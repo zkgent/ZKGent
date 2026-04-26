@@ -9,15 +9,42 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TreasuryRouteImport } from './routes/treasury'
+import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as SubmittedRouteImport } from './routes/submitted'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PayrollRouteImport } from './routes/payroll'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CounterpartiesRouteImport } from './routes/counterparties'
+import { Route as ArchitectureRouteImport } from './routes/architecture'
 import { Route as ApplyRouteImport } from './routes/apply'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminApplicationsRouteImport } from './routes/admin/applications'
 
+const TreasuryRoute = TreasuryRouteImport.update({
+  id: '/treasury',
+  path: '/treasury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransfersRoute = TransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SubmittedRoute = SubmittedRouteImport.update({
   id: '/submitted',
   path: '/submitted',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PayrollRoute = PayrollRouteImport.update({
+  id: '/payroll',
+  path: '/payroll',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -25,9 +52,24 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CounterpartiesRoute = CounterpartiesRouteImport.update({
+  id: '/counterparties',
+  path: '/counterparties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArchitectureRoute = ArchitectureRouteImport.update({
+  id: '/architecture',
+  path: '/architecture',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApplyRoute = ApplyRouteImport.update({
   id: '/apply',
   path: '/apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,60 +85,142 @@ const AdminApplicationsRoute = AdminApplicationsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/apply': typeof ApplyRoute
+  '/architecture': typeof ArchitectureRoute
+  '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
+  '/payroll': typeof PayrollRoute
+  '/settings': typeof SettingsRoute
   '/submitted': typeof SubmittedRoute
+  '/transfers': typeof TransfersRoute
+  '/treasury': typeof TreasuryRoute
   '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/apply': typeof ApplyRoute
+  '/architecture': typeof ArchitectureRoute
+  '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
+  '/payroll': typeof PayrollRoute
+  '/settings': typeof SettingsRoute
   '/submitted': typeof SubmittedRoute
+  '/transfers': typeof TransfersRoute
+  '/treasury': typeof TreasuryRoute
   '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/apply': typeof ApplyRoute
+  '/architecture': typeof ArchitectureRoute
+  '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
+  '/payroll': typeof PayrollRoute
+  '/settings': typeof SettingsRoute
   '/submitted': typeof SubmittedRoute
+  '/transfers': typeof TransfersRoute
+  '/treasury': typeof TreasuryRoute
   '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activity'
     | '/apply'
+    | '/architecture'
+    | '/counterparties'
     | '/dashboard'
+    | '/payroll'
+    | '/settings'
     | '/submitted'
+    | '/transfers'
+    | '/treasury'
     | '/admin/applications'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/apply' | '/dashboard' | '/submitted' | '/admin/applications'
+  to:
+    | '/'
+    | '/activity'
+    | '/apply'
+    | '/architecture'
+    | '/counterparties'
+    | '/dashboard'
+    | '/payroll'
+    | '/settings'
+    | '/submitted'
+    | '/transfers'
+    | '/treasury'
+    | '/admin/applications'
   id:
     | '__root__'
     | '/'
+    | '/activity'
     | '/apply'
+    | '/architecture'
+    | '/counterparties'
     | '/dashboard'
+    | '/payroll'
+    | '/settings'
     | '/submitted'
+    | '/transfers'
+    | '/treasury'
     | '/admin/applications'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
   ApplyRoute: typeof ApplyRoute
+  ArchitectureRoute: typeof ArchitectureRoute
+  CounterpartiesRoute: typeof CounterpartiesRoute
   DashboardRoute: typeof DashboardRoute
+  PayrollRoute: typeof PayrollRoute
+  SettingsRoute: typeof SettingsRoute
   SubmittedRoute: typeof SubmittedRoute
+  TransfersRoute: typeof TransfersRoute
+  TreasuryRoute: typeof TreasuryRoute
   AdminApplicationsRoute: typeof AdminApplicationsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/treasury': {
+      id: '/treasury'
+      path: '/treasury'
+      fullPath: '/treasury'
+      preLoaderRoute: typeof TreasuryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transfers': {
+      id: '/transfers'
+      path: '/transfers'
+      fullPath: '/transfers'
+      preLoaderRoute: typeof TransfersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/submitted': {
       id: '/submitted'
       path: '/submitted'
       fullPath: '/submitted'
       preLoaderRoute: typeof SubmittedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payroll': {
+      id: '/payroll'
+      path: '/payroll'
+      fullPath: '/payroll'
+      preLoaderRoute: typeof PayrollRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -106,11 +230,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/counterparties': {
+      id: '/counterparties'
+      path: '/counterparties'
+      fullPath: '/counterparties'
+      preLoaderRoute: typeof CounterpartiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/architecture': {
+      id: '/architecture'
+      path: '/architecture'
+      fullPath: '/architecture'
+      preLoaderRoute: typeof ArchitectureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/apply': {
       id: '/apply'
       path: '/apply'
       fullPath: '/apply'
       preLoaderRoute: typeof ApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -132,9 +277,16 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
   ApplyRoute: ApplyRoute,
+  ArchitectureRoute: ArchitectureRoute,
+  CounterpartiesRoute: CounterpartiesRoute,
   DashboardRoute: DashboardRoute,
+  PayrollRoute: PayrollRoute,
+  SettingsRoute: SettingsRoute,
   SubmittedRoute: SubmittedRoute,
+  TransfersRoute: TransfersRoute,
+  TreasuryRoute: TreasuryRoute,
   AdminApplicationsRoute: AdminApplicationsRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,7 +1,7 @@
-# Obsidian Protocol — Landing Page + Access App
+# Obsidian Protocol — Confidential Payments Console
 
 ## Project Overview
-A landing page and early access app for **Obsidian**, a Zero-Knowledge (ZK) Confidential Payments protocol engineered for the Solana blockchain. Features private, verifiable, and fast settlement using ZK-proofs (Groth16).
+A marketing landing page plus a full operator-facing confidential payment console for **Obsidian** — a Zero-Knowledge (ZK) confidential payments protocol engineered for Solana. The product experience is a real workspace: Transfers, Payroll, Treasury, Counterparties, Activity, Architecture, and Settings.
 
 ## Tech Stack
 ### Frontend
@@ -21,56 +21,50 @@ A landing page and early access app for **Obsidian**, a Zero-Knowledge (ZK) Conf
 - **Admin auth:** `x-admin-key` header; key set via `ADMIN_KEY` env var (default: `obsidian-admin-dev`)
 - **Application IDs:** Format `OBD-XXXXXXXX` (random alphanumeric)
 
-## Project Structure
-```
-index.html           # SPA HTML entry point
-src/
-  main.tsx           # React client mount entry (createRoot, wrapped in ApplicationProvider)
-  router.tsx         # TanStack Router factory (getRouter)
-  routeTree.gen.ts   # Auto-generated route tree
-  styles.css         # Global CSS + Tailwind entry
-  context/
-    ApplicationContext.tsx  # Form state, localStorage persistence
-  routes/
-    __root.tsx       # Root route (no SSR shell)
-    index.tsx        # Home/landing page route (/)
-    apply.tsx        # 4-step early access application (/apply)
-    submitted.tsx    # Confirmation screen (/submitted)
-    dashboard.tsx    # Access dashboard preview (/dashboard)
-  components/
-    obsidian/        # Brand components (Hero, Architecture, etc.)
-    app/             # App shell: AppShell, sidebar, top bar
-    ui/              # Shadcn UI primitives
-  hooks/             # Custom React hooks
-  lib/               # Utility functions
-```
-
 ## Routes
-- `/` — Marketing landing page (untouched)
-- `/apply` — 4-step multi-step application form (Identity → Use Case → Payment Profile → Review)
-- `/submitted` — Confirmation screen with next-steps timeline
-- `/dashboard` — Access overview dashboard preview
+
+### Public
+- `/` — Marketing landing page. Premium ZK finance landing page with hero, problem/solution, use cases, architecture, manifesto, and CTA to open the dashboard.
+
+### Product Console (AppShell with sidebar)
+- `/dashboard` — Workspace overview: status bar, quick actions, readiness config, ZK transfer protocol view, recent activity, architecture snapshot
+- `/transfers` — Confidential transfer list with filter chips (pending/verified/settled/failed), detail panel, and New Transfer modal
+- `/payroll` — Payroll batch management: batch list, stats, create batch flow, recipient import state
+- `/treasury` — Treasury routes and allocation view with approval queue
+- `/counterparties` — Counterparty directory with KYC status, search, filter, Add Counterparty modal
+- `/activity` — Event timeline with category filters (transfer/payroll/treasury/counterparty/settings/system)
+- `/architecture` — Protocol layer documentation (Confidential Notes → ZK Engine → Settlement → Policy → Audit)
+- `/settings` — Organization settings, privacy defaults, disclosure policy, notifications, connectivity state
+
+### Admin (internal)
+- `/admin/applications` — Full admin panel for application management (from previous access program phase). Password-gated via admin key.
+
+### Legacy (preserved for compatibility)
+- `/apply` — Early access application form (no longer primary UX)
+- `/submitted` — Application confirmation
 
 ## App Shell
-The new app routes (`/apply`, `/submitted`, `/dashboard`) use `AppShell` which provides:
-- Desktop sidebar (w-56) with nav links + back-to-landing link
-- Mobile hamburger menu with animated slide-out panel
-- Top status bar
+All product routes use `AppShell` which provides:
+- Desktop sidebar (w-52) with grouped navigation: main operations, system, internal/admin
+- Top status bar with current module label, Privacy mode indicator, Solana network indicator
+- Mobile hamburger with animated slide-out panel
 
 ## State Management
-`ApplicationContext` stores form data and submission status, persisted to `localStorage` under key `obsidian_application`.
+- `ApplicationContext` stores form data and application ID, persisted to `localStorage`
+- Product modules use local state + realistic mock data (no backend required for console UI)
 
 ## Architecture Notes
-- **SPA mode only**: TanStack Start (SSR) was replaced with pure TanStack Router SPA mode to avoid React 19 hydration errors caused by Replit's dev environment injecting scripts into the HTML head.
-- **No SSR**: Uses `createRoot` instead of `hydrateRoot`. All rendering is client-side.
-- **Vite config**: Uses `@tanstack/router-plugin/vite` + `@vitejs/plugin-react` + `@tailwindcss/vite` directly.
-- **Fonts**: Space Grotesk (display headings) + Inter (body) + JetBrains Mono (mono)
+- **SPA mode only**: Pure TanStack Router SPA (no SSR). Uses `createRoot`.
+- **Vite config**: Proxies `/api/*` → `localhost:3001`
+- **Fonts**: Space Grotesk (display) + Inter (body) + JetBrains Mono (mono)
+- **routeTree.gen.ts** is auto-generated — do not edit manually
 
 ## Development
-- **Dev server:** `npm run dev` — runs on port 5000
+- **Frontend dev server:** `npm run dev` → port 5000
+- **API server:** `npm run api` → port 3001
 - **Build:** `npm run build`
 
 ## Deployment
-- **Type:** Static site
+- **Type:** Static site (frontend) + Express API (backend)
 - **Build command:** `npm run build`
 - **Public directory:** `dist`

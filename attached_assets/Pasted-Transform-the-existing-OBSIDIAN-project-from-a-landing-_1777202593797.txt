@@ -1,0 +1,515 @@
+Transform the existing OBSIDIAN project from a landing page plus                
+access/onboarding app into a real product-oriented web application.             
+                                                                                
+Critical instructions                                                           
+                                                                                
+- Do not remove the existing landing page                                       
+- keep / as the marketing homepage                                              
+- preserve the OBSIDIAN visual identity and premium design language             
+- reuse the existing codebase, routes, components, and styles where practical   
+- remove all “waitlist”, “request early access”, “application received”, and    
+MVP-style onboarding language                                                   
+- this should no longer feel like an early-access startup preview               
+- it should feel like a real product you can enter and use immediately          
+                                                                                
+Product direction                                                               
+                                                                                
+OBSIDIAN is a confidential payments platform for organizations operating on     
+Solana.                                                                         
+                                                                                
+At this stage, do not pretend the full zero-knowledge settlement engine is live 
+if it is not.                                                                   
+But the product experience itself must now feel real, useful, and operational.  
+                                                                                
+This means:                                                                     
+- no waitlist language                                                          
+- no access-request flow                                                        
+- no “apply for early access”                                                   
+- no fake investor-demo onboarding                                              
+- no token/trading/exchange UI                                                  
+                                                                                
+Instead, the app should become a real operator-facing confidential finance      
+console.                                                                        
+                                                                                
+The user should be able to enter the product directly from the landing page and 
+understand what the platform does, what workflows exist, and how it would be    
+used in practice.                                                               
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Core product shift                                                              
+                                                                                
+Replace the current “early access / application” flow with a real product       
+experience centered around a Confidential Payments Workspace.                   
+                                                                                
+New product concept                                                             
+                                                                                
+OBSIDIAN is now presented as a confidential payment operations console.         
+                                                                                
+The app should support realistic product areas like:                            
+- Dashboard                                                                     
+- Transfers                                                                     
+- Payroll                                                                       
+- Treasury                                                                      
+- Counterparties                                                                
+- Activity                                                                      
+- Architecture                                                                  
+- Settings                                                                      
+                                                                                
+Not everything has to be fully connected to a blockchain backend yet, but the   
+product must feel operationally real and internally coherent.                   
+                                                                                
+If a module is not yet live, label it clearly as:                               
+- In Setup                                                                      
+- Not Connected                                                                 
+- Configuration Required                                                        
+- Coming Online                                                                 
+- Pilot Scope                                                                   
+                                                                                
+The experience must still feel like a product, not a waitlist.                  
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Required homepage changes                                                       
+                                                                                
+Update the existing landing page CTAs and navigation so they point into the real
+app instead of early access flows.                                              
+                                                                                
+Requirements                                                                    
+                                                                                
+Change CTA language across the landing page.                                    
+                                                                                
+Replace things like:                                                            
+- Join Waitlist                                                                 
+- Request Early Access                                                          
+- Application                                                                   
+- Access Program                                                                
+                                                                                
+With product-oriented CTAs such as:                                             
+- Open Dashboard                                                                
+- Launch Workspace                                                              
+- Enter Platform                                                                
+- Explore Console                                                               
+                                                                                
+### Important                                                                   
+                                                                                
+Do not ruin the current landing page design.                                    
+Preserve its premium look and layout.                                           
+Only update CTA behavior, wording, and app-entry flow so it feels like a real   
+live product.                                                                   
+                                                                                
+### Desired outcome                                                             
+                                                                                
+From the landing page, a user should be able to click directly into the product 
+workspace.                                                                      
+                                                                                
+Suggested route:                                                                
+- /dashboard                                                                    
+                                                                                
+If better route naming fits the app structure, use it consistently.             
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Replace the current app flow entirely                                           
+                                                                                
+The current app appears centered around:                                        
+- apply                                                                         
+- submitted                                                                     
+- dashboard preview                                                             
+- admin applications                                                            
+                                                                                
+That is no longer the primary product experience.                               
+                                                                                
+Refactor the app into a real workspace-oriented product shell.                  
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+New app structure                                                               
+                                                                                
+Create or refactor routes into something like this:                             
+                                                                                
+- /dashboard                                                                    
+- /transfers                                                                    
+- /payroll                                                                      
+- /treasury                                                                     
+- /counterparties                                                               
+- /activity                                                                     
+- /architecture                                                                 
+- /settings                                                                     
+                                                                                
+Optional internal/admin:                                                        
+- /admin                                                                        
+                                                                                
+If existing routes must be preserved temporarily for compatibility, that is     
+fine, but they should no longer be the primary product UX.                      
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+New app shell                                                                   
+                                                                                
+Build a real premium application shell for the workspace.                       
+                                                                                
+Requirements                                                                    
+                                                                                
+- sidebar navigation                                                            
+- top command/status bar                                                        
+- strong information hierarchy                                                  
+- responsive layout                                                             
+- excellent readability                                                         
+- premium dark OBSIDIAN styling                                                 
+- clean, intuitive UX                                                           
+- easy-to-understand module structure                                           
+                                                                                
+The app should feel like:                                                       
+- a serious finance operations console                                          
+- premium internal software                                                     
+- cryptography infrastructure software                                          
+- a product with actual operational surfaces                                    
+                                                                                
+It must not feel like:                                                          
+- a generic admin template                                                      
+- a waitlist app                                                                
+- a static mock dashboard                                                       
+- a toy crypto wallet                                                           
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Dashboard redesign, full overhaul                                               
+                                                                                
+Completely redesign the dashboard into a more useful, attractive, and           
+understandable product home.                                                    
+                                                                                
+Goal                                                                            
+                                                                                
+The dashboard should be the main entry point and should immediately communicate:
+- what the workspace is                                                         
+- what operational modules exist                                                
+- what the system state is                                                      
+- what actions are available                                                    
+- what is configured vs not configured                                          
+                                                                                
+Requirements for /dashboard                                                     
+                                                                                
+Create a much stronger dashboard with sections like:                            
+                                                                                
+### 1. Workspace Overview                                                       
+                                                                                
+Show:                                                                           
+- workspace status                                                              
+- confidential operations status                                                
+- organization / environment label                                              
+- system readiness state                                                        
+- privacy mode indicator                                                        
+- Solana connectivity state                                                     
+- operator profile summary                                                      
+                                                                                
+### 2. Primary Action Area                                                      
+                                                                                
+Large action cards or buttons for:                                              
+- New Confidential Transfer                                                     
+- Run Payroll Batch                                                             
+- Review Treasury Flows                                                         
+- Add Counterparty                                                              
+- Inspect Activity                                                              
+                                                                                
+These should be obvious and easy to understand.                                 
+                                                                                
+### 3. Operational Summary                                                      
+                                                                                
+Show realistic panels for:                                                      
+- Pending transfers                                                             
+- Payroll batches                                                               
+- Treasury routes                                                               
+- Counterparties onboarded                                                      
+- Activity events                                                               
+- Configuration health                                                          
+                                                                                
+These can be mock operational data, but must be presented as product data, not  
+investor-demo filler.                                                           
+                                                                                
+### 4. Confidential Transfer Module Preview                                     
+                                                                                
+A premium visual module that explains or displays:                              
+- sender protected                                                              
+- receiver protected                                                            
+- amount protected                                                              
+- proof state                                                                   
+- settlement path                                                               
+- compliance or disclosure controls                                             
+                                                                                
+This should be visually strong and much better than a simple text list.         
+                                                                                
+### 5. Readiness / Configuration State                                          
+                                                                                
+A useful section showing what is currently:                                     
+- configured                                                                    
+- pending                                                                       
+- disconnected                                                                  
+- requires setup                                                                
+                                                                                
+For example:                                                                    
+- Solana wallet connection                                                      
+- treasury policy setup                                                         
+- payroll recipient import                                                      
+- counterparty verification                                                     
+- disclosure policy settings                                                    
+                                                                                
+### 6. Recent Activity                                                          
+                                                                                
+A clean activity timeline or table showing:                                     
+- transfer initiated                                                            
+- payroll draft created                                                         
+- treasury route updated                                                        
+- counterparty added                                                            
+- policy changed                                                                
+                                                                                
+Use realistic product copy.                                                     
+                                                                                
+### 7. Architecture / Integrity Snapshot                                        
+                                                                                
+A compact but useful system block showing:                                      
+- Confidential Notes                                                            
+- ZK Verification                                                               
+- Settlement Layer                                                              
+- Policy Controls                                                               
+- Audit Surface                                                                 
+                                                                                
+This should feel like a real system overview, not decorative filler.            
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Transfers module                                                                
+                                                                                
+Create a dedicated /transfers route.                                            
+                                                                                
+Purpose                                                                         
+                                                                                
+This should feel like a real operational module for confidential transfers.     
+                                                                                
+Include                                                                         
+                                                                                
+- header                                                                        
+- status chips                                                                  
+- transfer list or transfer queue                                               
+- transfer detail panel or cards                                                
+- action button for “New Transfer”                                              
+- filters such as:                                                              
+    - pending                                                                   
+    - verified                                                                  
+    - settled                                                                   
+    - failed                                                                    
+- confidentiality indicators                                                    
+- settlement indicators                                                         
+                                                                                
+This can still use realistic mock data if no protocol backend exists yet, but it
+must feel like a real product module.                                           
+                                                                                
+Do not frame it as a demo.                                                      
+Frame it as the product surface.                                                
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Payroll module                                                                  
+                                                                                
+Create /payroll.                                                                
+                                                                                
+Include                                                                         
+                                                                                
+- payroll batches                                                               
+- scheduled disbursements                                                       
+- recipients imported                                                           
+- next run date                                                                 
+- status states                                                                 
+- action buttons like:                                                          
+    - Create Batch                                                              
+    - Import Recipients                                                         
+    - Review Draft                                                              
+                                                                                
+This should be easy to understand and operationally clear.                      
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Treasury module                                                                 
+                                                                                
+Create /treasury.                                                               
+                                                                                
+Include                                                                         
+                                                                                
+- treasury routes                                                               
+- managed flows                                                                 
+- allocation views                                                              
+- movement approvals or route states                                            
+- a premium summary of treasury operations                                      
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Counterparties module                                                           
+                                                                                
+Create /counterparties.                                                         
+                                                                                
+Include                                                                         
+                                                                                
+- counterparty list                                                             
+- onboarding status                                                             
+- payment relationship type                                                     
+- region                                                                        
+- verification state                                                            
+- add counterparty CTA                                                          
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Activity module                                                                 
+                                                                                
+Create /activity.                                                               
+                                                                                
+Include                                                                         
+                                                                                
+- event timeline or activity log                                                
+- filters                                                                       
+- clear action/event labels                                                     
+- timestamps                                                                    
+- category badges                                                               
+- a layout that is actually readable                                            
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Architecture module                                                             
+                                                                                
+Create /architecture.                                                           
+                                                                                
+Include                                                                         
+                                                                                
+- better technical system visualization                                         
+- concise explanations                                                          
+- product architecture overview                                                 
+- policy / disclosure / privacy system explanation                              
+- should feel like a product-integrated technical overview                      
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Settings module                                                                 
+                                                                                
+Create /settings.                                                               
+                                                                                
+Include                                                                         
+                                                                                
+- organization settings                                                         
+- privacy defaults                                                              
+- disclosure policy                                                             
+- operator preferences                                                          
+- system environment details                                                    
+- connectivity state                                                            
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+UX goals                                                                        
+                                                                                
+The biggest requirement is UX clarity.                                          
+                                                                                
+The app must feel:                                                              
+                                                                                
+- intuitive                                                                     
+- structured                                                                    
+- high-signal                                                                   
+- premium                                                                       
+- easy to scan                                                                  
+- easy to navigate                                                              
+- obviously useful                                                              
+                                                                                
+Avoid                                                                           
+                                                                                
+- too many meaningless cards                                                    
+- generic dashboard clutter                                                     
+- tiny unreadable text                                                          
+- fake chart spam                                                               
+- confusing crypto jargon                                                       
+- over-stylized interfaces that sacrifice usability                             
+                                                                                
+The user should quickly understand the app.                                     
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Visual system                                                                   
+                                                                                
+Use the existing OBSIDIAN brand language:                                       
+- dark mode                                                                     
+- obsidian black                                                                
+- charcoal surfaces                                                             
+- restrained emerald/cyan/violet accents                                        
+- glass only where useful                                                       
+- strong spacing                                                                
+- clear hierarchy                                                               
+- premium typography                                                            
+- quiet motion                                                                  
+                                                                                
+Preserve brand consistency with the landing page.                               
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Data and truthfulness                                                           
+                                                                                
+If no real confidential payment backend exists yet, that is acceptable.         
+But do not use the old startup language of waitlist, application, or early      
+access.                                                                         
+                                                                                
+Use realistic seeded workspace/product data where necessary.                    
+                                                                                
+The product should feel like:                                                   
+- a live workspace interface                                                    
+- a controlled platform environment                                             
+- an operational console                                                        
+                                                                                
+Not:                                                                            
+- a request form                                                                
+- a preview deck                                                                
+- a fake waitlist funnel                                                        
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Code requirements                                                               
+                                                                                
+- extend the existing project cleanly                                           
+- preserve homepage                                                             
+- refactor app shell as needed                                                  
+- remove old UX flows from the primary path                                     
+- keep code organized                                                           
+- create reusable layout and module components                                  
+- use React + TypeScript + Tailwind + Framer Motion                             
+- maintain responsiveness                                                       
+- keep copy concise and product-grade                                           
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Important text cleanup                                                          
+                                                                                
+Search the whole app and remove or replace language like:                       
+- waitlist                                                                      
+- request early access                                                          
+- application received                                                          
+- under review, when referring to access gating                                 
+- early access program                                                          
+- access program                                                                
+- pilot conversation                                                            
+- qualification flow                                                            
+                                                                                
+Replace with language consistent with a live product workspace.                 
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+                                                                                
+Final result                                                                    
+                                                                                
+The result should feel like a real confidential payments platform workspace.    
+                                                                                
+The homepage remains the premium marketing surface.                             
+The app becomes the product surface.                                            
+                                                                                
+The default experience should now be:                                           
+- user lands on homepage                                                        
+- user clicks CTA                                                               
+- user enters dashboard                                                         
+- user can navigate meaningful product modules                                  
+- UX is clean, premium, and understandable                                      
+- no waitlist or early-access funnel remains in the primary experience          
+                                                                                
+Before coding, inspect the current implementation and refactor intelligently    
+instead of layering more UI on top of the old access-flow model.  

@@ -1,63 +1,139 @@
 import { ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useApplication } from "@/context/ApplicationContext";
 
-const navItems: { href: string; label: string; icon: React.ReactNode; admin?: boolean }[] = [
-  {
-    href: "/apply",
-    label: "Apply",
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
-      </svg>
-    ),
-  },
-  {
-    href: "/submitted",
-    label: "Status",
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  section?: "main" | "system" | "admin";
+};
+
+const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
+    section: "main",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="5" height="8" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="9" y="6" width="5" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="9" y="2" width="5" height="3" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="2" y="12" width="12" height="2" rx="1" stroke="currentColor" strokeWidth="1.4" />
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="1" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="8.5" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="1" y="8.5" width="5.5" height="5.5" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1" stroke="currentColor" strokeWidth="1.35" />
+      </svg>
+    ),
+  },
+  {
+    href: "/transfers",
+    label: "Transfers",
+    section: "main",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path d="M1 5h11M9 2l3 3-3 3" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 10H3M5 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/payroll",
+    label: "Payroll",
+    section: "main",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="1" y="3" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.35" />
+        <path d="M5 7.5h5M7.5 5.5v4" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/treasury",
+    label: "Treasury",
+    section: "main",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path d="M2 11L7.5 2l5.5 9H2z" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round" />
+        <path d="M4.5 11V8.5M10.5 11V8.5M7.5 11V6" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/counterparties",
+    label: "Counterparties",
+    section: "main",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.35" />
+        <circle cx="10.5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.35" />
+        <path d="M1 13c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+        <path d="M10.5 9c1.38 0 2.5 1.57 2.5 3.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/activity",
+    label: "Activity",
+    section: "main",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path d="M1 7.5h2l2-4 2 8 2-6 2 4 1-2h2" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/architecture",
+    label: "Architecture",
+    section: "system",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="5.5" y="1" width="4" height="3" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="1" y="11" width="4" height="3" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="10" y="11" width="4" height="3" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <path d="M7.5 4v3M7.5 7H3m0 0v1M7.5 7h4.5m0 0v1" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    section: "system",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <circle cx="7.5" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.35" />
+        <path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.1 3.1l.7.7M11.2 11.2l.7.7M3.1 11.9l.7-.7M11.2 3.8l.7-.7" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
       </svg>
     ),
   },
   {
     href: "/admin/applications",
     label: "Admin",
-    admin: true,
+    section: "admin",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="2" y="9" width="4" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
-        <rect x="9" y="2" width="5" height="11" rx="1" stroke="currentColor" strokeWidth="1.4" />
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="1" y="8" width="4" height="6" rx="1" stroke="currentColor" strokeWidth="1.35" />
+        <rect x="8" y="1" width="6" height="10" rx="1" stroke="currentColor" strokeWidth="1.35" />
       </svg>
     ),
   },
 ];
 
-function ObsidianLogo() {
+function ObsidianMark() {
   return (
-    <div className="relative h-5 w-5 shrink-0">
-      <div className="absolute inset-0 rotate-45 rounded-[3px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
-      <div className="absolute inset-[2.5px] rotate-45 rounded-[2px] bg-background" />
-      <div className="absolute inset-[5px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
+    <div className="relative h-6 w-6 shrink-0">
+      <div className="absolute inset-0 rotate-45 rounded-[4px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
+      <div className="absolute inset-[3px] rotate-45 rounded-[2px] bg-background" />
+      <div className="absolute inset-[6px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
+    </div>
+  );
+}
+
+function SidebarSection({ label, children }: { label?: string; children: ReactNode }) {
+  return (
+    <div>
+      {label && (
+        <p className="mb-1 px-3 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground/40">{label}</p>
+      )}
+      <div className="space-y-0.5">{children}</div>
     </div>
   );
 }
@@ -65,55 +141,66 @@ function ObsidianLogo() {
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const router = useRouterState();
   const currentPath = router.location.pathname;
-  const { applicationId } = useApplication();
+
+  const main = navItems.filter((i) => i.section === "main");
+  const system = navItems.filter((i) => i.section === "system");
+  const admin = navItems.filter((i) => i.section === "admin");
+
+  const NavLink = ({ item }: { item: NavItem }) => {
+    const isActive = currentPath === item.href || currentPath.startsWith(item.href + "/");
+    return (
+      <Link
+        to={item.href}
+        onClick={onClose}
+        className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all ${
+          isActive
+            ? "bg-emerald/[0.12] text-emerald"
+            : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
+        }`}
+      >
+        <span className={`transition-colors ${isActive ? "text-emerald" : "text-muted-foreground/60 group-hover:text-foreground"}`}>
+          {item.icon}
+        </span>
+        {item.label}
+        {isActive && <div className="ml-auto h-1 w-1 rounded-full bg-emerald" />}
+      </Link>
+    );
+  };
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-hairline">
-        <ObsidianLogo />
-        <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">
-          OBSIDIAN
-        </span>
-        <span className="ml-auto font-mono text-[9px] tracking-widest text-emerald uppercase px-1.5 py-0.5 rounded bg-emerald/10 border border-emerald/20">
-          Access
-        </span>
+      <div className="flex items-center gap-2.5 px-4 py-4 border-b border-hairline">
+        <ObsidianMark />
+        <div>
+          <span className="font-mono text-[11px] font-semibold tracking-[0.22em] text-foreground">OBSIDIAN</span>
+          <p className="font-mono text-[9px] tracking-wider text-muted-foreground/50 leading-none mt-0.5">Confidential Console</p>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
+        </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = currentPath === item.href;
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              onClick={onClose}
-              className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all ${
-                isActive
-                  ? "bg-emerald/10 text-emerald border border-emerald/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-surface"
-              }`}
-            >
-              <span className={isActive ? "text-emerald" : "text-muted-foreground group-hover:text-foreground"}>
-                {item.icon}
-              </span>
-              {item.label}
-              {item.href === "/submitted" && !!applicationId && (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald" />
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+        <SidebarSection>
+          {main.map((item) => <NavLink key={item.href} item={item} />)}
+        </SidebarSection>
+        <SidebarSection label="System">
+          {system.map((item) => <NavLink key={item.href} item={item} />)}
+        </SidebarSection>
+        <SidebarSection label="Internal">
+          {admin.map((item) => <NavLink key={item.href} item={item} />)}
+        </SidebarSection>
       </nav>
 
-      <div className="px-4 pb-5 pt-3 border-t border-hairline">
+      <div className="px-4 pb-4 pt-3 border-t border-hairline">
         <Link
           to="/"
-          className="flex items-center gap-2 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+          className="flex items-center gap-2 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M7 2L3 6l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M7 1.5L3 5.5l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
-          Back to landing page
+          Homepage
         </Link>
       </div>
     </div>
@@ -122,31 +209,28 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouterState();
+  const currentPath = router.location.pathname;
+  const currentItem = navItems.find((i) => currentPath === i.href || currentPath.startsWith(i.href + "/"));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-56 shrink-0 flex-col border-r border-hairline bg-surface/40">
+      <aside className="hidden lg:flex w-52 shrink-0 flex-col border-r border-hairline bg-surface/30">
         <Sidebar />
       </aside>
 
-      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
-              initial={{ x: -224 }}
-              animate={{ x: 0 }}
-              exit={{ x: -224 }}
+              initial={{ x: -208 }} animate={{ x: 0 }} exit={{ x: -208 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 z-50 w-56 border-r border-hairline bg-surface lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-52 border-r border-hairline bg-surface lg:hidden"
             >
               <Sidebar onClose={() => setMobileOpen(false)} />
             </motion.aside>
@@ -154,31 +238,48 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Main content area */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center gap-4 border-b border-hairline px-5">
+        <header className="flex h-12 shrink-0 items-center gap-3 border-b border-hairline bg-surface/20 px-4">
           <button
             onClick={() => setMobileOpen(true)}
             className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
           </button>
           <div className="flex items-center gap-2 lg:hidden">
-            <ObsidianLogo />
-            <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">OBSIDIAN</span>
+            <ObsidianMark />
+            <span className="font-mono text-[11px] font-semibold tracking-[0.2em] text-foreground">OBSIDIAN</span>
           </div>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
-              Access Program
-            </span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
+
+          {currentItem && (
+            <div className="hidden lg:flex items-center gap-2">
+              <span className="text-muted-foreground/40">
+                {currentItem.icon}
+              </span>
+              <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">
+                {currentItem.label}
+              </span>
+            </div>
+          )}
+
+          <div className="ml-auto flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
+                Privacy mode active
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-cyan" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
+                Solana devnet
+              </span>
+            </div>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>

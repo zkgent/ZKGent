@@ -5,7 +5,6 @@ const links = [
   { label: "Vision", href: "#vision" },
   { label: "Use Cases", href: "#use-cases" },
   { label: "Architecture", href: "#architecture" },
-  { label: "Waitlist", href: "#waitlist" },
 ];
 
 export function Navbar() {
@@ -58,11 +57,11 @@ export function Navbar() {
         </ul>
 
         <a
-          href="#waitlist"
+          href="/dashboard"
           className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-hairline bg-surface-elevated px-4 py-1.5 text-[13px] font-medium text-foreground transition-all hover:border-emerald/40"
         >
           <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-          <span className="relative">Join Waitlist</span>
+          <span className="relative">Open Dashboard</span>
           <span className="relative text-emerald transition-transform group-hover:translate-x-0.5">→</span>
         </a>
       </nav>

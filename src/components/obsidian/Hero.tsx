@@ -16,28 +16,21 @@ export function Hero() {
       id="top"
       className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48"
     >
-      {/* ── Layered backgrounds ─────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grid mask-radial-fade" />
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grain opacity-[0.35]" />
 
-      {/* Deep ambient color wash */}
       <div className="pointer-events-none absolute -top-40 left-1/2 -z-20 h-[760px] w-[1400px] -translate-x-1/2 rounded-full bg-emerald/[0.09] blur-[140px]" />
       <div className="pointer-events-none absolute top-32 right-[-10%] -z-20 h-[520px] w-[520px] rounded-full bg-violet/[0.12] blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-[-10%] -z-20 h-[480px] w-[480px] rounded-full bg-cyan/[0.10] blur-[120px]" />
 
-      {/* Subtle horizon line at the bottom edge */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px divider-gradient" />
-
-      {/* Foreground blur layer — sits on top of everything but text, gives depth */}
       <div className="pointer-events-none absolute -bottom-32 left-1/2 z-10 h-[260px] w-[120%] -translate-x-1/2 rounded-[100%] bg-background/40 blur-3xl" />
 
       <motion.div
         style={{ y, opacity }}
         className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-20 px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12"
       >
-        {/* ── Left: copy ─────────────────────────────────────────────────── */}
         <div className="relative">
-          {/* Pre-headline */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -50,7 +43,6 @@ export function Hero() {
             </span>
           </motion.div>
 
-          {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -82,7 +74,6 @@ export function Hero() {
             </span>
           </motion.h1>
 
-          {/* Supporting paragraph — sharpened */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -92,7 +83,6 @@ export function Hero() {
             Private by design. Verifiable by mathematics. Settled at Solana speed.
           </motion.p>
 
-          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,11 +90,11 @@ export function Hero() {
             className="mt-10 flex flex-wrap items-center gap-3"
           >
             <Link
-              to="/apply"
+              to="/dashboard"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3.5 text-sm font-medium text-background transition-all hover:shadow-[0_0_50px_-8px_rgba(255,255,255,0.45)]"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <span className="relative">Request Early Access</span>
+              <span className="relative">Open Dashboard</span>
               <span className="relative transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
             <a
@@ -118,7 +108,6 @@ export function Hero() {
             </a>
           </motion.div>
 
-          {/* Premium micro-credibility strip */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -140,7 +129,6 @@ export function Hero() {
           </motion.div>
         </div>
 
-        {/* ── Right: visual ──────────────────────────────────────────────── */}
         <motion.div
           style={{ y: visualY }}
           initial={{ opacity: 0, scale: 0.94 }}
@@ -148,14 +136,12 @@ export function Hero() {
           transition={{ duration: 1.3, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="relative flex items-center justify-center"
         >
-          {/* Extra ambient glow behind visual */}
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute left-1/2 top-1/2 h-[110%] w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald/[0.08] blur-[120px]" />
           </div>
 
           <ProtocolVisual />
 
-          {/* Shielded pool live badge — bottom right, no overlap */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
