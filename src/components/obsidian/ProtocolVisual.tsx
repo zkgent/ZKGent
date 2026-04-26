@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
  */
 export function ProtocolVisual() {
   return (
-    <div className="relative aspect-square w-full max-w-[640px]">
+    <div className="relative aspect-square w-full max-w-[480px]">
       {/* Ambient glow layers */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-1/2 h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald/10 blur-[100px]" />

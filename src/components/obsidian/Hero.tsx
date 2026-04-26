@@ -145,7 +145,7 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.3, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex items-center justify-center lg:-mr-24 lg:scale-[1.1]"
+          className="relative flex items-center justify-center"
         >
           {/* Extra ambient glow behind visual */}
           <div className="pointer-events-none absolute inset-0 -z-10">
