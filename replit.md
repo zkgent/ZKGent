@@ -51,7 +51,19 @@ All product routes use `AppShell` which provides:
 
 ## State Management
 - `ApplicationContext` stores form data and application ID, persisted to `localStorage`
-- Product modules use local state + realistic mock data (no backend required for console UI)
+- All 7 product modules (Dashboard, Transfers, Payroll, Treasury, Counterparties, Activity, Settings) are fully DB-backed: no hardcoded fake data anywhere
+- Frontend uses `src/lib/api.ts` typed API client (namespaced `api.*` methods) to fetch/mutate via `/api/*` routes
+- All pages implement: loading skeletons, empty states, error states, and real form submissions that POST to the Express API
+- All create/update mutations automatically log to the `activity_events` table via `logActivity()` helper
+
+## Database Schema (SQLite — obsidian.db)
+- `applications` — Early access applications (legacy)
+- `transfers` — Confidential transfers with reference, status, proof state, asset, region
+- `payroll_batches` — Payroll batches with recipient count, approval threshold/count, scheduled date
+- `treasury_routes` — Treasury routing policies with source/destination pools and allocation
+- `counterparties` — KYC-tracked counterparties with type, relationship, status
+- `activity_events` — Append-only audit log of all mutations (category, event, detail, operator)
+- `workspace_settings` — Singleton settings row (privacy mode, notifications, disclosure policy)
 
 ## Architecture Notes
 - **SPA mode only**: Pure TanStack Router SPA (no SSR). Uses `createRoot`.
