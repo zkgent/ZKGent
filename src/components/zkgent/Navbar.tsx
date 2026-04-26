@@ -38,7 +38,7 @@ export function Navbar() {
             <div className="absolute inset-[6px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
           </div>
           <span className="font-mono text-[13px] font-medium tracking-[0.2em] text-foreground">
-            OBSIDIAN
+            ZKGENT
           </span>
         </a>
 

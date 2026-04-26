@@ -17,7 +17,7 @@ export function SolutionSection() {
               <em className="italic text-gradient-emerald">programmable money.</em>
             </>
           }
-          description="OBSIDIAN separates what the network must know to settle from what counterparties must reveal. Settlement happens. Surveillance doesn't."
+          description="ZKGENT separates what the network must know to settle from what counterparties must reveal. Settlement happens. Surveillance doesn't."
           align="center"
         />
 

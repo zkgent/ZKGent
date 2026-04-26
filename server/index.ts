@@ -44,5 +44,5 @@ if (isProd) {
 }
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`OBSIDIAN server running on port ${PORT} (${isProd ? "production" : "development"})`);
+  console.log(`ZKGENT server running on port ${PORT} (${isProd ? "production" : "development"})`);
 });

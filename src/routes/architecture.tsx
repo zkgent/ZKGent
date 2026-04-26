@@ -82,7 +82,7 @@ function ArchitecturePage() {
             <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">System</p>
             <h1 className="font-display text-2xl font-semibold text-foreground">Architecture</h1>
             <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">
-              OBSIDIAN is a layered confidential payment system. Each layer has a defined role — from cryptographic commitment through settlement and compliance.
+              ZKGENT is a layered confidential payment system. Each layer has a defined role — from cryptographic commitment through settlement and compliance.
             </p>
           </motion.div>
 
@@ -153,7 +153,7 @@ function ArchitecturePage() {
             <div>
               <p className="text-[13px] font-semibold text-foreground mb-1">Verifiability without exposure</p>
               <p className="text-[12px] leading-relaxed text-muted-foreground">
-                OBSIDIAN does not rely on trusted hardware or off-chain relayers for privacy. Every transaction's validity is cryptographically proven and can be verified by any participant — without learning anything about the transfer itself. The protocol is designed for production-grade confidentiality in regulated environments.
+                ZKGENT does not rely on trusted hardware or off-chain relayers for privacy. Every transaction's validity is cryptographically proven and can be verified by any participant — without learning anything about the transfer itself. The protocol is designed for production-grade confidentiality in regulated environments.
               </p>
             </div>
           </motion.div>

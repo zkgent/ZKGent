@@ -62,7 +62,7 @@ export function UseCases() {
               <em className="italic text-muted-foreground">discretion is non-negotiable.</em>
             </>
           }
-          description="OBSIDIAN is infrastructure for serious financial workflows — not retail speculation."
+          description="ZKGENT is infrastructure for serious financial workflows — not retail speculation."
         />
 
         <div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">

@@ -48,7 +48,7 @@
 .dark {
   --radius: 0.75rem;
 
-  /* Obsidian palette — dark only */
+  /* ZKGent palette — dark only */
   --background: oklch(0.13 0.005 260);
   --foreground: oklch(0.985 0.002 240);
 

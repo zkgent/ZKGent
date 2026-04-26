@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; dot: string 
 
 const TIMELINE = [
   { step: "Application received", desc: "Your application is logged and in the review queue." },
-  { step: "Internal review", desc: "OBSIDIAN team evaluates your use case and profile." },
+  { step: "Internal review", desc: "ZKGENT team evaluates your use case and profile." },
   { step: "Qualification", desc: "We confirm fit with the early access program criteria." },
   { step: "Pilot conversation", desc: "A team member will reach out to schedule a call." },
 ];

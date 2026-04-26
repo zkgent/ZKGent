@@ -117,7 +117,7 @@ const navItems: NavItem[] = [
   },
 ];
 
-function ObsidianMark() {
+function ZKGentMark() {
   return (
     <div className="relative h-6 w-6 shrink-0">
       <div className="absolute inset-0 rotate-45 rounded-[4px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
@@ -170,9 +170,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-hairline">
-        <ObsidianMark />
+        <ZKGentMark />
         <div>
-          <span className="font-mono text-[11px] font-semibold tracking-[0.22em] text-foreground">OBSIDIAN</span>
+          <span className="font-mono text-[11px] font-semibold tracking-[0.22em] text-foreground">ZKGENT</span>
           <p className="font-mono text-[9px] tracking-wider text-muted-foreground/50 leading-none mt-0.5">Confidential Console</p>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
@@ -249,8 +249,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </svg>
           </button>
           <div className="flex items-center gap-2 lg:hidden">
-            <ObsidianMark />
-            <span className="font-mono text-[11px] font-semibold tracking-[0.2em] text-foreground">OBSIDIAN</span>
+            <ZKGentMark />
+            <span className="font-mono text-[11px] font-semibold tracking-[0.2em] text-foreground">ZKGENT</span>
           </div>
 
           {currentItem && (

@@ -21,8 +21,8 @@ export type ApplicationRecord = FormData & {
   updatedAt: string;
 };
 
-const FORM_KEY = "obsidian_form_draft";
-const APP_ID_KEY = "obsidian_application_id";
+const FORM_KEY = "zkgent_form_draft";
+const APP_ID_KEY = "zkgent_application_id";
 
 const defaultForm: FormData = {
   fullName: "",

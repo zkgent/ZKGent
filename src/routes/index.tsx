@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Navbar } from "@/components/obsidian/Navbar";
-import { Hero } from "@/components/obsidian/Hero";
-import { ProblemSection } from "@/components/obsidian/ProblemSection";
-import { SolutionSection } from "@/components/obsidian/SolutionSection";
-import { UseCases } from "@/components/obsidian/UseCases";
-import { HowItWorks } from "@/components/obsidian/HowItWorks";
-import { Architecture } from "@/components/obsidian/Architecture";
-import { WhyNow } from "@/components/obsidian/WhyNow";
-import { Manifesto } from "@/components/obsidian/Manifesto";
-import { Waitlist } from "@/components/obsidian/Waitlist";
-import { Footer } from "@/components/obsidian/Footer";
-import { Divider } from "@/components/obsidian/Section";
+import { Navbar } from "@/components/zkgent/Navbar";
+import { Hero } from "@/components/zkgent/Hero";
+import { ProblemSection } from "@/components/zkgent/ProblemSection";
+import { SolutionSection } from "@/components/zkgent/SolutionSection";
+import { UseCases } from "@/components/zkgent/UseCases";
+import { HowItWorks } from "@/components/zkgent/HowItWorks";
+import { Architecture } from "@/components/zkgent/Architecture";
+import { WhyNow } from "@/components/zkgent/WhyNow";
+import { Manifesto } from "@/components/zkgent/Manifesto";
+import { Waitlist } from "@/components/zkgent/Waitlist";
+import { Footer } from "@/components/zkgent/Footer";
+import { Divider } from "@/components/zkgent/Section";
 
 export const Route = createFileRoute("/")({
   component: Index,

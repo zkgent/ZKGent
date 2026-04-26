@@ -9,7 +9,7 @@ export function Footer() {
                 <div className="absolute inset-0 rotate-45 rounded-[3px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
                 <div className="absolute inset-[2px] rotate-45 rounded-[2px] bg-background" />
               </div>
-              <span className="font-mono text-[12px] tracking-[0.2em] text-foreground">OBSIDIAN</span>
+              <span className="font-mono text-[12px] tracking-[0.2em] text-foreground">ZKGENT</span>
             </div>
             <p className="mt-5 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
               A zero-knowledge confidential payments protocol on Solana. Private by default. Verifiable by mathematics.
@@ -44,7 +44,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-hairline pt-8 sm:flex-row sm:items-center">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground/70">
-            © {new Date().getFullYear()} Obsidian Labs · All rights reserved
+            © {new Date().getFullYear()} ZKGent Labs · All rights reserved
           </p>
           <p className="font-mono text-[11px] tracking-wider text-muted-foreground/60">
             <span className="inline-flex items-center gap-1.5">
@@ -59,7 +59,7 @@ export function Footer() {
       <div className="overflow-hidden border-t border-hairline">
         <div className="mx-auto max-w-[1600px] px-6 py-10">
           <div className="font-display text-[clamp(60px,16vw,260px)] leading-none tracking-tight text-foreground/[0.06] select-none">
-            OBSIDIAN
+            ZKGENT
           </div>
         </div>
       </div>

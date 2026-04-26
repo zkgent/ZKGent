@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import crypto from "crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "..", "obsidian.db");
+const DB_PATH = path.join(__dirname, "..", "zkgent.db");
 
 export const db = new Database(DB_PATH);
 
@@ -107,7 +107,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS workspace_settings (
     id TEXT PRIMARY KEY DEFAULT 'singleton',
-    workspace_name TEXT DEFAULT 'OBSIDIAN Workspace',
+    workspace_name TEXT DEFAULT 'ZKGENT Workspace',
     environment TEXT DEFAULT 'devnet',
     default_payment_rail TEXT DEFAULT 'USDC',
     privacy_mode INTEGER DEFAULT 1,

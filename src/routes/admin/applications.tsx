@@ -7,7 +7,7 @@ export const Route = createFileRoute("/admin/applications")({
   component: AdminApplicationsPage,
 });
 
-const ADMIN_KEY_STORAGE = "obsidian_admin_key";
+const ADMIN_KEY_STORAGE = "zkgent_admin_key";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All statuses" },
@@ -94,7 +94,7 @@ function AdminLogin({ onLogin }: { onLogin: (key: string) => void }) {
             </svg>
           </div>
           <h1 className="font-display text-xl font-semibold text-foreground">Admin Access</h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">OBSIDIAN Internal</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">ZKGENT Internal</p>
         </div>
         <div className="space-y-3">
           <input type="password" value={key} onChange={(e) => setKey(e.target.value)}
@@ -290,7 +290,7 @@ function AdminApplicationsPage() {
             <div className="absolute inset-[2.5px] rotate-45 rounded-[2px] bg-background" />
             <div className="absolute inset-[5px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
           </div>
-          <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">OBSIDIAN</span>
+          <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">ZKGENT</span>
           <span className="font-mono text-[10px] text-muted-foreground/60">/ Admin</span>
         </div>
         <div className="flex items-center gap-3">

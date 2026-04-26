@@ -3,7 +3,7 @@ import { db, VALID_STATUSES, VALID_PRIORITIES, type ApplicationRow } from "../db
 
 export const adminRouter = Router();
 
-const ADMIN_KEY = process.env.ADMIN_KEY || "obsidian-admin-dev";
+const ADMIN_KEY = process.env.ADMIN_KEY || "zkgent-admin-dev";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const key =

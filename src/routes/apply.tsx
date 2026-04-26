@@ -213,7 +213,7 @@ function Step4({ data }: { data: any }) {
       <div className="flex items-start gap-3 rounded-xl border border-emerald/20 bg-emerald/5 p-4">
         <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald" />
         <p className="text-[12px] leading-relaxed text-muted-foreground">
-          Your application is reviewed by the OBSIDIAN core team. All information is handled with strict confidentiality. We typically respond within 5–7 business days.
+          Your application is reviewed by the ZKGENT core team. All information is handled with strict confidentiality. We typically respond within 5–7 business days.
         </p>
       </div>
     </div>

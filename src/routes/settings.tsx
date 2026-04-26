@@ -50,7 +50,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 const DEFAULTS: Settings = {
-  workspaceName: "OBSIDIAN Workspace",
+  workspaceName: "ZKGENT Workspace",
   environment: "devnet",
   defaultPaymentRail: "USDC",
   privacyMode: true,

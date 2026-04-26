@@ -41,7 +41,7 @@ export function Architecture() {
                 <em className="italic text-muted-foreground">cryptographic discretion at scale.</em>
               </>
             }
-            description="Every layer of OBSIDIAN is built around a single principle: settlement requires verification, not exposure."
+            description="Every layer of ZKGENT is built around a single principle: settlement requires verification, not exposure."
           />
 
           {/* Stack illustration */}
