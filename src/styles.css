@@ -39,7 +39,7 @@
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-hairline: var(--hairline);
-  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
@@ -112,7 +112,7 @@
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 
   .text-balance {

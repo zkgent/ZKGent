@@ -58,7 +58,7 @@ export function Hero() {
           >
             <span className="block">Confidential payments,</span>
             <span className="block">
-              <em className="italic text-gradient-emerald">engineered</em> for{" "}
+              <em className="not-italic text-gradient-emerald font-semibold">engineered</em> for{" "}
               <span className="relative inline-block">
                 Solana
                 <svg
