@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { Link } from "@tanstack/react-router";
 import { ProtocolVisual } from "./ProtocolVisual";
 
 export function Hero() {
@@ -98,14 +99,14 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.45 }}
             className="mt-10 flex flex-wrap items-center gap-3"
           >
-            <a
-              href="#waitlist"
+            <Link
+              to="/apply"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3.5 text-sm font-medium text-background transition-all hover:shadow-[0_0_50px_-8px_rgba(255,255,255,0.45)]"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               <span className="relative">Request Early Access</span>
               <span className="relative transition-transform group-hover:translate-x-0.5">→</span>
-            </a>
+            </Link>
             <a
               href="#architecture"
               className="group inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/40 px-6 py-3.5 text-sm font-medium text-foreground backdrop-blur-md transition-all hover:border-emerald/40 hover:bg-surface"
