@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import { applicationsRouter } from "./routes/applications.js";
 import { adminRouter } from "./routes/admin.js";
 import { transfersRouter } from "./routes/transfers.js";
@@ -10,8 +12,11 @@ import { activityRouter } from "./routes/activity.js";
 import { settingsRouter } from "./routes/settings.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isProd = process.env.NODE_ENV === "production";
+
 const app = express();
-const PORT = parseInt(process.env.API_PORT || "3001", 10);
+const PORT = parseInt(process.env.PORT || (isProd ? "5000" : "3001"), 10);
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -30,6 +35,14 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });
 });
 
+if (isProd) {
+  const distPath = path.join(__dirname, "../dist");
+  app.use(express.static(distPath));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
+
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`OBSIDIAN API running on port ${PORT}`);
+  console.log(`OBSIDIAN server running on port ${PORT} (${isProd ? "production" : "development"})`);
 });
