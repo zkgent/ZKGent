@@ -113,31 +113,6 @@ export function ProtocolVisual() {
         amount hidden
       </FloatingTag>
 
-      {/* Floating mini-card: encrypted note */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, delay: 1, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute bottom-[6%] left-[4%] w-[200px] glass rounded-xl p-3 animate-float"
-      >
-        <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-          <span>NOTE_8F2A</span>
-          <span className="flex items-center gap-1 text-emerald">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
-            encrypted
-          </span>
-        </div>
-        <div className="mt-2 space-y-1">
-          <div className="h-1 w-full rounded-full bg-foreground/10">
-            <div className="h-1 w-3/4 rounded-full bg-gradient-to-r from-emerald to-cyan" />
-          </div>
-          <div className="h-1 w-2/3 rounded-full bg-foreground/10" />
-        </div>
-        <div className="mt-2 font-mono text-[9px] tracking-wider text-foreground/40">
-          0x9c…f1b8 → ████████
-        </div>
-      </motion.div>
-
       {/* Floating mini-card: proof */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

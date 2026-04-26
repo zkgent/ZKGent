@@ -153,60 +153,6 @@ export function Hero() {
           </div>
 
           <ProtocolVisual />
-
-          {/* Additional floating fragments — break the container */}
-          <motion.div
-            initial={{ opacity: 0, y: 20, x: 20 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            transition={{ duration: 1, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute -right-6 top-[8%] w-[180px] glass animate-float rounded-xl p-3"
-            style={{ animationDelay: "0.8s" }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
-                Proof · Groth16
-              </span>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
-            </div>
-            <div className="mt-2 font-mono text-[10px] leading-relaxed text-foreground/70">
-              π = (a, b, c)
-              <br />
-              <span className="text-emerald">verified · 11ms</span>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1.3, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute -left-8 top-[42%] w-[150px] glass rounded-xl p-3 animate-float"
-            style={{ animationDelay: "2s" }}
-          >
-            <div className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
-              Settlement
-            </div>
-            <div className="mt-1.5 flex items-baseline gap-1.5">
-              <span className="font-display text-2xl text-foreground">412</span>
-              <span className="font-mono text-[10px] text-muted-foreground">ms</span>
-            </div>
-            <div className="mt-1 h-px w-full bg-gradient-to-r from-cyan/60 to-transparent" />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute -right-10 bottom-[14%] flex items-center gap-2 glass rounded-full px-3 py-1.5 animate-float"
-            style={{ animationDelay: "3s" }}
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-violet" />
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80">
-              shielded pool · live
-            </span>
-          </motion.div>
         </motion.div>
       </motion.div>
     </section>
