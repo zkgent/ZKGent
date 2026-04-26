@@ -5,124 +5,238 @@ import { ProtocolVisual } from "./ProtocolVisual";
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 120]);
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, 140]);
+  const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
+  const visualY = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   return (
-    <section ref={ref} id="top" className="relative overflow-hidden pt-32 pb-32 lg:pt-40 lg:pb-40">
-      {/* Layered backgrounds */}
-      <div className="pointer-events-none absolute inset-0 -z-20 bg-grid mask-radial-fade" />
-      <div className="pointer-events-none absolute inset-0 -z-20 bg-grain opacity-[0.4]" />
-      <div className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-[600px] w-[1200px] -translate-x-1/2 rounded-full bg-emerald/10 blur-[120px]" />
-      <div className="pointer-events-none absolute top-40 right-0 -z-10 h-[400px] w-[400px] rounded-full bg-violet/10 blur-[100px]" />
+    <section
+      ref={ref}
+      id="top"
+      className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48"
+    >
+      {/* ── Layered backgrounds ─────────────────────────────────────────── */}
+      <div className="pointer-events-none absolute inset-0 -z-30 bg-grid mask-radial-fade" />
+      <div className="pointer-events-none absolute inset-0 -z-30 bg-grain opacity-[0.35]" />
 
-      <motion.div style={{ y, opacity }} className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 px-6 lg:grid-cols-[1.1fr_1fr] lg:gap-8">
-        {/* Left */}
-        <div>
+      {/* Deep ambient color wash */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -z-20 h-[760px] w-[1400px] -translate-x-1/2 rounded-full bg-emerald/[0.09] blur-[140px]" />
+      <div className="pointer-events-none absolute top-32 right-[-10%] -z-20 h-[520px] w-[520px] rounded-full bg-violet/[0.12] blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 left-[-10%] -z-20 h-[480px] w-[480px] rounded-full bg-cyan/[0.10] blur-[120px]" />
+
+      {/* Subtle horizon line at the bottom edge */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px divider-gradient" />
+
+      {/* Foreground blur layer — sits on top of everything but text, gives depth */}
+      <div className="pointer-events-none absolute -bottom-32 left-1/2 z-10 h-[260px] w-[120%] -translate-x-1/2 rounded-[100%] bg-background/40 blur-3xl" />
+
+      <motion.div
+        style={{ y, opacity }}
+        className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-20 px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12"
+      >
+        {/* ── Left: copy ─────────────────────────────────────────────────── */}
+        <div className="relative">
+          {/* Pre-headline */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/50 px-3 py-1 backdrop-blur-md"
+            className="flex items-center gap-3"
           >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald" />
-            </span>
-            <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Confidential payments protocol
+            <span className="h-px w-8 bg-gradient-to-r from-transparent to-emerald/60" />
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-muted-foreground">
+              Zero-Knowledge Confidential Payments
             </span>
           </motion.div>
 
+          {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-6 text-balance text-[44px] font-display leading-[0.95] tracking-tight text-foreground sm:text-6xl lg:text-[72px]"
+            transition={{ duration: 1, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-6 text-balance font-display text-[48px] leading-[0.96] tracking-tight text-foreground sm:text-[64px] lg:text-[80px]"
           >
-            Payments that <em className="italic text-gradient-emerald">prove</em>{" "}
-            without <span className="relative">revealing
-              <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" preserveAspectRatio="none">
-                <motion.path
-                  d="M0,4 Q50,0 100,4 T200,4"
-                  stroke="oklch(0.78 0.16 160 / 60%)"
-                  strokeWidth="1.5"
-                  fill="none"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 1.4, delay: 1, ease: "easeInOut" }}
-                />
-              </svg>
-            </span>.
+            <span className="block">Confidential payments,</span>
+            <span className="block">
+              <em className="italic text-gradient-emerald">engineered</em> for{" "}
+              <span className="relative inline-block">
+                Solana
+                <svg
+                  className="absolute -bottom-3 left-0 w-full"
+                  viewBox="0 0 200 8"
+                  preserveAspectRatio="none"
+                >
+                  <motion.path
+                    d="M0,4 Q50,0 100,4 T200,4"
+                    stroke="oklch(0.78 0.16 160 / 65%)"
+                    strokeWidth="1.5"
+                    fill="none"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.6, delay: 1, ease: "easeInOut" }}
+                  />
+                </svg>
+              </span>
+              .
+            </span>
           </motion.h1>
 
+          {/* Supporting paragraph — sharpened */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.25 }}
-            className="mt-7 max-w-xl text-balance text-[17px] leading-relaxed text-muted-foreground"
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mt-7 max-w-md text-[17px] leading-relaxed text-muted-foreground"
           >
-            OBSIDIAN is a zero-knowledge confidential payments protocol on Solana.
-            Sender, receiver, and amount stay private — verifiability stays mathematical.
+            Private by design. Verifiable by mathematics. Settled at Solana speed.
           </motion.p>
 
+          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-9 flex flex-wrap items-center gap-3"
+            transition={{ duration: 0.8, delay: 0.45 }}
+            className="mt-10 flex flex-wrap items-center gap-3"
           >
             <a
               href="#waitlist"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background transition-all hover:shadow-[0_0_40px_-6px_rgba(255,255,255,0.4)]"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3.5 text-sm font-medium text-background transition-all hover:shadow-[0_0_50px_-8px_rgba(255,255,255,0.45)]"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <span className="relative">Join Waitlist</span>
+              <span className="relative">Request Early Access</span>
               <span className="relative transition-transform group-hover:translate-x-0.5">→</span>
             </a>
             <a
-              href="#vision"
-              className="group inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/40 px-5 py-3 text-sm font-medium text-foreground backdrop-blur-md transition-all hover:border-emerald/40 hover:bg-surface"
+              href="#architecture"
+              className="group inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/40 px-6 py-3.5 text-sm font-medium text-foreground backdrop-blur-md transition-all hover:border-emerald/40 hover:bg-surface"
             >
-              Read the Vision
-              <span className="text-muted-foreground transition-colors group-hover:text-emerald">↗</span>
+              Explore the Protocol
+              <span className="text-muted-foreground transition-colors group-hover:text-emerald">
+                ↗
+              </span>
             </a>
           </motion.div>
 
+          {/* Premium micro-credibility strip */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.7 }}
-            className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] font-mono uppercase tracking-[0.15em] text-muted-foreground"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.7 }}
+            className="mt-12 max-w-lg"
           >
-            <Badge dot="emerald">Built on Solana</Badge>
-            <span className="h-3 w-px bg-hairline" />
-            <Badge dot="cyan">Zero-Knowledge Proofs</Badge>
-            <span className="h-3 w-px bg-hairline" />
-            <Badge dot="violet">Confidential by Default</Badge>
+            <div className="glass relative overflow-hidden rounded-2xl p-1.5">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-emerald/[0.06] via-transparent to-violet/[0.06]" />
+              <div className="relative grid grid-cols-3 divide-x divide-hairline">
+                <CredItem dot="emerald" label="Sender" value="hidden" />
+                <CredItem dot="cyan" label="Receiver" value="hidden" />
+                <CredItem dot="violet" label="Amount" value="hidden" />
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/70">
+              <span className="h-1 w-1 rounded-full bg-emerald" />
+              Built on Solana · Verifiable via ZK proofs
+            </div>
           </motion.div>
         </div>
 
-        {/* Right — visual */}
+        {/* ── Right: visual ──────────────────────────────────────────────── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
+          style={{ y: visualY }}
+          initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex items-center justify-center"
+          transition={{ duration: 1.3, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="relative flex items-center justify-center lg:-mr-24 lg:scale-[1.1]"
         >
+          {/* Extra ambient glow behind visual */}
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute left-1/2 top-1/2 h-[110%] w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald/[0.08] blur-[120px]" />
+          </div>
+
           <ProtocolVisual />
+
+          {/* Additional floating fragments — break the container */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            transition={{ duration: 1, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute -right-6 top-[8%] w-[180px] glass animate-float rounded-xl p-3"
+            style={{ animationDelay: "0.8s" }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
+                Proof · Groth16
+              </span>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
+            </div>
+            <div className="mt-2 font-mono text-[10px] leading-relaxed text-foreground/70">
+              π = (a, b, c)
+              <br />
+              <span className="text-emerald">verified · 11ms</span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 1.3, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute -left-8 top-[42%] w-[150px] glass rounded-xl p-3 animate-float"
+            style={{ animationDelay: "2s" }}
+          >
+            <div className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
+              Settlement
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1.5">
+              <span className="font-display text-2xl text-foreground">412</span>
+              <span className="font-mono text-[10px] text-muted-foreground">ms</span>
+            </div>
+            <div className="mt-1 h-px w-full bg-gradient-to-r from-cyan/60 to-transparent" />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute -right-10 bottom-[14%] flex items-center gap-2 glass rounded-full px-3 py-1.5 animate-float"
+            style={{ animationDelay: "3s" }}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-violet" />
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80">
+              shielded pool · live
+            </span>
+          </motion.div>
         </motion.div>
       </motion.div>
     </section>
   );
 }
 
-function Badge({ children, dot }: { children: React.ReactNode; dot: "emerald" | "cyan" | "violet" }) {
-  const cls = dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
+function CredItem({
+  dot,
+  label,
+  value,
+}: {
+  dot: "emerald" | "cyan" | "violet";
+  label: string;
+  value: string;
+}) {
+  const cls =
+    dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
+  const glow =
+    dot === "emerald"
+      ? "shadow-[0_0_12px_var(--emerald-glow)]"
+      : dot === "cyan"
+        ? "shadow-[0_0_12px_var(--cyan-glow)]"
+        : "shadow-[0_0_12px_var(--violet-glow)]";
   return (
-    <span className="inline-flex items-center gap-2">
-      <span className={`h-1 w-1 rounded-full ${cls}`} />
-      {children}
-    </span>
+    <div className="flex flex-col items-center justify-center gap-1.5 px-3 py-3.5">
+      <span className={`h-1.5 w-1.5 rounded-full ${cls} ${glow}`} />
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="font-display text-base italic text-foreground/90">{value}</span>
+    </div>
   );
 }
