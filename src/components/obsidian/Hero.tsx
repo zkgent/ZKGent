@@ -159,7 +159,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-0 bottom-[10%] flex items-center gap-2 glass rounded-full px-3 py-1.5 animate-float"
+            className="absolute left-0 bottom-[10%] flex items-center gap-2 glass rounded-full px-3 py-1.5 animate-float"
             style={{ animationDelay: "3s" }}
           >
             <span className="relative flex h-2 w-2">
