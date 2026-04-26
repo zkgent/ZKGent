@@ -153,6 +153,23 @@ export function Hero() {
           </div>
 
           <ProtocolVisual />
+
+          {/* Shielded pool live badge — bottom right, no overlap */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute right-0 bottom-[10%] flex items-center gap-2 glass rounded-full px-3 py-1.5 animate-float"
+            style={{ animationDelay: "3s" }}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-violet" />
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/80">
+              shielded pool · live
+            </span>
+          </motion.div>
         </motion.div>
       </motion.div>
     </section>
