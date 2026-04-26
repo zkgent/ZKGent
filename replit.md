@@ -4,6 +4,7 @@
 A landing page and early access app for **Obsidian**, a Zero-Knowledge (ZK) Confidential Payments protocol engineered for the Solana blockchain. Features private, verifiable, and fast settlement using ZK-proofs (Groth16).
 
 ## Tech Stack
+### Frontend
 - **Framework:** React 19 (pure SPA via TanStack Router)
 - **Routing:** TanStack Router (file-based, client-side only)
 - **Build Tool:** Vite 7
@@ -12,6 +13,13 @@ A landing page and early access app for **Obsidian**, a Zero-Knowledge (ZK) Conf
 - **Animations:** Framer Motion
 - **Language:** TypeScript
 - **Package Manager:** npm
+
+### Backend
+- **API:** Express (port 3001) — `npm run api` via `tsx watch server/index.ts`
+- **Database:** SQLite via `better-sqlite3` (file: `obsidian.db` at project root)
+- **Proxy:** Vite dev server proxies `/api/*` → `localhost:3001`
+- **Admin auth:** `x-admin-key` header; key set via `ADMIN_KEY` env var (default: `obsidian-admin-dev`)
+- **Application IDs:** Format `OBD-XXXXXXXX` (random alphanumeric)
 
 ## Project Structure
 ```

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-export type ApplicationData = {
+export type FormData = {
   fullName: string;
   workEmail: string;
   company: string;
@@ -12,12 +12,19 @@ export type ApplicationData = {
   currentRail: string;
   privacyConcern: string;
   whyConfidential: string;
-  submittedAt?: string;
 };
 
-const STORAGE_KEY = "obsidian_application";
+export type ApplicationRecord = FormData & {
+  id: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
-const defaultData: ApplicationData = {
+const FORM_KEY = "obsidian_form_draft";
+const APP_ID_KEY = "obsidian_application_id";
+
+const defaultForm: FormData = {
   fullName: "",
   workEmail: "",
   company: "",
@@ -32,57 +39,53 @@ const defaultData: ApplicationData = {
 };
 
 type ApplicationContextType = {
-  data: ApplicationData;
-  update: (patch: Partial<ApplicationData>) => void;
-  submit: () => void;
-  isSubmitted: boolean;
-  reset: () => void;
+  formData: FormData;
+  updateForm: (patch: Partial<FormData>) => void;
+  applicationId: string | null;
+  setApplicationId: (id: string) => void;
+  clearApplication: () => void;
 };
 
 const ApplicationContext = createContext<ApplicationContextType | null>(null);
 
 export function ApplicationProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<ApplicationData>(() => {
+  const [formData, setFormData] = useState<FormData>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : defaultData;
+      const stored = localStorage.getItem(FORM_KEY);
+      return stored ? { ...defaultForm, ...JSON.parse(stored) } : defaultForm;
     } catch {
-      return defaultData;
+      return defaultForm;
     }
   });
 
-  const [isSubmitted, setIsSubmitted] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const parsed = stored ? JSON.parse(stored) : null;
-      return !!parsed?.submittedAt;
-    } catch {
-      return false;
-    }
+  const [applicationId, setApplicationIdState] = useState<string | null>(() => {
+    return localStorage.getItem(APP_ID_KEY);
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    localStorage.setItem(FORM_KEY, JSON.stringify(formData));
+  }, [formData]);
 
-  const update = (patch: Partial<ApplicationData>) => {
-    setData((prev) => ({ ...prev, ...patch }));
+  const updateForm = (patch: Partial<FormData>) => {
+    setFormData((prev) => ({ ...prev, ...patch }));
   };
 
-  const submit = () => {
-    const submitted = { ...data, submittedAt: new Date().toISOString() };
-    setData(submitted);
-    setIsSubmitted(true);
+  const setApplicationId = (id: string) => {
+    localStorage.setItem(APP_ID_KEY, id);
+    setApplicationIdState(id);
   };
 
-  const reset = () => {
-    setData(defaultData);
-    setIsSubmitted(false);
-    localStorage.removeItem(STORAGE_KEY);
+  const clearApplication = () => {
+    localStorage.removeItem(FORM_KEY);
+    localStorage.removeItem(APP_ID_KEY);
+    setFormData(defaultForm);
+    setApplicationIdState(null);
   };
 
   return (
-    <ApplicationContext.Provider value={{ data, update, submit, isSubmitted, reset }}>
+    <ApplicationContext.Provider
+      value={{ formData, updateForm, applicationId, setApplicationId, clearApplication }}
+    >
       {children}
     </ApplicationContext.Provider>
   );

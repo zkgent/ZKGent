@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useApplication } from "@/context/ApplicationContext";
 
-const navItems = [
+const navItems: { href: string; label: string; icon: React.ReactNode; admin?: boolean }[] = [
   {
     href: "/apply",
     label: "Apply",
@@ -38,6 +38,18 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    href: "/admin/applications",
+    label: "Admin",
+    admin: true,
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
+        <rect x="2" y="9" width="4" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
+        <rect x="9" y="2" width="5" height="11" rx="1" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+    ),
+  },
 ];
 
 function ObsidianLogo() {
@@ -53,7 +65,7 @@ function ObsidianLogo() {
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const router = useRouterState();
   const currentPath = router.location.pathname;
-  const { isSubmitted } = useApplication();
+  const { applicationId } = useApplication();
 
   return (
     <div className="flex h-full flex-col">
@@ -85,7 +97,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                 {item.icon}
               </span>
               {item.label}
-              {item.href === "/submitted" && isSubmitted && (
+              {item.href === "/submitted" && !!applicationId && (
                 <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald" />
               )}
             </Link>

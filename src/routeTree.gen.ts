@@ -13,6 +13,7 @@ import { Route as SubmittedRouteImport } from './routes/submitted'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminApplicationsRouteImport } from './routes/admin/applications'
 
 const SubmittedRoute = SubmittedRouteImport.update({
   id: '/submitted',
@@ -34,18 +35,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminApplicationsRoute = AdminApplicationsRouteImport.update({
+  id: '/admin/applications',
+  path: '/admin/applications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/apply': typeof ApplyRoute
   '/dashboard': typeof DashboardRoute
   '/submitted': typeof SubmittedRoute
+  '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/apply': typeof ApplyRoute
   '/dashboard': typeof DashboardRoute
   '/submitted': typeof SubmittedRoute
+  '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,25 @@ export interface FileRoutesById {
   '/apply': typeof ApplyRoute
   '/dashboard': typeof DashboardRoute
   '/submitted': typeof SubmittedRoute
+  '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/apply' | '/dashboard' | '/submitted'
+  fullPaths:
+    | '/'
+    | '/apply'
+    | '/dashboard'
+    | '/submitted'
+    | '/admin/applications'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/apply' | '/dashboard' | '/submitted'
-  id: '__root__' | '/' | '/apply' | '/dashboard' | '/submitted'
+  to: '/' | '/apply' | '/dashboard' | '/submitted' | '/admin/applications'
+  id:
+    | '__root__'
+    | '/'
+    | '/apply'
+    | '/dashboard'
+    | '/submitted'
+    | '/admin/applications'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +87,7 @@ export interface RootRouteChildren {
   ApplyRoute: typeof ApplyRoute
   DashboardRoute: typeof DashboardRoute
   SubmittedRoute: typeof SubmittedRoute
+  AdminApplicationsRoute: typeof AdminApplicationsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/applications': {
+      id: '/admin/applications'
+      path: '/admin/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AdminApplicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +135,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApplyRoute: ApplyRoute,
   DashboardRoute: DashboardRoute,
   SubmittedRoute: SubmittedRoute,
+  AdminApplicationsRoute: AdminApplicationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
