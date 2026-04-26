@@ -1,7 +1,7 @@
-# Obsidian Protocol — Confidential Payments Console
+# ZKGent — Confidential Payments Console
 
 ## Project Overview
-A marketing landing page plus a full operator-facing confidential payment console for **Obsidian** — a Zero-Knowledge (ZK) confidential payments protocol engineered for Solana. The product experience is a real workspace: Transfers, Payroll, Treasury, Counterparties, Activity, Architecture, and Settings.
+A marketing landing page plus a full operator-facing confidential payment console for **ZKGent** — a Zero-Knowledge (ZK) confidential payments protocol engineered for Solana. The product experience is a real workspace: Transfers, Payroll, Treasury, Counterparties, Activity, Architecture, and Settings.
 
 ## Tech Stack
 ### Frontend
@@ -16,9 +16,9 @@ A marketing landing page plus a full operator-facing confidential payment consol
 
 ### Backend
 - **API:** Express (port 3001) — `npm run api` via `tsx watch server/index.ts`
-- **Database:** SQLite via `better-sqlite3` (file: `obsidian.db` at project root)
+- **Database:** SQLite via `better-sqlite3` (file: `zkgent.db` at project root)
 - **Proxy:** Vite dev server proxies `/api/*` → `localhost:3001`
-- **Admin auth:** `x-admin-key` header; key set via `ADMIN_KEY` env var (default: `obsidian-admin-dev`)
+- **Admin auth:** `x-admin-key` header; key set via `ADMIN_KEY` env var (default: `zkgent-admin-dev`)
 - **Application IDs:** Format `OBD-XXXXXXXX` (random alphanumeric)
 
 ## Routes
@@ -56,7 +56,7 @@ All product routes use `AppShell` which provides:
 - All pages implement: loading skeletons, empty states, error states, and real form submissions that POST to the Express API
 - All create/update mutations automatically log to the `activity_events` table via `logActivity()` helper
 
-## Database Schema (SQLite — obsidian.db)
+## Database Schema (SQLite — zkgent.db)
 - `applications` — Early access applications (legacy)
 - `transfers` — Confidential transfers with reference, status, proof state, asset, region
 - `payroll_batches` — Payroll batches with recipient count, approval threshold/count, scheduled date
@@ -70,6 +70,7 @@ All product routes use `AppShell` which provides:
 - **Vite config**: Proxies `/api/*` → `localhost:3001`
 - **Fonts**: Space Grotesk (display) + Inter (body) + JetBrains Mono (mono)
 - **routeTree.gen.ts** is auto-generated — do not edit manually
+- **Components folder**: `src/components/zkgent/` — landing page components
 
 ## Development
 - **Frontend dev server:** `npm run dev` → port 5000
@@ -77,6 +78,6 @@ All product routes use `AppShell` which provides:
 - **Build:** `npm run build`
 
 ## Deployment
-- **Type:** Static site (frontend) + Express API (backend)
+- **Type:** Reserved VM — Express server serves both frontend (built `dist/`) and API
 - **Build command:** `npm run build`
-- **Public directory:** `dist`
+- **Run command:** `npm start` (sets NODE_ENV=production, starts Express on port 5000)
