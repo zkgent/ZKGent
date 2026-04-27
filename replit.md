@@ -114,6 +114,14 @@ All product routes use `AppShell` which provides:
 - **Dashboard:** Wallet Identity panel shows fingerprint, session count, per-user activity totals
 - **API routes:** `POST /api/identity/resolve`, `GET /api/identity/:address`, `GET /api/identity`
 
+## On-Chain Anchoring on Solana Devnet (Phase 6)
+- **Network:** `SOLANA_NETWORK=devnet` (env var, shared). Real RPC: `https://api.devnet.solana.com`.
+- **Operator wallet:** Persistent via `ZKGENT_OPERATOR_SEED` env (32-byte hex). Address derived deterministically through HMAC-SHA256 → Ed25519 keypair. `custody_mode: env_seed`. Stable across restarts so the funded address does not get rotated away.
+- **On-chain program:** Uses **SPL Memo program** (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`) — audited, deployed on all clusters. We anchor `commitment | nullifier | merkle_root | settlement_id` as a memo string per settlement. We deliberately did NOT deploy a custom Solana program (would require Rust BPF compile + multi-week audit + ongoing upgrade authority risk).
+- **Mainnet was deferred:** User declined the unaudited-mainnet path (no funding + accepted security recommendation). To re-enable mainnet later, set `SOLANA_NETWORK=mainnet-beta`, fund the operator address with real SOL, and the same code path runs unchanged.
+- **End-to-end verified:** Settlement `STL-6NE34H56` finalized with real Poseidon commitment / nullifier / Merkle root + real devnet tx signature `3JHtMDmL1Zs2pgVrK1i3y14cE3wqEQTe7JGG7mtBufzLALxVuHow14YhxmTd4HkrbZ21Q6QEXXiRZNPN44rPzk99` (explorer URL recorded in DB).
+- **Funding flow:** Auto-airdrop tries first; if devnet faucet rate-limits (429), the user funds manually via `https://faucet.solana.com` (one-time). Operator address printed in `/api/zk/system → on_chain.operator_address`.
+
 ## ZK-Friendly Hash Chain + Real Groth16 (Phase 5)
 - **Hash scheme:** Migrated `zk_commitments`, `zk_nullifiers`, `zk_merkle_nodes` from SHA-256 to **Poseidon over BN254** (`poseidon-lite`, audited). `crypto.ts` now exports `poseidonHashHex`, `poseidonField{1..5}`, `hexToField`, `fieldToHex`, `strToField`, `BN254_PRIME`. SHA-256 retained for ID generation, KDFs, AES key derivation, Ed25519 signing message — anything outside the circuit.
 - **Encoding rules (canonical, no ambiguity):**
