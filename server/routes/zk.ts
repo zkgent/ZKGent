@@ -31,6 +31,7 @@ import { getKeySet } from "../domain/keys.js";
 import { getDisclosureStatus } from "../domain/disclosure.js";
 import { getProverPublicKey } from "../domain/proof.js";
 import { logActivity, generateId, db } from "../db.js";
+import { getRequiredAdminKey, rateLimit, timingSafeEqualText } from "../security.js";
 
 export const zkRouter = Router();
 
@@ -251,37 +252,49 @@ zkRouter.get("/groth16/status", (_req, res) => {
  */
 // Admin-gated: proving is CPU-expensive (~600ms per call), so we don't expose
 // it as an unauthenticated endpoint (DoS vector).
-const ADMIN_KEY = process.env.ADMIN_KEY || "zkgent-admin-dev";
-zkRouter.get("/groth16/demo", async (req, res) => {
-  const key =
-    (req.headers["x-admin-key"] as string) ||
-    (typeof req.query.key === "string" ? req.query.key : undefined);
-  if (!key || key !== ADMIN_KEY) {
-    return res.status(401).json({
-      ok: false,
-      error: "unauthorized",
-      hint: "Provide x-admin-key header or ?key= query param. This endpoint runs a real Groth16 prove (~600ms CPU) and is rate-limited to admins.",
-    });
-  }
-  try {
-    const preimageInput = typeof req.query.preimage === "string" ? req.query.preimage : undefined;
-    const result = await proveAndVerifyPreimage(preimageInput);
-    if (result.ok) {
-      logActivity({
-        category: "zk",
-        event: "groth16_proof_verified",
-        detail: `Preimage circuit proof verified in ${result.prove_ms}ms (verify ${result.verify_ms}ms)`,
-        operator: "system",
-        status: "success",
-        relatedEntityType: "groth16_proof",
-        relatedEntityId: result.expected_hash.slice(0, 16),
+zkRouter.get(
+  "/groth16/demo",
+  rateLimit({ scope: "groth16-demo", max: 6, windowMs: 60_000 }),
+  async (req, res) => {
+    const configuredAdminKey = getRequiredAdminKey();
+    if (!configuredAdminKey) {
+      return res.status(503).json({
+        ok: false,
+        error: "admin_unconfigured",
+        hint: "Set ADMIN_KEY in the environment before using this endpoint.",
       });
     }
-    res.json(result);
-  } catch (err: unknown) {
-    res.status(500).json({ ok: false, error: getErrorMessage(err) });
-  }
-});
+
+    const key =
+      (typeof req.headers["x-admin-key"] === "string" ? req.headers["x-admin-key"] : undefined) ||
+      (typeof req.query.key === "string" ? req.query.key : undefined);
+    if (!key || !timingSafeEqualText(key, configuredAdminKey)) {
+      return res.status(401).json({
+        ok: false,
+        error: "unauthorized",
+        hint: "Provide x-admin-key header or ?key= query param. This endpoint runs a real Groth16 prove (~600ms CPU) and is rate-limited to admins.",
+      });
+    }
+    try {
+      const preimageInput = typeof req.query.preimage === "string" ? req.query.preimage : undefined;
+      const result = await proveAndVerifyPreimage(preimageInput);
+      if (result.ok) {
+        logActivity({
+          category: "zk",
+          event: "groth16_proof_verified",
+          detail: `Preimage circuit proof verified in ${result.prove_ms}ms (verify ${result.verify_ms}ms)`,
+          operator: "system",
+          status: "success",
+          relatedEntityType: "groth16_proof",
+          relatedEntityId: result.expected_hash.slice(0, 16),
+        });
+      }
+      res.json(result);
+    } catch (err: unknown) {
+      res.status(500).json({ ok: false, error: getErrorMessage(err) });
+    }
+  },
+);
 
 // ─── Settlement ───────────────────────────────────────────────────────────────
 

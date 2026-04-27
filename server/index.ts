@@ -14,6 +14,7 @@ import { dashboardRouter } from "./routes/dashboard.js";
 import { zkRouter } from "./routes/zk.js";
 import { identityRouter } from "./routes/identity.js";
 import { accessRouter } from "./routes/access.js";
+import { rateLimit } from "./security.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === "production";
@@ -22,7 +23,8 @@ const app = express();
 const PORT = parseInt(process.env.PORT || (isProd ? "5000" : "3001"), 10);
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "256kb" }));
+app.use(rateLimit({ scope: "api-global", max: 300, windowMs: 60_000 }));
 
 app.use("/api/applications", applicationsRouter);
 app.use("/api/admin", adminRouter);

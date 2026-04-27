@@ -1,6 +1,13 @@
+function withWalletHeaders(headers?: HeadersInit, walletAddress?: string): HeadersInit {
+  const merged = new Headers(headers ?? { "Content-Type": "application/json" });
+  if (!merged.has("Content-Type")) merged.set("Content-Type", "application/json");
+  if (walletAddress) merged.set("x-wallet-address", walletAddress);
+  return merged;
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: withWalletHeaders(options?.headers),
     ...options,
   });
   if (!res.ok) {
@@ -442,6 +449,7 @@ export const api = {
       }) =>
         fetchJson<{ settlement_id: string; status: string }>("/api/zk/settlement/initiate", {
           method: "POST",
+          headers: withWalletHeaders(undefined, body.initiated_by_wallet),
           body: JSON.stringify(body),
         }),
     },
@@ -457,6 +465,7 @@ export const api = {
           status: string;
         }>("/api/zk/tx/prepare", {
           method: "POST",
+          headers: withWalletHeaders(undefined, body.wallet_address),
           body: JSON.stringify(body),
         }),
       confirm: (body: {

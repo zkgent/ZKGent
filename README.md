@@ -75,7 +75,7 @@ That means the cryptography is real, while some state and operational assumption
 | Public proof re-verification endpoint                | Single-party phase-2 ceremony                               |
 | Invitation-only wallet-gated console                 | Unsigned wallet header for cohort gating                    |
 
-> **No mainnet support yet. Do not use real funds.**
+> **No mainnet support by default. Production use requires explicit mainnet configuration and should not use real funds until the trust model is upgraded.**
 
 We would rather look slightly less flashy than pretend the trust model is stronger than it is.
 
@@ -284,12 +284,12 @@ npm start
 
 ### Important environment variables
 
-| Variable               | Purpose                        |
-| ---------------------- | ------------------------------ |
-| `ADMIN_KEY`            | Admin panel authentication     |
-| `SOLANA_NETWORK`       | Use `devnet` for current alpha |
-| `SOLANA_RPC_URL`       | Optional custom RPC endpoint   |
-| `ZKGENT_OPERATOR_SEED` | Operator signing seed          |
+| Variable               | Purpose                                |
+| ---------------------- | -------------------------------------- |
+| `ADMIN_KEY`            | Admin panel authentication             |
+| `SOLANA_NETWORK`       | Defaults to `devnet` for current alpha |
+| `SOLANA_RPC_URL`       | Optional custom RPC endpoint           |
+| `ZKGENT_OPERATOR_SEED` | Operator signing seed                  |
 
 > Always confirm you are targeting **devnet**, not mainnet.
 

@@ -626,8 +626,10 @@ function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald shrink-0" />
                     <p className="font-mono text-[10px] text-emerald">
-                      Active: <strong>Operator Authorization Proof</strong> · Ed25519 cryptographic
-                      signature (real, not ZK-SNARK)
+                      Active: <strong>{zk.system.proof_type}</strong> ·{" "}
+                      {zk.system.snark_ready
+                        ? "Groth16 spend proof active"
+                        : "Ed25519 operator authorization fallback"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -644,7 +646,7 @@ function DashboardPage() {
                       className={`h-1.5 w-1.5 rounded-full shrink-0 ${zk.circuit?.transfer?.available ? "bg-emerald" : "bg-muted-foreground/20"}`}
                     />
                     <p className="font-mono text-[10px] text-muted-foreground/40">
-                      Future zk-SNARK circuit ({zk.circuit?.transfer?.id ?? "zkgent-transfer-v1"}):
+                      Transfer circuit ({zk.circuit?.transfer?.id ?? "zkgent-transfer-v1"}):
                       {zk.circuit?.transfer?.available
                         ? " ✓ Available"
                         : " Not active — requires Circom .wasm + .zkey compilation"}

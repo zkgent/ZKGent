@@ -6,19 +6,30 @@ import {
   ACCESS_GRANTING_STATUSES,
   type ApplicationRow,
 } from "../db.js";
+import { getRequiredAdminKey, rateLimit, timingSafeEqualText } from "../security.js";
 
 export const adminRouter = Router();
 
-const ADMIN_KEY = process.env.ADMIN_KEY || "zkgent-admin-dev";
-
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const key = (req.headers["x-admin-key"] as string) || (req.query.key as string);
-  if (!key || key !== ADMIN_KEY) {
+  const configuredAdminKey = getRequiredAdminKey();
+  if (!configuredAdminKey) {
+    return res.status(503).json({
+      error: "admin_unconfigured",
+      hint: "Set ADMIN_KEY in the environment before using admin routes.",
+    });
+  }
+
+  const key =
+    (typeof req.headers["x-admin-key"] === "string" ? req.headers["x-admin-key"] : undefined) ||
+    (typeof req.query.key === "string" ? req.query.key : undefined);
+
+  if (!key || !timingSafeEqualText(key, configuredAdminKey)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   return next();
 }
 
+adminRouter.use(rateLimit({ scope: "admin", max: 30, windowMs: 60_000 }));
 adminRouter.use(requireAdmin);
 
 function toAdmin(row: ApplicationRow) {

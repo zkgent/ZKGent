@@ -218,7 +218,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         // Step 1: backend prepares real serialized transaction
         const prepRes = await fetch("/api/zk/tx/prepare", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-wallet-address": wallet.address,
+          },
           body: JSON.stringify({ settlement_id: settlementId, wallet_address: wallet.address }),
         });
         if (!prepRes.ok) {
@@ -228,7 +231,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const { request_id, serialized_tx, network } = await prepRes.json();
 
         // Step 2: deserialize via @solana/web3.js (lazy import to avoid bundle bloat)
-        const { Transaction, Connection, clusterApiUrl } = await import("@solana/web3.js");
+        const { Transaction, Connection } = await import("@solana/web3.js");
         const txBytes = Buffer.from(serialized_tx, "base64");
         const tx = Transaction.from(txBytes);
 
