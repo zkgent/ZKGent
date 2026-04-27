@@ -3,6 +3,7 @@
  */
 
 import { Router } from "express";
+import { requireApprovedWallet } from "./access.js";
 import { getNoteStats, getAllNotes } from "../domain/note.js";
 import { getCommitmentStats, getAllCommitments } from "../domain/commitment.js";
 import { getNullifierStats, getAllNullifiers } from "../domain/nullifier.js";
@@ -232,8 +233,11 @@ zkRouter.get("/settlement/queue", (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-zkRouter.post("/settlement/initiate", async (req, res) => {
-  const { transfer_id, value, asset, recipient_fingerprint, memo, initiated_by_wallet } = req.body;
+zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) => {
+  const { transfer_id, value, asset, recipient_fingerprint, memo } = req.body;
+  // Use the wallet validated by requireApprovedWallet — never re-read from
+  // body, otherwise a caller could authorize one wallet and act on another.
+  const initiated_by_wallet = (req as any).walletAddress as string;
   if (!transfer_id || value == null || !recipient_fingerprint) {
     return res.status(400).json({ error: "transfer_id, value, recipient_fingerprint required" });
   }
@@ -301,13 +305,12 @@ zkRouter.get("/solana", async (_req, res) => {
  *
  * Body: { settlement_id, wallet_address }
  */
-zkRouter.post("/tx/prepare", async (req, res) => {
-  const { settlement_id, wallet_address } = req.body;
+zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
+  const { settlement_id } = req.body;
+  // Always use the middleware-validated wallet — body field is ignored.
+  const wallet_address = (req as any).walletAddress as string;
   if (!settlement_id || typeof settlement_id !== "string") {
     return res.status(400).json({ error: "settlement_id required" });
-  }
-  if (!wallet_address || typeof wallet_address !== "string") {
-    return res.status(400).json({ error: "wallet_address required" });
   }
 
   const settlement = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(settlement_id) as any;

@@ -38,6 +38,8 @@ function toPublic(row: ApplicationRow) {
     privacyConcern: row.privacy_concern,
     whyConfidential: row.why_confidential,
     status: row.status,
+    walletAddress: row.wallet_address,
+    approvedAt: row.approved_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -65,12 +67,26 @@ applicationsRouter.post("/", (req, res) => {
     const id = generateId();
     const now = new Date().toISOString();
 
+    // Optional wallet linkage at application time
+    const walletAddress = body.walletAddress?.trim() || null;
+    if (walletAddress) {
+      const taken = db
+        .prepare("SELECT id FROM applications WHERE wallet_address = ?")
+        .get(walletAddress) as { id: string } | undefined;
+      if (taken) {
+        return res.status(409).json({
+          error: "wallet_already_linked_to_another_application",
+          existingId: taken.id,
+        });
+      }
+    }
+
     db.prepare(`
       INSERT INTO applications (
         id, full_name, work_email, company, role, use_case, team_size, region,
         monthly_volume, current_rail, privacy_concern, why_confidential,
-        status, internal_notes, review_priority, tags, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'under_review', '', 'normal', '', ?, ?)
+        status, internal_notes, review_priority, tags, wallet_address, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'under_review', '', 'normal', '', ?, ?, ?)
     `).run(
       id,
       body.fullName.trim(),
@@ -84,6 +100,7 @@ applicationsRouter.post("/", (req, res) => {
       body.currentRail,
       body.privacyConcern,
       body.whyConfidential.trim(),
+      walletAddress,
       now,
       now
     );

@@ -2,6 +2,13 @@ import { ReactNode, useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { WalletButton } from "@/components/wallet/WalletButton";
+import { TrustBanner } from "@/components/app/TrustBanner";
+import { AccessGate } from "@/components/app/AccessGate";
+
+// Routes that require an approved early-access application + linked wallet.
+// Everything else (apply, submitted, architecture, trust-model, settings,
+// admin) is reachable without gating so users can see status and apply.
+const GATED_PATHS = ["/dashboard", "/transfers", "/payroll", "/treasury", "/counterparties", "/activity"];
 
 type NavItem = {
   href: string;
@@ -221,6 +228,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouterState();
   const currentPath = router.location.pathname;
   const currentItem = navItems.find((i) => currentPath === i.href || currentPath.startsWith(i.href + "/"));
+  const isGated = GATED_PATHS.some((p) => currentPath === p || currentPath.startsWith(p + "/"));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -248,6 +256,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </AnimatePresence>
 
       <div className="flex flex-1 flex-col min-w-0">
+        <TrustBanner />
         <header className="flex h-12 shrink-0 items-center gap-3 border-b border-hairline bg-surface/20 px-4">
           <button
             onClick={() => setMobileOpen(true)}
@@ -293,7 +302,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-auto">
-          {children}
+          {isGated ? <AccessGate>{children}</AccessGate> : children}
         </main>
       </div>
     </div>

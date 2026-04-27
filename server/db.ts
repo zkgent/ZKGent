@@ -279,11 +279,21 @@ db.exec(`
     ["treasury_routes",  "created_by_wallet",      "TEXT"],
     ["counterparties",   "created_by_wallet",      "TEXT"],
     ["activity_events",  "wallet_address",         "TEXT"],
+    ["applications",     "wallet_address",         "TEXT"],
+    ["applications",     "approved_at",            "TEXT"],
   ];
   for (const [tbl, col, type] of alterCols) {
     try { db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run(); }
     catch {} // Column already exists — safe to ignore
   }
+
+  // Enforce one-application-per-wallet at the DB level.
+  // SQLite UNIQUE indexes treat NULLs as distinct, so unlinked applications
+  // are unaffected. Double-creates are caught and ignored.
+  try {
+    db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_applications_wallet_address
+                ON applications(wallet_address) WHERE wallet_address IS NOT NULL`).run();
+  } catch {}
 
   // One-time data migration: rename legacy OBD-* references to ZKG-*
   try {
@@ -411,6 +421,8 @@ export type ApplicationRow = {
   review_priority: string;
   tags: string;
   contacted_at: string | null;
+  wallet_address: string | null;
+  approved_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -424,3 +436,31 @@ export const VALID_STATUSES = [
 ] as const;
 
 export const VALID_PRIORITIES = ["low", "normal", "high"] as const;
+
+/**
+ * Statuses that grant a wallet access to the ZK product surface.
+ * Anything in this set with a linked wallet_address can call gated
+ * endpoints (settlement initiate, tx prepare, etc.).
+ */
+export const ACCESS_GRANTING_STATUSES = [
+  "qualified",
+  "pilot_candidate",
+  "contacted",
+] as const;
+
+export type AccessCheck =
+  | { hasAccess: true;  application: ApplicationRow }
+  | { hasAccess: false; reason: "no_application" | "pending_review" | "rejected"; application: ApplicationRow | null };
+
+export function checkWalletAccess(walletAddress: string): AccessCheck {
+  const row = db
+    .prepare("SELECT * FROM applications WHERE wallet_address = ? LIMIT 1")
+    .get(walletAddress) as ApplicationRow | undefined;
+
+  if (!row) return { hasAccess: false, reason: "no_application", application: null };
+  if (row.status === "rejected") return { hasAccess: false, reason: "rejected", application: row };
+  if ((ACCESS_GRANTING_STATUSES as readonly string[]).includes(row.status)) {
+    return { hasAccess: true, application: row };
+  }
+  return { hasAccess: false, reason: "pending_review", application: row };
+}

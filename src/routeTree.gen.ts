@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrustModelRouteImport } from './routes/trust-model'
 import { Route as TreasuryRouteImport } from './routes/treasury'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as SubmittedRouteImport } from './routes/submitted'
@@ -22,6 +23,11 @@ import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminApplicationsRouteImport } from './routes/admin/applications'
 
+const TrustModelRoute = TrustModelRouteImport.update({
+  id: '/trust-model',
+  path: '/trust-model',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TreasuryRoute = TreasuryRouteImport.update({
   id: '/treasury',
   path: '/treasury',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/submitted': typeof SubmittedRoute
   '/transfers': typeof TransfersRoute
   '/treasury': typeof TreasuryRoute
+  '/trust-model': typeof TrustModelRoute
   '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRoutesByTo {
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/submitted': typeof SubmittedRoute
   '/transfers': typeof TransfersRoute
   '/treasury': typeof TreasuryRoute
+  '/trust-model': typeof TrustModelRoute
   '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRoutesById {
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/submitted': typeof SubmittedRoute
   '/transfers': typeof TransfersRoute
   '/treasury': typeof TreasuryRoute
+  '/trust-model': typeof TrustModelRoute
   '/admin/applications': typeof AdminApplicationsRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/submitted'
     | '/transfers'
     | '/treasury'
+    | '/trust-model'
     | '/admin/applications'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/submitted'
     | '/transfers'
     | '/treasury'
+    | '/trust-model'
     | '/admin/applications'
   id:
     | '__root__'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/submitted'
     | '/transfers'
     | '/treasury'
+    | '/trust-model'
     | '/admin/applications'
   fileRoutesById: FileRoutesById
 }
@@ -183,11 +195,19 @@ export interface RootRouteChildren {
   SubmittedRoute: typeof SubmittedRoute
   TransfersRoute: typeof TransfersRoute
   TreasuryRoute: typeof TreasuryRoute
+  TrustModelRoute: typeof TrustModelRoute
   AdminApplicationsRoute: typeof AdminApplicationsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/trust-model': {
+      id: '/trust-model'
+      path: '/trust-model'
+      fullPath: '/trust-model'
+      preLoaderRoute: typeof TrustModelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/treasury': {
       id: '/treasury'
       path: '/treasury'
@@ -287,6 +307,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubmittedRoute: SubmittedRoute,
   TransfersRoute: TransfersRoute,
   TreasuryRoute: TreasuryRoute,
+  TrustModelRoute: TrustModelRoute,
   AdminApplicationsRoute: AdminApplicationsRoute,
 }
 export const routeTree = rootRouteImport

@@ -58,6 +58,8 @@ type Application = {
   reviewPriority: string;
   tags: string;
   contactedAt: string | null;
+  walletAddress: string | null;
+  approvedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -176,6 +178,22 @@ function DetailPanel({ app, adminKey, onUpdate, onClose }: {
               <span className="text-[12px] text-foreground text-right ml-4">{v}</span>
             </div>
           ))}
+        </div>
+
+        <div className="rounded-lg border border-hairline bg-background p-3 space-y-2">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Wallet & Access</p>
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">Linked wallet</span>
+            <span className="text-[11px] text-foreground font-mono">
+              {app.walletAddress ? `${app.walletAddress.slice(0, 8)}…${app.walletAddress.slice(-6)}` : "— not linked —"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">Approved at</span>
+            <span className="text-[11px] text-foreground">
+              {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : "— pending —"}
+            </span>
+          </div>
         </div>
 
         <div>
@@ -360,7 +378,7 @@ function AdminApplicationsPage() {
             <table className="w-full">
               <thead className="border-b border-hairline bg-surface-elevated">
                 <tr>
-                  {["Name", "Company", "Use Case", "Volume", "Status", "Priority", "Applied"].map((h) => (
+                  {["Name", "Company", "Use Case", "Volume", "Status", "Wallet", "Applied"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60">{h}</th>
                   ))}
                 </tr>
@@ -390,7 +408,13 @@ function AdminApplicationsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`font-mono text-[10px] uppercase tracking-wider ${priority?.color || "text-foreground"}`}>{app.reviewPriority}</span>
+                        {app.walletAddress ? (
+                          <span className="font-mono text-[10px] text-foreground">
+                            {app.walletAddress.slice(0, 4)}…{app.walletAddress.slice(-4)}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[10px] text-muted-foreground/40">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-[11px] text-muted-foreground">
                         {new Date(app.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}

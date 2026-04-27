@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db, VALID_STATUSES, VALID_PRIORITIES, type ApplicationRow } from "../db.js";
+import { db, VALID_STATUSES, VALID_PRIORITIES, ACCESS_GRANTING_STATUSES, type ApplicationRow } from "../db.js";
 
 export const adminRouter = Router();
 
@@ -35,6 +35,8 @@ function toAdmin(row: ApplicationRow) {
     reviewPriority: row.review_priority,
     tags: row.tags,
     contactedAt: row.contacted_at,
+    walletAddress: row.wallet_address,
+    approvedAt: row.approved_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -114,6 +116,16 @@ adminRouter.patch("/applications/:id", (req, res) => {
 
       if (body.status === "contacted" && !row.contacted_at) {
         updates.push("contacted_at = ?");
+        params.push(new Date().toISOString());
+      }
+
+      // Stamp approved_at the first time the application crosses into an
+      // access-granting status. Lets us later show "approved on …" in the UI.
+      if (
+        (ACCESS_GRANTING_STATUSES as readonly string[]).includes(body.status) &&
+        !row.approved_at
+      ) {
+        updates.push("approved_at = ?");
         params.push(new Date().toISOString());
       }
     }

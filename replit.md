@@ -204,6 +204,21 @@ The dashboard now exposes Phase A+B+C status to operators:
 - `GET /api/zk/keys` — Key fingerprints + prover pubkey (no secret material ever exposed)
 - `GET /api/zk/disclosure` — Compliance disclosure status
 
+## Early-Access Gating (Sprint A)
+- **Gating model**: Product surface (`/dashboard`, `/transfers`, `/payroll`, `/treasury`, `/counterparties`, `/activity`) requires an **approved early-access application** with a **linked Solana wallet**.
+- **Approval statuses**: `qualified`, `pilot_candidate`, `contacted` (defined as `ACCESS_GRANTING_STATUSES` in `server/db.ts`). When admin moves an application into any of these for the first time, `approved_at` is auto-stamped.
+- **Application columns added**: `wallet_address` (UNIQUE per app, nullable), `approved_at` (nullable ISO timestamp).
+- **Backend access router** (`server/routes/access.ts`):
+  - `GET /api/access/check?wallet=…` — returns `{ hasAccess, reason, application }`
+  - `POST /api/access/link-wallet` `{ applicationId, walletAddress }` — one-time wallet linkage with collision protection
+  - `requireApprovedWallet` middleware — reads wallet from `x-wallet-address` header OR `wallet_address`/`initiated_by_wallet` body field; gates `POST /api/zk/settlement/initiate` and `POST /api/zk/tx/prepare`.
+- **Frontend**:
+  - `src/hooks/useAccess.ts` — polls `/api/access/check` for connected wallet
+  - `src/components/app/AccessGate.tsx` — wraps gated routes, handles not-connected / no-app / pending / rejected / link-wallet flows
+  - `src/components/app/TrustBanner.tsx` — always-visible yellow devnet/D1 banner with link to `/trust-model`
+  - `src/routes/trust-model.tsx` — public roadmap page (D1 shipped / D2 in progress / D3 planned)
+  - `apply.tsx` captures connected wallet at submit, `submitted.tsx` shows wallet linking UI, `admin/applications.tsx` shows wallet column + approved_at.
+
 ## Architecture Notes
 - **SPA mode only**: Pure TanStack Router SPA (no SSR). Uses `createRoot`.
 - **Vite config**: Proxies `/api/*` → `localhost:3001`

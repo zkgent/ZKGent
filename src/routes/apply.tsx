@@ -3,6 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { useApplication } from "@/context/ApplicationContext";
+import { useWallet } from "@/context/WalletContext";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/apply")({
@@ -220,6 +221,34 @@ function Step4({ data }: { data: any }) {
   );
 }
 
+function WalletNotice({ wallet, connect, walletStatus }: {
+  wallet: { shortAddress: string; address: string } | null;
+  connect: () => void;
+  walletStatus: string;
+}) {
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-xl border border-hairline bg-surface p-4">
+      <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan" />
+      <div className="flex-1">
+        <p className="text-[12px] font-medium text-foreground">
+          {wallet ? "Wallet will be linked to this application" : "Connect a wallet to skip the linking step later (optional)"}
+        </p>
+        {wallet ? (
+          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">{wallet.shortAddress}</p>
+        ) : (
+          <button
+            onClick={connect}
+            disabled={walletStatus === "connecting"}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition disabled:opacity-50"
+          >
+            {walletStatus === "connecting" ? "Connecting…" : "Connect wallet"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function canAdvance(step: number, data: any): boolean {
   if (step === 0) return !!(data.fullName && data.workEmail && data.company && data.role);
   if (step === 1) return !!(data.useCase && data.teamSize && data.region);
@@ -229,6 +258,7 @@ function canAdvance(step: number, data: any): boolean {
 
 function ApplyPage() {
   const { formData, updateForm, setApplicationId, applicationId } = useApplication();
+  const { wallet, connect, status: walletStatus } = useWallet();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -242,10 +272,14 @@ function ApplyPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const payload = {
+        ...formData,
+        walletAddress: wallet?.address ?? undefined,
+      };
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -320,6 +354,10 @@ function ApplyPage() {
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {step === 3 && (
+          <WalletNotice wallet={wallet} connect={connect} walletStatus={walletStatus} />
+        )}
 
         {submitError && (
           <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-[12px] text-destructive">

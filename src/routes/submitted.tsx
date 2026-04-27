@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { useApplication } from "@/context/ApplicationContext";
 import type { ApplicationRecord } from "@/context/ApplicationContext";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/submitted")({
   component: SubmittedWrapper,
@@ -42,9 +43,20 @@ const STATUS_PROGRESS: Record<string, number> = {
 
 function SubmittedPage() {
   const { applicationId } = useApplication();
-  const [application, setApplication] = useState<ApplicationRecord | null>(null);
+  const { wallet, connect, status: walletStatus } = useWallet();
+  const [application, setApplication] = useState<(ApplicationRecord & { walletAddress?: string | null; approvedAt?: string | null }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  const reload = () => {
+    if (!applicationId) return;
+    fetch(`/api/applications/${applicationId}`)
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data) => setApplication(data))
+      .catch(() => setError("Could not load your application. It may have been removed."));
+  };
 
   useEffect(() => {
     if (!applicationId) { setLoading(false); return; }
@@ -53,6 +65,29 @@ function SubmittedPage() {
       .then((data) => { setApplication(data); setLoading(false); })
       .catch(() => { setError("Could not load your application. It may have been removed."); setLoading(false); });
   }, [applicationId]);
+
+  const linkWallet = async () => {
+    if (!applicationId || !wallet) return;
+    setLinking(true);
+    setLinkError(null);
+    try {
+      const res = await fetch("/api/access/link-wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId, walletAddress: wallet.address }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLinkError(data.hint || data.error || "Could not link wallet.");
+        return;
+      }
+      reload();
+    } catch {
+      setLinkError("Network error.");
+    } finally {
+      setLinking(false);
+    }
+  };
 
   if (!applicationId) {
     return (
@@ -180,6 +215,44 @@ function SubmittedPage() {
               );
             })}
           </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mb-8 rounded-2xl border border-hairline bg-surface p-5">
+          <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Linked Wallet</p>
+          {application.walletAddress ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[13px] text-foreground">Solana wallet linked</p>
+                <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                  {application.walletAddress.slice(0, 8)}…{application.walletAddress.slice(-6)}
+                </p>
+              </div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-emerald">linked</span>
+            </div>
+          ) : wallet ? (
+            <div className="space-y-3">
+              <p className="text-[12px] text-muted-foreground">
+                Link <span className="font-mono text-foreground">{wallet.shortAddress}</span> to this application so it gets access when you are approved.
+              </p>
+              <button onClick={linkWallet} disabled={linking}
+                className="rounded-full bg-foreground px-4 py-2 text-[12px] font-medium text-background hover:opacity-90 transition disabled:opacity-50">
+                {linking ? "Linking…" : "Link this wallet"}
+              </button>
+              {linkError && <p className="text-[11px] text-destructive">{linkError}</p>}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-[12px] text-muted-foreground">
+                Connect your Solana wallet now to link it. You can also do this later by visiting the dashboard.
+              </p>
+              <button onClick={connect} disabled={walletStatus === "connecting"}
+                className="rounded-full border border-hairline px-4 py-2 text-[12px] text-muted-foreground hover:text-foreground hover:border-foreground/20 transition disabled:opacity-50">
+                {walletStatus === "connecting" ? "Connecting…" : "Connect Wallet"}
+              </button>
+            </div>
+          )}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
