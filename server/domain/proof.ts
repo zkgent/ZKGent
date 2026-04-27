@@ -30,7 +30,18 @@
 
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { db } from "../db.js";
-import { domainHash, randomSalt, DOMAIN, Bytes32, shortHash } from "./crypto.js";
+import {
+  domainHash,
+  randomSalt,
+  DOMAIN,
+  Bytes32,
+  shortHash,
+  fieldToHex,
+  hexToField,
+  poseidonField2,
+  strToField,
+} from "./crypto.js";
+import { computeValueHash } from "./commitment.js";
 import crypto from "crypto";
 
 export type ProofStatus =
@@ -92,13 +103,21 @@ export interface ProofStats {
  * BACKEND: Ed25519 operator proof is used in the interim.
  */
 export const CIRCUIT_CONFIG = {
+  preimage: {
+    id:        "preimage-knowledge-v1",
+    available: true,
+    wasm:      "server/circuits/preimage/preimage_js/preimage.wasm",
+    zkey:      "server/circuits/preimage/preimage_final.zkey",
+    vkey:      "server/circuits/preimage/verification_key.json",
+    note:      "Toy circuit — proves knowledge of Poseidon preimage. Real Groth16 over BN254. Trusted setup is single-party (NOT FOR PRODUCTION).",
+  },
   transfer: {
     id:        "zkgent-transfer-v1",
     available: false,   // set true when .wasm + .zkey are in place
     wasm:      "server/circuits/transfer/circuit.wasm",
     zkey:      "server/circuits/transfer/circuit.zkey",
     vkey:      "server/circuits/transfer/vkey.json",
-    note:      "Requires Circom compilation. Use: npm run circuits:build",
+    note:      "Production transfer circuit. Not yet compiled — requires multi-party trusted setup.",
   },
   membership: {
     id:        "zkgent-membership-v1",
@@ -106,7 +125,7 @@ export const CIRCUIT_CONFIG = {
     wasm:      "server/circuits/membership/circuit.wasm",
     zkey:      "server/circuits/membership/circuit.zkey",
     vkey:      "server/circuits/membership/vkey.json",
-    note:      "Merkle membership proof. Requires Circom compilation.",
+    note:      "Merkle membership proof. Not yet compiled.",
   },
 } as const;
 
@@ -155,13 +174,20 @@ export function buildProofInput(opts: {
   salt: Bytes32;
   proofType: ProofType;
 }): ProofInput {
-  const valueHash = domainHash(DOMAIN.COMMITMENT, "value", String(opts.value), opts.asset);
+  // Poseidon-based value_hash — matches zk_commitments.value_hash column
+  // so a future SNARK can prove (value, asset) → value_hash without re-hashing.
+  const valueHash = computeValueHash(opts.value, opts.asset);
+  // Poseidon-based recipient_hash for circuit consistency (recipient as field).
+  // Use strToField for the recipient — fingerprints may be labels, not hex.
+  const recipientHash = fieldToHex(
+    poseidonField2(strToField("recipient"), strToField(opts.recipientFingerprint))
+  );
   return {
     commitment:     opts.commitment,
     nullifier:      opts.nullifier,
     merkle_root:    opts.merkleRoot,
     value_hash:     valueHash,
-    recipient_hash: domainHash(DOMAIN.COMMITMENT, "recipient", opts.recipientFingerprint),
+    recipient_hash: recipientHash,
     salt:           opts.salt,
     proof_type:     opts.proofType,
   };

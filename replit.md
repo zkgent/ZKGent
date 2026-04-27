@@ -114,6 +114,28 @@ All product routes use `AppShell` which provides:
 - **Dashboard:** Wallet Identity panel shows fingerprint, session count, per-user activity totals
 - **API routes:** `POST /api/identity/resolve`, `GET /api/identity/:address`, `GET /api/identity`
 
+## ZK-Friendly Hash Chain + Real Groth16 (Phase 5)
+- **Hash scheme:** Migrated `zk_commitments`, `zk_nullifiers`, `zk_merkle_nodes` from SHA-256 to **Poseidon over BN254** (`poseidon-lite`, audited). `crypto.ts` now exports `poseidonHashHex`, `poseidonField{1..5}`, `hexToField`, `fieldToHex`, `strToField`, `BN254_PRIME`. SHA-256 retained for ID generation, KDFs, AES key derivation, Ed25519 signing message — anything outside the circuit.
+- **Encoding rules (canonical, no ambiguity):**
+  - `commitment = Poseidon4(value, strToField(asset), strToField(owner), hexToField(salt))`
+  - `nullifier = Poseidon2(hexToField(commitment), hexToField(nk))`
+  - `merkleHashPair = Poseidon2(hexToField(left), hexToField(right))`
+  - Arbitrary strings (asset codes, fingerprint labels) ALWAYS go through `strToField` (SHA-256→field). Hex field elements (commitments, salts, derived secrets) go through `hexToField` directly. Single canonical encoding per field, no auto-detection.
+- **Value hygiene:** `computeCommitment` and `computeValueHash` reject non-numbers, non-finite, negative, or non-safe-integer values explicitly.
+- **Migration:** `zk_meta(key, value)` table records `hash_scheme=poseidon-bn254-v1`. On startup, db.ts wipes `zk_signing_requests/onchain_txs/settlements/proofs/nullifiers/commitments/merkle_nodes/notes` (dependents first) **inside a single SQLite transaction** along with the marker write — either fully migrated or nothing changes. One-shot, idempotent.
+- **Real Groth16 toolchain:** circom 2.1.9 binary at `.tools/circom`, `circomlib`, `snarkjs` installed. Toy preimage circuit at `server/circuits/preimage/preimage.circom` — proves "I know x such that Poseidon(x) = h" (213 non-linear constraints). Compiled artifacts: `preimage_js/preimage.wasm`, `preimage_final.zkey`, `verification_key.json`, `pot12_final.ptau` (4.7MB Powers of Tau, single-party local ceremony **NOT FOR PRODUCTION**).
+- **Server module:** `server/domain/groth16.ts` exports `proveAndVerifyPreimage()` and `getGroth16Status()`. Uses snarkjs `groth16.fullProve` (~600ms) + `groth16.verify` (~15ms).
+- **API endpoints:**
+  - `GET /api/zk/groth16/status` — pipeline readiness (public).
+  - `GET /api/zk/groth16/demo?preimage=2a` — **admin-gated** (requires `x-admin-key` header or `?key=`). Proving is CPU-expensive so unauthenticated access would be a DoS vector. Logs activity event `groth16_proof_verified`.
+- **`/api/zk/system` flags:**
+  - `system.snark_ready: false` — production transfer/membership circuits do NOT exist yet.
+  - `system.snark_demo_ready: true` + `system.snark_demo_circuit: "preimage-knowledge-v1"` — only the toy demo pipeline is wired.
+  - `hash_chain.scheme: "poseidon-bn254-v1"`, `system.version: "0.3.0-alpha"`.
+- **CIRCUIT_CONFIG:** `preimage` entry `available: true`. `transfer` and `membership` remain `false` — production circuits not yet built (require multi-party trusted setup).
+- **Honesty in UI:** Groth16 status object explicitly labels `setup.powers_of_tau` and `setup.phase2` as `"single-party local ceremony (NOT FOR PRODUCTION)"`. `system.note` warns this is a toy circuit only.
+- **Still scaffold:** Production transfer circuit (membership + nullifier derivation + balance check), multi-party trusted setup ceremony, on-chain Groth16 verifier program (Solana), X25519 viewing keys, HSM custody.
+
 ## Per-Wallet Dashboard Scoping (Phase 4)
 - **All dashboard views are wallet-scoped** — switching wallets shows different data
 - **Ownership columns:** `transfers.initiated_by_wallet`, `payroll_batches.created_by_wallet`, `treasury_routes.created_by_wallet`, `counterparties.created_by_wallet`, `activity_events.wallet_address` (auto-migrated via ALTER)

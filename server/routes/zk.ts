@@ -8,6 +8,7 @@ import { getCommitmentStats, getAllCommitments } from "../domain/commitment.js";
 import { getNullifierStats, getAllNullifiers } from "../domain/nullifier.js";
 import { getMerkleStats } from "../domain/merkle.js";
 import { getProofStats, getAllProofs, getCircuitStatus } from "../domain/proof.js";
+import { proveAndVerifyPreimage, getGroth16Status } from "../domain/groth16.js";
 import {
   getSettlementStats, getSettlementQueue,
   queueSettlement, executeSettlement, getLatestOnChainTxs,
@@ -37,8 +38,9 @@ zkRouter.get("/system", async (_req, res) => {
         Promise.resolve(getDisclosureStatus()),
       ]);
 
-    const keys    = getKeySet();
-    const circuit = getCircuitStatus();
+    const keys     = getKeySet();
+    const circuit  = getCircuitStatus();
+    const groth16Status = getGroth16Status();
     const latestTxs = getLatestTxs(3);
     const operatorAddress = getOperatorAddress();
 
@@ -53,16 +55,33 @@ zkRouter.get("/system", async (_req, res) => {
         custody_mode:           keys.operator.custody_mode,
       },
       circuit,
+      groth16: groth16Status,
+      hash_chain: {
+        scheme: "poseidon-bn254-v1",
+        curve:  "BN254 (alt_bn128)",
+        note:   "Commitments, nullifiers and Merkle nodes use Poseidon (ZK-friendly).",
+      },
       on_chain: {
         operator_address: operatorAddress,
         latest_txs: latestTxs,
       },
       system: {
-        version:     "0.2.0-alpha",
+        version:     "0.3.0-alpha",
         proof_real:  true,
         proof_type:  "ed25519-operator-proof-v1",
-        snark_ready: circuit.transfer.available,
-        note: "Ed25519 operator proofs are REAL (cryptographic). Full zk-SNARK requires Circom circuit compilation.",
+        // Production transfer/membership circuits are NOT available yet.
+        // snark_ready stays false until the real circuits exist + a multi-party
+        // trusted setup has been performed.
+        snark_ready: false,
+        snark_circuit: null,
+        // Separate flag indicates only that the toy demo pipeline is wired.
+        snark_demo_ready: groth16Status.available,
+        snark_demo_circuit: groth16Status.circuit_id,
+        note:
+          "Ed25519 operator proofs verify settlements. " +
+          "Real Groth16 (BN254) is wired ONLY for a toy preimage circuit at " +
+          "/api/zk/groth16/demo (single-party trusted setup, NOT FOR PRODUCTION). " +
+          "Production transfer/membership circuits are not built. Hash chain uses Poseidon.",
       },
       fetched_at: new Date().toISOString(),
     });
@@ -103,6 +122,57 @@ zkRouter.get("/proofs", (_req, res) => {
 zkRouter.get("/circuit", (_req, res) => {
   try { res.json(getCircuitStatus()); }
   catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Real Groth16 (toy preimage circuit) ──────────────────────────────────────
+
+zkRouter.get("/groth16/status", (_req, res) => {
+  try { res.json(getGroth16Status()); }
+  catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+/**
+ * Demo: prove (and verify) knowledge of a Poseidon preimage.
+ *   GET /api/zk/groth16/demo                — random preimage
+ *   GET /api/zk/groth16/demo?preimage=42    — specific preimage (hex or decimal-as-hex)
+ *
+ * Uses the real Circom circuit + snarkjs Groth16. Returns timing and the
+ * verification result.
+ */
+// Admin-gated: proving is CPU-expensive (~600ms per call), so we don't expose
+// it as an unauthenticated endpoint (DoS vector).
+const ADMIN_KEY = process.env.ADMIN_KEY || "zkgent-admin-dev";
+zkRouter.get("/groth16/demo", async (req, res) => {
+  const key =
+    (req.headers["x-admin-key"] as string) ||
+    (typeof req.query.key === "string" ? req.query.key : undefined);
+  if (!key || key !== ADMIN_KEY) {
+    return res.status(401).json({
+      ok: false,
+      error: "unauthorized",
+      hint: "Provide x-admin-key header or ?key= query param. This endpoint runs a real Groth16 prove (~600ms CPU) and is rate-limited to admins.",
+    });
+  }
+  try {
+    const preimageInput = typeof req.query.preimage === "string"
+      ? req.query.preimage
+      : undefined;
+    const result = await proveAndVerifyPreimage(preimageInput);
+    if (result.ok) {
+      logActivity({
+        category: "zk",
+        event: "groth16_proof_verified",
+        detail: `Preimage circuit proof verified in ${result.prove_ms}ms (verify ${result.verify_ms}ms)`,
+        operator: "system",
+        status: "success",
+        relatedEntityType: "groth16_proof",
+        relatedEntityId: result.expected_hash.slice(0, 16),
+      });
+    }
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 // ─── Settlement ───────────────────────────────────────────────────────────────

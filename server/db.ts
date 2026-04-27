@@ -286,6 +286,59 @@ db.exec(`
     db.prepare(`UPDATE transfers SET reference = REPLACE(reference, 'OBD-T-', 'ZKG-T-') WHERE reference LIKE 'OBD-T-%'`).run();
     db.prepare(`UPDATE transfers SET reference = REPLACE(reference, 'OBD-', 'ZKG-') WHERE reference LIKE 'OBD-%'`).run();
   } catch {}
+
+  // ─── ZK Hash Scheme Migration ────────────────────────────────────────────────
+  // The ZK hash chain (commitments, nullifiers, Merkle nodes) was migrated from
+  // SHA-256 to Poseidon (BN254). Old records are incompatible — wipe them once
+  // and write a marker so we don't re-wipe on every startup.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS zk_meta (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+  const CURRENT_HASH_SCHEME = "poseidon-bn254-v1";
+  const meta = db
+    .prepare(`SELECT value FROM zk_meta WHERE key = 'hash_scheme'`)
+    .get() as { value: string } | undefined;
+  if (meta?.value !== CURRENT_HASH_SCHEME) {
+    console.log(
+      `[zkgent] Hash scheme migration: ${meta?.value ?? "(none)"} → ${CURRENT_HASH_SCHEME}. Wiping incompatible ZK records...`
+    );
+    // Order matters for foreign-key-style cleanliness: dependents first.
+    // zk_signing_requests references zk_settlements; wipe it before settlements.
+    const tablesToWipe = [
+      "zk_signing_requests",
+      "zk_onchain_txs",
+      "zk_settlements",
+      "zk_proofs",
+      "zk_nullifiers",
+      "zk_commitments",
+      "zk_merkle_nodes",
+      "zk_notes",
+    ];
+    // Transactional: either all wipes succeed AND the marker is written,
+    // or nothing changes. Avoids leaving the DB in a half-migrated state.
+    const migrate = db.transaction(() => {
+      for (const t of tablesToWipe) {
+        // Skip tables that don't exist yet (fresh DB) — but never swallow
+        // unrelated errors silently.
+        const exists = db
+          .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`)
+          .get(t) as { name: string } | undefined;
+        if (!exists) continue;
+        db.prepare(`DELETE FROM ${t}`).run();
+      }
+      db.prepare(`
+        INSERT INTO zk_meta (key, value, updated_at)
+        VALUES ('hash_scheme', ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+      `).run(CURRENT_HASH_SCHEME, new Date().toISOString());
+    });
+    migrate();
+    console.log(`[zkgent] Hash scheme migration complete.`);
+  }
 }
 
 export function generateId(prefix = "OBD"): string {

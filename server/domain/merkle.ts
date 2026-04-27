@@ -16,17 +16,22 @@
  */
 
 import { db } from "../db.js";
-import { domainHash, DOMAIN, Bytes32 } from "./crypto.js";
+import { Bytes32, fieldToHex, hexToField, poseidonField2 } from "./crypto.js";
 
 export const TREE_DEPTH = 20;
-export const ZERO_VALUE  = domainHash(DOMAIN.MERKLE, "zero");
+/**
+ * Empty subtree value — field-zero. Convention used by Tornado-style
+ * fixed-depth Merkle trees with Poseidon.
+ */
+export const ZERO_VALUE: Bytes32 = "0".repeat(64);
 
 /**
  * Hash two sibling nodes to produce their parent.
- * IMPLEMENTED: SHA-256. SCAFFOLD: Replace with Poseidon2 for ZK circuits.
+ * IMPLEMENTED: Poseidon2 over BN254 — circuit-compatible.
  */
 export function merkleHashPair(left: Bytes32, right: Bytes32): Bytes32 {
-  return domainHash(DOMAIN.MERKLE, left, right);
+  // Both children are always 64-char hex field elements (commitments or interior nodes).
+  return fieldToHex(poseidonField2(hexToField(left), hexToField(right)));
 }
 
 export interface MerkleNode {

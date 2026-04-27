@@ -13,7 +13,17 @@
  */
 
 import { db } from "../db.js";
-import { domainHash, DOMAIN, Bytes32 } from "./crypto.js";
+import {
+  Bytes32,
+  poseidonHashHex,
+  hexToField,
+  strToField,
+  fieldToHex,
+  poseidonField4,
+  poseidonField2,
+} from "./crypto.js";
+
+const SAFE_VALUE_MAX = Number.MAX_SAFE_INTEGER; // 2^53 - 1, well below BN254 prime
 
 export interface CommitmentInput {
   value: number;
@@ -38,25 +48,53 @@ export interface CommitmentRecord {
 /**
  * Derive a commitment from a note's contents.
  *
- * Commitment = H(domain || H(value || asset) || owner_fingerprint || salt)
+ * Commitment = Poseidon4(value, asset_field, owner_field, salt_field)
  *
- * IMPLEMENTED: SHA-256 based (substitute Poseidon for ZK circuit compatibility).
- * The multi-step hashing prevents length-extension attacks and provides
- * domain separation.
+ * IMPLEMENTED: Poseidon over BN254 — circuit-compatible. The asset code is
+ * mapped to a field element via SHA-256-then-mod-p so circuits can take it
+ * as a public input.
+ *
+ * Value is bounded by JS Number (< 2^53) so it fits trivially in the field.
  */
 export function computeCommitment(input: CommitmentInput): Bytes32 {
-  const valueHash = domainHash(
-    DOMAIN.COMMITMENT,
-    "value",
-    String(input.value),
-    input.asset
+  // Explicit value hygiene: must be a non-negative safe integer.
+  if (
+    typeof input.value !== "number" ||
+    !Number.isFinite(input.value) ||
+    input.value < 0 ||
+    !Number.isSafeInteger(Math.floor(input.value)) ||
+    Math.floor(input.value) > SAFE_VALUE_MAX
+  ) {
+    throw new Error(`computeCommitment: invalid value ${String(input.value)} (must be non-negative safe integer)`);
+  }
+  const valueField = BigInt(Math.floor(input.value));
+  // Asset and owner are arbitrary strings/labels — always hash to field via strToField.
+  // This guarantees a single canonical encoding regardless of whether the caller passes
+  // a hex hash, a label like "ZKG:OPERATOR:…", or any other identifier.
+  const assetField = strToField(input.asset);
+  const ownerField = strToField(input.ownerFingerprintHash);
+  // Salt MUST be a 64-char hex field element produced by randomFieldSalt().
+  const saltField  = hexToField(input.salt);
+  return fieldToHex(
+    poseidonField4(valueField, assetField, ownerField, saltField)
   );
-  return domainHash(
-    DOMAIN.COMMITMENT,
-    valueHash,
-    input.ownerFingerprintHash,
-    input.salt
-  );
+}
+
+/**
+ * Derive value_hash for indexed storage.
+ * Poseidon2(value, asset_field).
+ */
+export function computeValueHash(value: number, asset: string): Bytes32 {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    !Number.isSafeInteger(Math.floor(value)) ||
+    Math.floor(value) > SAFE_VALUE_MAX
+  ) {
+    throw new Error(`computeValueHash: invalid value ${String(value)} (must be non-negative safe integer)`);
+  }
+  return fieldToHex(poseidonField2(BigInt(Math.floor(value)), strToField(asset)));
 }
 
 /**
@@ -68,9 +106,7 @@ export function persistCommitment(opts: {
   noteId: string;
   input: CommitmentInput;
 }): CommitmentRecord {
-  const valueHash = domainHash(
-    DOMAIN.COMMITMENT, "value", String(opts.input.value), opts.input.asset
-  );
+  const valueHash = computeValueHash(opts.input.value, opts.input.asset);
   const now = new Date().toISOString();
 
   db.prepare(`

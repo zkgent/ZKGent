@@ -16,7 +16,7 @@
  */
 
 import { db } from "../db.js";
-import { domainHash, DOMAIN, Bytes32 } from "./crypto.js";
+import { Bytes32, fieldToHex, hexToField, poseidonField2 } from "./crypto.js";
 import { deriveNullifierSk } from "./keys.js";
 
 export interface NullifierRecord {
@@ -31,16 +31,19 @@ export interface NullifierRecord {
 /**
  * Derive a nullifier.
  *
- * Nullifier = H(domain || commitment || nullifier_sk(commitment))
+ * Nullifier = Poseidon2(commitment_field, nullifier_sk_field)
  *
- * The nullifier secret key is derived per-context so it cannot be linked
- * across different notes without knowledge of the root secret.
+ * The nullifier secret key is derived from the operator seed per-commitment
+ * so it cannot be linked across notes without knowledge of the root secret.
  *
- * IMPLEMENTED (SHA-256). SCAFFOLD: Replace with Poseidon in actual ZK circuit.
+ * IMPLEMENTED: Poseidon over BN254 — circuit-compatible.
  */
 export function computeNullifier(commitment: Bytes32): Bytes32 {
+  // commitment is always a 64-char hex field element (output of computeCommitment).
+  // nk is a SHA-256 hex string from deriveNullifierSk — also valid hex.
+  // Both are interpreted strictly as hex field elements.
   const nk = deriveNullifierSk(commitment);
-  return domainHash(DOMAIN.NULLIFIER, commitment, nk);
+  return fieldToHex(poseidonField2(hexToField(commitment), hexToField(nk)));
 }
 
 /**
