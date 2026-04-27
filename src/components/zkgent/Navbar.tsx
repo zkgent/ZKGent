@@ -6,6 +6,7 @@ const links = [
   { label: "Vision", href: "#vision", external: false, internal: false },
   { label: "Use Cases", href: "#use-cases", external: false, internal: false },
   { label: "Architecture", href: "#architecture", external: false, internal: false },
+  { label: "Docs", href: "/docs", external: false, internal: true },
   { label: "Trust", href: "/trust-model", external: false, internal: true },
 ];
 

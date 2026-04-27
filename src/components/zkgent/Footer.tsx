@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 const socials = [
   {
     label: "X",
@@ -68,6 +70,16 @@ export function Footer() {
             ]}
           />
           <FooterCol
+            title="Docs"
+            links={[
+              { label: "Overview", href: "/docs" },
+              { label: "Quickstart", href: "/docs/quickstart" },
+              { label: "ZK Protocol", href: "/docs/protocol" },
+              { label: "API Reference", href: "/docs/api" },
+              { label: "FAQ", href: "/docs/faq" },
+            ]}
+          />
+          <FooterCol
             title="Company"
             links={[
               { label: "Contact", href: "#" },
@@ -131,17 +143,30 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
     <div>
       <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">{title}</h4>
       <ul className="mt-4 space-y-2.5">
-        {links.map((l) => (
-          <li key={l.label}>
-            <a
-              href={l.href}
-              className="group inline-flex items-center gap-1 text-[13px] text-foreground/80 transition-colors hover:text-foreground"
-            >
+        {links.map((l) => {
+          const isInternal = l.href.startsWith("/") && !l.href.startsWith("//");
+          const className =
+            "group inline-flex items-center gap-1 text-[13px] text-foreground/80 transition-colors hover:text-foreground";
+          const inner = (
+            <>
               {l.label}
               <span className="text-muted-foreground/40 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100">↗</span>
-            </a>
-          </li>
-        ))}
+            </>
+          );
+          return (
+            <li key={l.label}>
+              {isInternal ? (
+                <Link to={l.href} className={className}>
+                  {inner}
+                </Link>
+              ) : (
+                <a href={l.href} className={className}>
+                  {inner}
+                </a>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

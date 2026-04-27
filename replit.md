@@ -25,6 +25,10 @@ A marketing landing page plus a full operator-facing confidential payment consol
 
 ### Public
 - `/` — Marketing landing page. Premium ZK finance landing page with hero, problem/solution, use cases, architecture, manifesto, and CTA to open the dashboard.
+- `/trust-model` — D1/D2/D3 roadmap and trust assumption transparency.
+- `/docs` — Public documentation hub (sidebar nav + content pages):
+  - `/docs` Overview · `/docs/quickstart` · `/docs/trust` · `/docs/protocol` · `/docs/console` · `/docs/api` · `/docs/faq`
+  - Layout: `src/components/docs/DocsLayout.tsx` (sticky header, sidebar, prev/next pager, callouts, code blocks)
 
 ### Product Console (AppShell with sidebar)
 - `/dashboard` — Workspace overview: status bar, quick actions, readiness config, ZK transfer protocol view, recent activity, architecture snapshot

@@ -21,6 +21,13 @@ import { Route as ArchitectureRouteImport } from './routes/architecture'
 import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsTrustRouteImport } from './routes/docs/trust'
+import { Route as DocsQuickstartRouteImport } from './routes/docs/quickstart'
+import { Route as DocsProtocolRouteImport } from './routes/docs/protocol'
+import { Route as DocsFaqRouteImport } from './routes/docs/faq'
+import { Route as DocsConsoleRouteImport } from './routes/docs/console'
+import { Route as DocsApiRouteImport } from './routes/docs/api'
 import { Route as AdminApplicationsRouteImport } from './routes/admin/applications'
 
 const TrustModelRoute = TrustModelRouteImport.update({
@@ -83,6 +90,41 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsTrustRoute = DocsTrustRouteImport.update({
+  id: '/docs/trust',
+  path: '/docs/trust',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsQuickstartRoute = DocsQuickstartRouteImport.update({
+  id: '/docs/quickstart',
+  path: '/docs/quickstart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsProtocolRoute = DocsProtocolRouteImport.update({
+  id: '/docs/protocol',
+  path: '/docs/protocol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsFaqRoute = DocsFaqRouteImport.update({
+  id: '/docs/faq',
+  path: '/docs/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsConsoleRoute = DocsConsoleRouteImport.update({
+  id: '/docs/console',
+  path: '/docs/console',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsApiRoute = DocsApiRouteImport.update({
+  id: '/docs/api',
+  path: '/docs/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminApplicationsRoute = AdminApplicationsRouteImport.update({
   id: '/admin/applications',
   path: '/admin/applications',
@@ -103,6 +145,13 @@ export interface FileRoutesByFullPath {
   '/treasury': typeof TreasuryRoute
   '/trust-model': typeof TrustModelRoute
   '/admin/applications': typeof AdminApplicationsRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/console': typeof DocsConsoleRoute
+  '/docs/faq': typeof DocsFaqRoute
+  '/docs/protocol': typeof DocsProtocolRoute
+  '/docs/quickstart': typeof DocsQuickstartRoute
+  '/docs/trust': typeof DocsTrustRoute
+  '/docs/': typeof DocsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +167,13 @@ export interface FileRoutesByTo {
   '/treasury': typeof TreasuryRoute
   '/trust-model': typeof TrustModelRoute
   '/admin/applications': typeof AdminApplicationsRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/console': typeof DocsConsoleRoute
+  '/docs/faq': typeof DocsFaqRoute
+  '/docs/protocol': typeof DocsProtocolRoute
+  '/docs/quickstart': typeof DocsQuickstartRoute
+  '/docs/trust': typeof DocsTrustRoute
+  '/docs': typeof DocsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +190,13 @@ export interface FileRoutesById {
   '/treasury': typeof TreasuryRoute
   '/trust-model': typeof TrustModelRoute
   '/admin/applications': typeof AdminApplicationsRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/console': typeof DocsConsoleRoute
+  '/docs/faq': typeof DocsFaqRoute
+  '/docs/protocol': typeof DocsProtocolRoute
+  '/docs/quickstart': typeof DocsQuickstartRoute
+  '/docs/trust': typeof DocsTrustRoute
+  '/docs/': typeof DocsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +214,13 @@ export interface FileRouteTypes {
     | '/treasury'
     | '/trust-model'
     | '/admin/applications'
+    | '/docs/api'
+    | '/docs/console'
+    | '/docs/faq'
+    | '/docs/protocol'
+    | '/docs/quickstart'
+    | '/docs/trust'
+    | '/docs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +236,13 @@ export interface FileRouteTypes {
     | '/treasury'
     | '/trust-model'
     | '/admin/applications'
+    | '/docs/api'
+    | '/docs/console'
+    | '/docs/faq'
+    | '/docs/protocol'
+    | '/docs/quickstart'
+    | '/docs/trust'
+    | '/docs'
   id:
     | '__root__'
     | '/'
@@ -181,6 +258,13 @@ export interface FileRouteTypes {
     | '/treasury'
     | '/trust-model'
     | '/admin/applications'
+    | '/docs/api'
+    | '/docs/console'
+    | '/docs/faq'
+    | '/docs/protocol'
+    | '/docs/quickstart'
+    | '/docs/trust'
+    | '/docs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +281,13 @@ export interface RootRouteChildren {
   TreasuryRoute: typeof TreasuryRoute
   TrustModelRoute: typeof TrustModelRoute
   AdminApplicationsRoute: typeof AdminApplicationsRoute
+  DocsApiRoute: typeof DocsApiRoute
+  DocsConsoleRoute: typeof DocsConsoleRoute
+  DocsFaqRoute: typeof DocsFaqRoute
+  DocsProtocolRoute: typeof DocsProtocolRoute
+  DocsQuickstartRoute: typeof DocsQuickstartRoute
+  DocsTrustRoute: typeof DocsTrustRoute
+  DocsIndexRoute: typeof DocsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -285,6 +376,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/trust': {
+      id: '/docs/trust'
+      path: '/docs/trust'
+      fullPath: '/docs/trust'
+      preLoaderRoute: typeof DocsTrustRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/quickstart': {
+      id: '/docs/quickstart'
+      path: '/docs/quickstart'
+      fullPath: '/docs/quickstart'
+      preLoaderRoute: typeof DocsQuickstartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/protocol': {
+      id: '/docs/protocol'
+      path: '/docs/protocol'
+      fullPath: '/docs/protocol'
+      preLoaderRoute: typeof DocsProtocolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/faq': {
+      id: '/docs/faq'
+      path: '/docs/faq'
+      fullPath: '/docs/faq'
+      preLoaderRoute: typeof DocsFaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/console': {
+      id: '/docs/console'
+      path: '/docs/console'
+      fullPath: '/docs/console'
+      preLoaderRoute: typeof DocsConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/api': {
+      id: '/docs/api'
+      path: '/docs/api'
+      fullPath: '/docs/api'
+      preLoaderRoute: typeof DocsApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/applications': {
       id: '/admin/applications'
       path: '/admin/applications'
@@ -309,6 +449,13 @@ const rootRouteChildren: RootRouteChildren = {
   TreasuryRoute: TreasuryRoute,
   TrustModelRoute: TrustModelRoute,
   AdminApplicationsRoute: AdminApplicationsRoute,
+  DocsApiRoute: DocsApiRoute,
+  DocsConsoleRoute: DocsConsoleRoute,
+  DocsFaqRoute: DocsFaqRoute,
+  DocsProtocolRoute: DocsProtocolRoute,
+  DocsQuickstartRoute: DocsQuickstartRoute,
+  DocsTrustRoute: DocsTrustRoute,
+  DocsIndexRoute: DocsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
