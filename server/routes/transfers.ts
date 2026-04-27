@@ -24,10 +24,9 @@ function toPublic(row: Record<string, unknown>) {
 
 transfersRouter.get("/", (req, res) => {
   try {
-    const wallet = typeof req.query.wallet === "string" ? req.query.wallet : null;
-    const rows = wallet
-      ? db.prepare("SELECT * FROM transfers WHERE initiated_by_wallet = ? ORDER BY created_at DESC").all(wallet)
-      : db.prepare("SELECT * FROM transfers ORDER BY created_at DESC").all();
+    const wallet = typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
+    if (!wallet) return res.json([]);
+    const rows = db.prepare("SELECT * FROM transfers WHERE initiated_by_wallet = ? ORDER BY created_at DESC").all(wallet);
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/transfers error:", err);
@@ -80,10 +79,11 @@ transfersRouter.post("/", (req, res) => {
       category: "transfer",
       event: "Transfer initiated",
       detail: `${reference} · ${body.asset}${body.region ? " · " + body.region : ""}`,
-      operator: body.createdBy ?? "operator",
+      operator: walletAddress ? `wallet:${walletAddress.slice(0, 8)}` : (body.createdBy ?? "operator"),
       status: "pending",
       relatedEntityType: "transfer",
       relatedEntityId: id,
+      walletAddress,
     });
 
     return res.status(201).json(toPublic(row));

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { cn } from "@/lib/utils";
 import { api, type Counterparty } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/counterparties")({
   component: CounterpartiesWrapper,
@@ -29,7 +30,7 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function AddCounterpartyModal({ onClose, onCreated }: { onClose: () => void; onCreated: (c: Counterparty) => void }) {
+function AddCounterpartyModal({ createdByWallet, onClose, onCreated }: { createdByWallet: string; onClose: () => void; onCreated: (c: Counterparty) => void }) {
   const [form, setForm] = useState({ name: "", type: "Institutional", relationship: "Vendor", region: "", contactEmail: "", walletAddress: "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -41,7 +42,7 @@ function AddCounterpartyModal({ onClose, onCreated }: { onClose: () => void; onC
     setSaving(true);
     setErr(null);
     try {
-      const c = await api.counterparties.create(form as Parameters<typeof api.counterparties.create>[0]);
+      const c = await api.counterparties.create({ ...form, createdByWallet } as Parameters<typeof api.counterparties.create>[0]);
       onCreated(c);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed");
@@ -102,6 +103,7 @@ function AddCounterpartyModal({ onClose, onCreated }: { onClose: () => void; onC
 }
 
 function CounterpartiesPage() {
+  const { wallet } = useWallet();
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,11 +112,17 @@ function CounterpartiesPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    api.counterparties.list()
+    if (!wallet?.address) {
+      setCounterparties([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    api.counterparties.list(wallet.address)
       .then(setCounterparties)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [wallet?.address]);
 
   const verified = counterparties.filter((c) => c.status === "verified").length;
   const pending = counterparties.filter((c) => c.status === "pending_kyc").length;
@@ -134,8 +142,11 @@ function CounterpartiesPage() {
               <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Operations</p>
               <h1 className="font-display text-2xl font-semibold text-foreground">Counterparties</h1>
             </div>
-            <button onClick={() => setShowAdd(true)}
-              className="group relative shrink-0 inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background hover:opacity-90 transition">
+            <button
+              onClick={() => setShowAdd(true)}
+              disabled={!wallet?.address}
+              title={wallet?.address ? "" : "Connect a wallet to add a counterparty"}
+              className="group relative shrink-0 inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed">
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               <span className="relative">+ Add Counterparty</span>
             </button>
@@ -196,6 +207,11 @@ function CounterpartiesPage() {
                     <div className="h-5 w-16 rounded-full bg-surface-elevated" />
                   </div>
                 ))
+              ) : !wallet ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                  <p className="text-[13px] text-muted-foreground">Connect a wallet to view counterparties</p>
+                  <p className="text-[11px] text-muted-foreground/50">Counterparties are scoped per wallet — each wallet sees only its own list</p>
+                </div>
               ) : visible.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-2">
                   <p className="text-[13px] text-muted-foreground">{counterparties.length === 0 ? "No counterparties yet" : "No matches"}</p>
@@ -225,8 +241,9 @@ function CounterpartiesPage() {
           </motion.div>
         </motion.div>
       </div>
-      {showAdd && (
+      {showAdd && wallet?.address && (
         <AddCounterpartyModal
+          createdByWallet={wallet.address}
           onClose={() => setShowAdd(false)}
           onCreated={(c) => { setCounterparties((prev) => [c, ...prev]); setShowAdd(false); }}
         />

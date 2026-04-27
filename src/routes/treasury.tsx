@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { cn } from "@/lib/utils";
 import { api, type TreasuryRoute } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/treasury")({
   component: TreasuryWrapper,
@@ -24,7 +25,7 @@ const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transiti
 
 const COLORS = ["bg-emerald/70", "bg-cyan/60", "bg-violet/60", "bg-yellow-500/40", "bg-muted-foreground/30"];
 
-function AddRouteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (r: TreasuryRoute) => void }) {
+function AddRouteModal({ walletAddress, onClose, onCreated }: { walletAddress: string; onClose: () => void; onCreated: (r: TreasuryRoute) => void }) {
   const [form, setForm] = useState({ name: "", source: "", destination: "", policy: "", status: "idle" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -36,7 +37,7 @@ function AddRouteModal({ onClose, onCreated }: { onClose: () => void; onCreated:
     setSaving(true);
     setErr(null);
     try {
-      const r = await api.treasury.create(form as Parameters<typeof api.treasury.create>[0]);
+      const r = await api.treasury.create({ ...form, walletAddress } as Parameters<typeof api.treasury.create>[0]);
       onCreated(r);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed");
@@ -92,17 +93,24 @@ function AddRouteModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 }
 
 function TreasuryPage() {
+  const { wallet } = useWallet();
   const [routes, setRoutes] = useState<TreasuryRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
-    api.treasury.list()
+    if (!wallet?.address) {
+      setRoutes([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    api.treasury.list(wallet.address)
       .then(setRoutes)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [wallet?.address]);
 
   const active = routes.filter((r) => r.status === "active").length;
   const idle = routes.filter((r) => r.status === "idle").length;
@@ -118,8 +126,11 @@ function TreasuryPage() {
               <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Operations</p>
               <h1 className="font-display text-2xl font-semibold text-foreground">Treasury</h1>
             </div>
-            <button onClick={() => setShowAdd(true)}
-              className="group relative shrink-0 inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background hover:opacity-90 transition">
+            <button
+              onClick={() => setShowAdd(true)}
+              disabled={!wallet?.address}
+              title={wallet?.address ? "" : "Connect a wallet to add a treasury route"}
+              className="group relative shrink-0 inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed">
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               <span className="relative">Add Route</span>
             </button>
@@ -149,6 +160,11 @@ function TreasuryPage() {
             <div className="rounded-2xl border border-hairline overflow-hidden">
               {loading ? (
                 [0, 1, 2].map((i) => <div key={i} className="p-5 border-b border-hairline animate-pulse"><div className="h-4 w-1/2 rounded bg-surface-elevated mb-2" /><div className="h-3 w-1/3 rounded bg-surface-elevated" /></div>)
+              ) : !wallet ? (
+                <div className="flex flex-col items-center justify-center py-14 gap-2">
+                  <p className="text-[13px] text-muted-foreground">Connect a wallet to view treasury routes</p>
+                  <p className="text-[11px] text-muted-foreground/50">Routes are scoped per wallet — each wallet sees only its own routes</p>
+                </div>
               ) : routes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-14 gap-2">
                   <p className="text-[13px] text-muted-foreground">No treasury routes configured</p>
@@ -189,8 +205,9 @@ function TreasuryPage() {
           </motion.div>
         </motion.div>
       </div>
-      {showAdd && (
+      {showAdd && wallet?.address && (
         <AddRouteModal
+          walletAddress={wallet.address}
           onClose={() => setShowAdd(false)}
           onCreated={(r) => { setRoutes((prev) => [r, ...prev]); setShowAdd(false); }}
         />

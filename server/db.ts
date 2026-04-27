@@ -270,7 +270,11 @@ db.exec(`
     ["zk_settlements", "note_created_at",          "TEXT"],
     ["zk_settlements", "proof_generated_at",       "TEXT"],
     ["zk_settlements", "proof_verified_at",        "TEXT"],
-    ["transfers",      "initiated_by_wallet",      "TEXT"],
+    ["transfers",        "initiated_by_wallet",    "TEXT"],
+    ["payroll_batches",  "created_by_wallet",      "TEXT"],
+    ["treasury_routes",  "created_by_wallet",      "TEXT"],
+    ["counterparties",   "created_by_wallet",      "TEXT"],
+    ["activity_events",  "wallet_address",         "TEXT"],
   ];
   for (const [tbl, col, type] of alterCols) {
     try { db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run(); }
@@ -310,13 +314,14 @@ export function logActivity(opts: {
   status?: string;
   relatedEntityType?: string;
   relatedEntityId?: string;
+  walletAddress?: string | null;
 }) {
   const id = generateId("EVT");
   const now = new Date().toISOString();
   db.prepare(`
     INSERT INTO activity_events
-      (id, category, event, detail, operator, status, related_entity_type, related_entity_id, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, category, event, detail, operator, status, related_entity_type, related_entity_id, wallet_address, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     opts.category,
@@ -326,6 +331,7 @@ export function logActivity(opts: {
     opts.status ?? "info",
     opts.relatedEntityType ?? "",
     opts.relatedEntityId ?? "",
+    opts.walletAddress ?? null,
     now
   );
 }

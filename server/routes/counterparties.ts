@@ -14,6 +14,7 @@ function toPublic(row: Record<string, unknown>) {
     contactEmail: row.contact_email,
     walletAddress: row.wallet_address,
     notes: row.notes,
+    createdByWallet: row.created_by_wallet ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastActivityAt: row.last_activity_at,
@@ -22,10 +23,12 @@ function toPublic(row: Record<string, unknown>) {
 
 counterpartiesRouter.get("/", (req, res) => {
   try {
-    const { status } = req.query as { status?: string };
+    const { status, wallet } = req.query as { status?: string; wallet?: string };
+    if (!wallet) return res.json([]);
+
     const rows = status && status !== "all"
-      ? db.prepare("SELECT * FROM counterparties WHERE status = ? ORDER BY created_at DESC").all(status)
-      : db.prepare("SELECT * FROM counterparties ORDER BY created_at DESC").all();
+      ? db.prepare("SELECT * FROM counterparties WHERE created_by_wallet = ? AND status = ? ORDER BY created_at DESC").all(wallet, status)
+      : db.prepare("SELECT * FROM counterparties WHERE created_by_wallet = ? ORDER BY created_at DESC").all(wallet);
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/counterparties error:", err);
@@ -51,11 +54,12 @@ counterpartiesRouter.post("/", (req, res) => {
 
     const id = generateId("CPT");
     const now = new Date().toISOString();
+    const createdByWallet = body.createdByWallet ?? null;
 
     db.prepare(`
       INSERT INTO counterparties
-        (id, name, type, region, relationship, status, contact_email, wallet_address, notes, created_at, updated_at, last_activity_at)
-      VALUES (?, ?, ?, ?, ?, 'not_connected', ?, ?, ?, ?, ?, NULL)
+        (id, name, type, region, relationship, status, contact_email, wallet_address, notes, created_by_wallet, created_at, updated_at, last_activity_at)
+      VALUES (?, ?, ?, ?, ?, 'not_connected', ?, ?, ?, ?, ?, ?, NULL)
     `).run(
       id,
       body.name.trim(),
@@ -65,6 +69,7 @@ counterpartiesRouter.post("/", (req, res) => {
       body.contactEmail ?? "",
       body.walletAddress ?? "",
       body.notes ?? "",
+      createdByWallet,
       now,
       now
     );
@@ -75,10 +80,11 @@ counterpartiesRouter.post("/", (req, res) => {
       category: "counterparty",
       event: "Counterparty added",
       detail: `${body.name.trim()}${body.region ? " · " + body.region : ""}`,
-      operator: body.createdBy ?? "operator",
+      operator: createdByWallet ? `wallet:${createdByWallet.slice(0, 8)}` : (body.createdBy ?? "operator"),
       status: "info",
       relatedEntityType: "counterparty",
       relatedEntityId: id,
+      walletAddress: createdByWallet,
     });
 
     return res.status(201).json(toPublic(row));
@@ -130,6 +136,7 @@ counterpartiesRouter.patch("/:id", (req, res) => {
       status: "info",
       relatedEntityType: "counterparty",
       relatedEntityId: req.params.id,
+      walletAddress: (row.created_by_wallet as string | null) ?? null,
     });
 
     return res.json(toPublic(row));

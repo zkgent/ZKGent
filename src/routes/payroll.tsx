@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { cn } from "@/lib/utils";
 import { api, type PayrollBatch } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/payroll")({
   component: PayrollWrapper,
@@ -22,7 +23,7 @@ function fmtDate(iso: string) {
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } } };
 
-function CreateBatchModal({ onClose, onCreated }: { onClose: () => void; onCreated: (b: PayrollBatch) => void }) {
+function CreateBatchModal({ walletAddress, onClose, onCreated }: { walletAddress: string; onClose: () => void; onCreated: (b: PayrollBatch) => void }) {
   const [form, setForm] = useState({ name: "", scheduledDate: "", asset: "USDC", recipientCount: "", approvalThreshold: "2", notes: "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -41,6 +42,7 @@ function CreateBatchModal({ onClose, onCreated }: { onClose: () => void; onCreat
         recipientCount: form.recipientCount ? parseInt(form.recipientCount) : 0,
         approvalThreshold: parseInt(form.approvalThreshold),
         notes: form.notes,
+        walletAddress,
       } as Parameters<typeof api.payroll.create>[0]);
       onCreated(b);
     } catch (e: unknown) {
@@ -96,17 +98,24 @@ function CreateBatchModal({ onClose, onCreated }: { onClose: () => void; onCreat
 }
 
 function PayrollPage() {
+  const { wallet } = useWallet();
   const [batches, setBatches] = useState<PayrollBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    api.payroll.list()
+    if (!wallet?.address) {
+      setBatches([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    api.payroll.list(wallet.address)
       .then(setBatches)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [wallet?.address]);
 
   const total = batches.reduce((s, b) => s + b.recipientCount, 0);
   const drafts = batches.filter((b) => b.status === "draft");
@@ -122,8 +131,11 @@ function PayrollPage() {
               <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Operations</p>
               <h1 className="font-display text-2xl font-semibold text-foreground">Payroll</h1>
             </div>
-            <button onClick={() => setShowCreate(true)}
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2 text-[12px] font-medium text-background transition hover:opacity-90">
+            <button
+              onClick={() => setShowCreate(true)}
+              disabled={!wallet?.address}
+              title={wallet?.address ? "" : "Connect a wallet to create a payroll batch"}
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2 text-[12px] font-medium text-background transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               <span className="relative">Create Batch</span>
             </button>
@@ -163,6 +175,11 @@ function PayrollPage() {
                       <div className="h-3 w-8 rounded bg-surface-elevated" />
                     </div>
                   ))
+                ) : !wallet ? (
+                  <div className="flex flex-col items-center justify-center py-14 gap-2">
+                    <p className="text-[13px] text-muted-foreground">Connect a wallet to view payroll batches</p>
+                    <p className="text-[11px] text-muted-foreground/50">Batches are scoped per wallet — each wallet sees only its own batches</p>
+                  </div>
                 ) : batches.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-14 gap-2">
                     <p className="text-[13px] text-muted-foreground">No payroll batches yet</p>
@@ -193,8 +210,9 @@ function PayrollPage() {
           </motion.div>
         </motion.div>
       </div>
-      {showCreate && (
+      {showCreate && wallet?.address && (
         <CreateBatchModal
+          walletAddress={wallet.address}
           onClose={() => setShowCreate(false)}
           onCreated={(b) => { setBatches((prev) => [b, ...prev]); setShowCreate(false); }}
         />

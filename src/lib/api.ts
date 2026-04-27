@@ -223,30 +223,38 @@ export const api = {
       fetchJson<Transfer>(`/api/transfers/${id}/status`, { method: "PATCH", body: JSON.stringify(body) }),
   },
   payroll: {
-    list: () => fetchJson<PayrollBatch[]>("/api/payroll"),
+    list: (wallet?: string) => fetchJson<PayrollBatch[]>(wallet ? `/api/payroll?wallet=${encodeURIComponent(wallet)}` : "/api/payroll"),
     get: (id: string) => fetchJson<PayrollBatch>(`/api/payroll/${id}`),
-    create: (body: Partial<PayrollBatch> & { name: string }) => fetchJson<PayrollBatch>("/api/payroll", { method: "POST", body: JSON.stringify(body) }),
+    create: (body: Partial<PayrollBatch> & { name: string; walletAddress?: string }) =>
+      fetchJson<PayrollBatch>("/api/payroll", { method: "POST", body: JSON.stringify(body) }),
     update: (id: string, body: Partial<PayrollBatch>) => fetchJson<PayrollBatch>(`/api/payroll/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   },
   treasury: {
-    list: () => fetchJson<TreasuryRoute[]>("/api/treasury"),
-    create: (body: Partial<TreasuryRoute> & { name: string; source: string; destination: string }) =>
+    list: (wallet?: string) => fetchJson<TreasuryRoute[]>(wallet ? `/api/treasury?wallet=${encodeURIComponent(wallet)}` : "/api/treasury"),
+    create: (body: Partial<TreasuryRoute> & { name: string; source: string; destination: string; walletAddress?: string }) =>
       fetchJson<TreasuryRoute>("/api/treasury", { method: "POST", body: JSON.stringify(body) }),
     update: (id: string, body: Partial<TreasuryRoute>) =>
       fetchJson<TreasuryRoute>(`/api/treasury/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   },
   counterparties: {
-    list: (status?: string) => fetchJson<Counterparty[]>(`/api/counterparties${status && status !== "all" ? `?status=${status}` : ""}`),
-    create: (body: Partial<Counterparty> & { name: string }) =>
+    list: (wallet?: string, status?: string) => {
+      const params = new URLSearchParams();
+      if (wallet) params.set("wallet", wallet);
+      if (status && status !== "all") params.set("status", status);
+      const qs = params.toString();
+      return fetchJson<Counterparty[]>(`/api/counterparties${qs ? "?" + qs : ""}`);
+    },
+    create: (body: Partial<Counterparty> & { name: string; createdByWallet?: string }) =>
       fetchJson<Counterparty>("/api/counterparties", { method: "POST", body: JSON.stringify(body) }),
     update: (id: string, body: Partial<Counterparty>) =>
       fetchJson<Counterparty>(`/api/counterparties/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   },
   activity: {
-    list: (category?: string, limit?: number) => {
+    list: (opts: { wallet?: string; category?: string; limit?: number } = {}) => {
       const params = new URLSearchParams();
-      if (category && category !== "all") params.set("category", category);
-      if (limit) params.set("limit", String(limit));
+      if (opts.wallet) params.set("wallet", opts.wallet);
+      if (opts.category && opts.category !== "all") params.set("category", opts.category);
+      if (opts.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
       return fetchJson<ActivityEvent[]>(`/api/activity${qs ? "?" + qs : ""}`);
     },
@@ -256,7 +264,7 @@ export const api = {
     update: (body: Partial<Settings>) => fetchJson<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
   },
   dashboard: {
-    get: () => fetchJson<DashboardStats>("/api/dashboard"),
+    get: (wallet?: string) => fetchJson<DashboardStats & { walletScoped?: boolean }>(wallet ? `/api/dashboard?wallet=${encodeURIComponent(wallet)}` : "/api/dashboard"),
   },
   zk: {
     system:   () => fetchJson<ZkSystemInfo>("/api/zk/system"),

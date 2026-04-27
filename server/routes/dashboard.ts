@@ -3,25 +3,29 @@ import { db } from "../db.js";
 
 export const dashboardRouter = Router();
 
-dashboardRouter.get("/", (_req, res) => {
+dashboardRouter.get("/", (req, res) => {
   try {
-    const transferStats = db.prepare(`
-      SELECT status, COUNT(*) as count FROM transfers GROUP BY status
-    `).all() as { status: string; count: number }[];
+    const wallet = typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
 
-    const payrollStats = db.prepare(`
-      SELECT status, COUNT(*) as count FROM payroll_batches GROUP BY status
-    `).all() as { status: string; count: number }[];
+    const transferStats = wallet
+      ? db.prepare(`SELECT status, COUNT(*) as count FROM transfers WHERE initiated_by_wallet = ? GROUP BY status`).all(wallet) as { status: string; count: number }[]
+      : [] as { status: string; count: number }[];
 
-    const treasuryCount = (db.prepare("SELECT COUNT(*) as count FROM treasury_routes").get() as { count: number }).count;
+    const payrollStats = wallet
+      ? db.prepare(`SELECT status, COUNT(*) as count FROM payroll_batches WHERE created_by_wallet = ? GROUP BY status`).all(wallet) as { status: string; count: number }[]
+      : [];
 
-    const cpStats = db.prepare(`
-      SELECT status, COUNT(*) as count FROM counterparties GROUP BY status
-    `).all() as { status: string; count: number }[];
+    const treasuryCount = wallet
+      ? (db.prepare("SELECT COUNT(*) as count FROM treasury_routes WHERE created_by_wallet = ?").get(wallet) as { count: number }).count
+      : 0;
 
-    const recentActivity = db.prepare(`
-      SELECT * FROM activity_events ORDER BY created_at DESC LIMIT 10
-    `).all() as Record<string, unknown>[];
+    const cpStats = wallet
+      ? db.prepare(`SELECT status, COUNT(*) as count FROM counterparties WHERE created_by_wallet = ? GROUP BY status`).all(wallet) as { status: string; count: number }[]
+      : [];
+
+    const recentActivity = wallet
+      ? db.prepare(`SELECT * FROM activity_events WHERE wallet_address = ? ORDER BY created_at DESC LIMIT 10`).all(wallet) as Record<string, unknown>[]
+      : [];
 
     const toMap = (arr: { status: string; count: number }[]) =>
       Object.fromEntries(arr.map((r) => [r.status, r.count]));
@@ -62,6 +66,7 @@ dashboardRouter.get("/", (_req, res) => {
         status: r.status,
         createdAt: r.created_at,
       })),
+      walletScoped: !!wallet,
     });
   } catch (err) {
     console.error("GET /api/dashboard error:", err);

@@ -13,15 +13,18 @@ function toPublic(row: Record<string, unknown>) {
     status: row.status,
     allocationPercent: row.allocation_percent,
     notes: row.notes,
+    createdByWallet: row.created_by_wallet ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastMovedAt: row.last_moved_at,
   };
 }
 
-treasuryRouter.get("/", (_req, res) => {
+treasuryRouter.get("/", (req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM treasury_routes ORDER BY created_at DESC").all();
+    const wallet = typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
+    if (!wallet) return res.json([]);
+    const rows = db.prepare("SELECT * FROM treasury_routes WHERE created_by_wallet = ? ORDER BY created_at DESC").all(wallet);
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/treasury error:", err);
@@ -49,11 +52,12 @@ treasuryRouter.post("/", (req, res) => {
 
     const id = generateId("TRS");
     const now = new Date().toISOString();
+    const walletAddress = (body.walletAddress as string | undefined) ?? null;
 
     db.prepare(`
       INSERT INTO treasury_routes
-        (id, name, source, destination, policy, status, allocation_percent, notes, created_at, updated_at, last_moved_at)
-      VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, NULL)
+        (id, name, source, destination, policy, status, allocation_percent, notes, created_by_wallet, created_at, updated_at, last_moved_at)
+      VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, NULL)
     `).run(
       id,
       body.name.toString().trim(),
@@ -62,6 +66,7 @@ treasuryRouter.post("/", (req, res) => {
       body.policy ?? "manual",
       body.allocationPercent ? parseFloat(body.allocationPercent.toString()) : 0,
       body.notes ?? "",
+      walletAddress,
       now,
       now
     );
@@ -72,10 +77,11 @@ treasuryRouter.post("/", (req, res) => {
       category: "treasury",
       event: "Treasury route created",
       detail: `${body.name} · ${body.source} → ${body.destination}`,
-      operator: body.createdBy?.toString() ?? "operator",
+      operator: walletAddress ? `wallet:${walletAddress.slice(0, 8)}` : (body.createdBy?.toString() ?? "operator"),
       status: "info",
       relatedEntityType: "treasury_route",
       relatedEntityId: id,
+      walletAddress,
     });
 
     return res.status(201).json(toPublic(row));
@@ -123,6 +129,7 @@ treasuryRouter.patch("/:id", (req, res) => {
       status: "info",
       relatedEntityType: "treasury_route",
       relatedEntityId: req.params.id,
+      walletAddress: (row.created_by_wallet as string | null) ?? null,
     });
 
     return res.json(toPublic(row));

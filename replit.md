@@ -114,6 +114,17 @@ All product routes use `AppShell` which provides:
 - **Dashboard:** Wallet Identity panel shows fingerprint, session count, per-user activity totals
 - **API routes:** `POST /api/identity/resolve`, `GET /api/identity/:address`, `GET /api/identity`
 
+## Per-Wallet Dashboard Scoping (Phase 4)
+- **All dashboard views are wallet-scoped** — switching wallets shows different data
+- **Ownership columns:** `transfers.initiated_by_wallet`, `payroll_batches.created_by_wallet`, `treasury_routes.created_by_wallet`, `counterparties.created_by_wallet`, `activity_events.wallet_address` (auto-migrated via ALTER)
+- **List endpoints** (`GET /api/{transfers,payroll,treasury,counterparties,activity}`): require `?wallet=` — return `[]` when missing (no global fallback)
+- **Dashboard stats** (`GET /api/dashboard?wallet=`): all aggregates (transfers, payroll, treasury, counterparties, recentActivity) filtered by wallet; returns zeros + `walletScoped:false` when wallet missing
+- **Create endpoints:** accept `walletAddress` (or `createdByWallet` for counterparties) in POST body, store in ownership column, pass to `logActivity({walletAddress})`
+- **Frontend pattern:** every page calls `useWallet()`, scopes API requests to `wallet?.address`, reloads via `useEffect([wallet?.address])`, shows "Connect a wallet" empty state, disables create buttons when no wallet
+- **Known limitations** (out of scope, future signature-auth work):
+  - GET `/:id` and PATCH `/:id` do not enforce per-row ownership
+  - Wallet identity in query/body is client-asserted (no signed proof binding caller to wallet)
+
 ## signTransaction Flow (Phase 3)
 - **Real flow:** Backend builds serialized Solana Transaction → wallet.signTransaction() → submit → confirm
 - **Prepare:** `POST /api/zk/tx/prepare` → `{ request_id, serialized_tx (base64), network, explorer_url }`

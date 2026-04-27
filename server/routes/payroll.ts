@@ -14,14 +14,17 @@ function toPublic(row: Record<string, unknown>) {
     approvalThreshold: row.approval_threshold,
     approvals: row.approvals,
     notes: row.notes,
+    createdByWallet: row.created_by_wallet ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-payrollRouter.get("/", (_req, res) => {
+payrollRouter.get("/", (req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM payroll_batches ORDER BY created_at DESC").all();
+    const wallet = typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
+    if (!wallet) return res.json([]);
+    const rows = db.prepare("SELECT * FROM payroll_batches WHERE created_by_wallet = ? ORDER BY created_at DESC").all(wallet);
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/payroll error:", err);
@@ -47,11 +50,12 @@ payrollRouter.post("/", (req, res) => {
 
     const id = generateId("PAY");
     const now = new Date().toISOString();
+    const walletAddress = body.walletAddress ?? null;
 
     db.prepare(`
       INSERT INTO payroll_batches
-        (id, name, scheduled_date, recipient_count, asset, status, approval_threshold, approvals, notes, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, 'draft', ?, 0, ?, ?, ?)
+        (id, name, scheduled_date, recipient_count, asset, status, approval_threshold, approvals, notes, created_by_wallet, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'draft', ?, 0, ?, ?, ?, ?)
     `).run(
       id,
       body.name.trim(),
@@ -60,6 +64,7 @@ payrollRouter.post("/", (req, res) => {
       body.asset ?? "USDC",
       body.approvalThreshold ? parseInt(body.approvalThreshold) : 2,
       body.notes ?? "",
+      walletAddress,
       now,
       now
     );
@@ -70,10 +75,11 @@ payrollRouter.post("/", (req, res) => {
       category: "payroll",
       event: "Payroll batch created",
       detail: `${body.name.trim()}${body.scheduledDate ? " · " + body.scheduledDate : ""}`,
-      operator: body.createdBy ?? "operator",
+      operator: walletAddress ? `wallet:${walletAddress.slice(0, 8)}` : (body.createdBy ?? "operator"),
       status: "info",
       relatedEntityType: "payroll_batch",
       relatedEntityId: id,
+      walletAddress,
     });
 
     return res.status(201).json(toPublic(row));
@@ -122,6 +128,7 @@ payrollRouter.patch("/:id", (req, res) => {
         status: body.status === "settled" ? "ok" : "info",
         relatedEntityType: "payroll_batch",
         relatedEntityId: req.params.id,
+        walletAddress: (row.created_by_wallet as string | null) ?? null,
       });
     }
 

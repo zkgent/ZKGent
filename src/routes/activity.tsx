@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { cn } from "@/lib/utils";
 import { api, type ActivityEvent } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/activity")({
   component: ActivityWrapper,
@@ -45,17 +46,24 @@ function fmtDate(iso: string) {
 }
 
 function ActivityPage() {
+  const { wallet } = useWallet();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<EventCategory>("all");
 
   useEffect(() => {
-    api.activity.list()
+    if (!wallet?.address) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    api.activity.list({ wallet: wallet.address })
       .then(setEvents)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [wallet?.address]);
 
   const visible = filter === "all" ? events : events.filter((e) => e.category === filter);
 
@@ -100,6 +108,11 @@ function ActivityPage() {
                     </div>
                   </div>
                 ))
+              ) : !wallet ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-2">
+                  <p className="text-[13px] text-muted-foreground">Connect a wallet to view activity</p>
+                  <p className="text-[11px] text-muted-foreground/50">Activity is scoped per wallet — each wallet sees only its own events</p>
+                </div>
               ) : visible.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
                   <p className="text-[13px] text-muted-foreground">{events.length === 0 ? "No activity yet" : "No events in this category"}</p>

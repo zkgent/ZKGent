@@ -129,7 +129,7 @@ function DashboardPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    Promise.all([api.zk.system(), api.dashboard.get()])
+    Promise.all([api.zk.system(), api.dashboard.get(wallet?.address)])
       .then(([zkData, legacyData]) => {
         setZk(zkData);
         setLegacy(legacyData);
@@ -137,7 +137,7 @@ function DashboardPage() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [wallet?.address]);
 
   // Load per-user activity when wallet connects
   useEffect(() => {
