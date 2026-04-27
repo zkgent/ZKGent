@@ -37,9 +37,9 @@ export function getTxExplorerUrl(signature: string, network: SolanaNetwork): str
 }
 
 export function getSolanaConfig(): SolanaConfig {
-  const raw = (process.env.SOLANA_NETWORK ?? "devnet") as SolanaNetwork;
+  const raw = (process.env.SOLANA_NETWORK ?? "mainnet-beta") as SolanaNetwork;
   const network: SolanaNetwork =
-    raw === "mainnet-beta" || raw === "testnet" || raw === "devnet" ? raw : "devnet";
+    raw === "mainnet-beta" || raw === "testnet" || raw === "devnet" ? raw : "mainnet-beta";
 
   return {
     network,

@@ -100,7 +100,7 @@ export function upsertWalletUser(opts: {
     opts.wallet_address,
     fingerprint,
     opts.wallet_name ?? null,
-    opts.network_preference ?? "devnet",
+    opts.network_preference ?? "mainnet-beta",
     now,
     now
   );

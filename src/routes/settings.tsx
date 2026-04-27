@@ -51,7 +51,7 @@ function Card({ children }: { children: React.ReactNode }) {
 
 const DEFAULTS: Settings = {
   workspaceName: "ZKGENT Workspace",
-  environment: "devnet",
+  environment: "mainnet-beta",
   defaultPaymentRail: "USDC",
   privacyMode: true,
   hideAmounts: true,
@@ -136,8 +136,8 @@ function SettingsPage() {
               <SettingRow label="Environment" desc="Current runtime environment">
                 <select value={form.environment} onChange={(e) => set("environment", e.target.value)}
                   className="rounded-lg border border-hairline bg-background px-3 py-2 text-[12px] text-foreground outline-none focus:border-emerald/50 appearance-none">
-                  <option value="devnet">Solana Devnet</option>
-                  <option value="mainnet">Solana Mainnet</option>
+                  <option value="mainnet-beta">Solana Mainnet</option>
+                  <option value="devnet">Solana Devnet (dev only)</option>
                 </select>
               </SettingRow>
               <SettingRow label="Default asset" desc="Used when creating transfers">

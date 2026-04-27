@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { WalletButton } from "@/components/wallet/WalletButton";
@@ -204,8 +204,20 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
+function useNetworkBadge() {
+  const [network, setNetwork] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/zk/system")
+      .then(r => r.json())
+      .then(d => setNetwork(d?.solana?.network ?? null))
+      .catch(() => {});
+  }, []);
+  return network;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const network = useNetworkBadge();
   const router = useRouterState();
   const currentPath = router.location.pathname;
   const currentItem = navItems.find((i) => currentPath === i.href || currentPath.startsWith(i.href + "/"));
@@ -268,12 +280,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 Privacy mode active
               </span>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-cyan" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
-                Devnet
-              </span>
-            </div>
+            {network && (
+              <div className="hidden sm:flex items-center gap-1.5">
+                <div className={`h-1.5 w-1.5 rounded-full ${network === "mainnet-beta" ? "bg-emerald" : "bg-yellow-400/70"}`} />
+                <span className={`font-mono text-[10px] uppercase tracking-widest ${network === "mainnet-beta" ? "text-emerald/70" : "text-yellow-400/60"}`}>
+                  {network === "mainnet-beta" ? "Mainnet" : network}
+                </span>
+              </div>
+            )}
             <WalletButton compact />
           </div>
         </header>

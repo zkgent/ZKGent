@@ -63,3 +63,4 @@ run = ["npm", "start"]
 
 [userenv.shared]
 ADMIN_KEY = "obsidian-admin-dev"
+SOLANA_NETWORK = "mainnet-beta"

@@ -274,7 +274,7 @@ zkRouter.post("/tx/confirm", async (req, res) => {
   if (!signing_request) return res.status(404).json({ error: "signing_request_not_found" });
 
   const { getTxExplorerUrl } = await import("../domain/solana.js");
-  const net = (network ?? "devnet") as any;
+  const net = (network ?? "mainnet-beta") as any;
   const explorerUrl = getTxExplorerUrl(tx_signature, net);
   const now = new Date().toISOString();
 

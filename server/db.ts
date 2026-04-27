@@ -241,7 +241,7 @@ db.exec(`
     wallet_address TEXT NOT NULL UNIQUE,
     identity_fingerprint TEXT NOT NULL,
     wallet_name TEXT,
-    network_preference TEXT NOT NULL DEFAULT 'devnet',
+    network_preference TEXT NOT NULL DEFAULT 'mainnet-beta',
     first_seen_at TEXT NOT NULL,
     last_seen_at TEXT NOT NULL,
     session_count INTEGER NOT NULL DEFAULT 1
