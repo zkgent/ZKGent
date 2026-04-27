@@ -360,23 +360,6 @@ Further reading:
 - [Trust Model](https://zkgent.sbs/trust-model)
 - [Docs: Trust](https://zkgent.sbs/docs/trust)
 
----
-
-## Repo structure
-
-```text
-ZKGent/
-├── public/                  # brand assets
-├── server/                  # Express API + domain logic
-│   ├── routes/              # access, admin, applications, zk
-│   └── domain/              # proof, settlement, solana, notes
-├── src/                     # React application
-│   ├── routes/              # landing, docs, dashboard, trust-model
-│   ├── components/          # app, docs, ui, marketing
-│   └── hooks/               # access + wallet hooks
-├── README.md
-└── replit.md
-```
 
 ---
 
