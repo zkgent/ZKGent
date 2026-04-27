@@ -124,6 +124,88 @@ db.exec(`
 
   INSERT OR IGNORE INTO workspace_settings (id, updated_at)
   VALUES ('singleton', datetime('now'));
+
+  -- ZK Domain Tables
+
+  CREATE TABLE IF NOT EXISTS zk_notes (
+    id TEXT PRIMARY KEY,
+    commitment TEXT NOT NULL UNIQUE,
+    owner_fingerprint TEXT NOT NULL,
+    value REAL NOT NULL,
+    asset TEXT NOT NULL DEFAULT 'USDC',
+    salt TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'unspent',
+    nullifier TEXT,
+    encrypted_payload TEXT NOT NULL,
+    related_transfer_id TEXT,
+    merkle_index INTEGER,
+    created_at TEXT NOT NULL,
+    spent_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_commitments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    commitment TEXT NOT NULL UNIQUE,
+    note_id TEXT NOT NULL,
+    value_hash TEXT NOT NULL,
+    owner_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    merkle_index INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL,
+    finalized_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_nullifiers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nullifier TEXT NOT NULL UNIQUE,
+    commitment TEXT NOT NULL,
+    note_id TEXT NOT NULL,
+    spent_by_transfer_id TEXT,
+    published_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_merkle_nodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    level INTEGER NOT NULL,
+    idx INTEGER NOT NULL,
+    value TEXT NOT NULL,
+    commitment TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_proofs (
+    id TEXT PRIMARY KEY,
+    related_transfer_id TEXT,
+    proof_type TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    input_hash TEXT NOT NULL,
+    proof_data TEXT,
+    public_signals TEXT,
+    verification_result INTEGER,
+    error_message TEXT,
+    prover_backend TEXT NOT NULL DEFAULT 'scaffold',
+    circuit_id TEXT NOT NULL DEFAULT 'scaffold',
+    created_at TEXT NOT NULL,
+    generated_at TEXT,
+    verified_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_settlements (
+    id TEXT PRIMARY KEY,
+    transfer_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    note_id TEXT,
+    commitment TEXT,
+    nullifier TEXT,
+    proof_id TEXT,
+    merkle_root_at_settlement TEXT,
+    on_chain_tx_sig TEXT,
+    error_message TEXT,
+    queued_at TEXT NOT NULL,
+    settled_at TEXT,
+    updated_at TEXT NOT NULL
+  );
 `);
 
 export function generateId(prefix = "OBD"): string {

@@ -11,6 +11,7 @@ import { counterpartiesRouter } from "./routes/counterparties.js";
 import { activityRouter } from "./routes/activity.js";
 import { settingsRouter } from "./routes/settings.js";
 import { dashboardRouter } from "./routes/dashboard.js";
+import { zkRouter } from "./routes/zk.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === "production";
@@ -30,6 +31,7 @@ app.use("/api/counterparties", counterpartiesRouter);
 app.use("/api/activity", activityRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/zk", zkRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });

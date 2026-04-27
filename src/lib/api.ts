@@ -105,6 +105,66 @@ export interface DashboardStats {
   recentActivity: { id: string; category: string; event: string; detail: string; operator: string; status: string; createdAt: string }[];
 }
 
+// ─── ZK System Types ────────────────────────────────────────────────────────
+
+export interface ZkNoteStats {
+  total: number; unspent: number; spent: number;
+  pending_spend: number; total_shielded_value: number;
+}
+export interface ZkCommitmentStats {
+  total: number; pending: number; inserted: number; finalized: number;
+}
+export interface ZkNullifierStats { total: number }
+export interface ZkMerkleStats {
+  leaf_count: number; current_root: string | null;
+  tree_depth: number; capacity: number;
+}
+export interface ZkProofStats {
+  total: number; pending: number; generating: number;
+  generated: number; verified: number; failed: number;
+  avg_generation_ms: number | null;
+}
+export interface ZkSettlementStats {
+  total: number; queued: number; in_progress: number;
+  settled: number; failed: number;
+}
+export interface ZkSolanaStatus {
+  network: string; rpc_endpoint: string; reachable: boolean;
+  slot: number | null; epoch: number | null; block_time: number | null;
+  tps_estimate: number | null; program_deployed: boolean;
+  last_checked_at: string; error: string | null;
+}
+export interface ZkDisclosureStatus {
+  current_policy: string; viewing_key_fingerprint: string;
+  compliance_mode: boolean; audit_key_active: boolean;
+}
+export interface ZkKeyStatus {
+  operator_fingerprint: string; signing_fingerprint: string;
+  encryption_fingerprint: string; viewing_fingerprint: string;
+  custody_mode: string;
+}
+export interface ZkSystemInfo {
+  notes: ZkNoteStats;
+  commitments: ZkCommitmentStats;
+  nullifiers: ZkNullifierStats;
+  merkle: ZkMerkleStats;
+  proofs: ZkProofStats;
+  settlements: ZkSettlementStats;
+  solana: ZkSolanaStatus;
+  disclosure: ZkDisclosureStatus;
+  keys: ZkKeyStatus;
+  system: { version: string; zk_ready: boolean; note: string };
+  fetched_at: string;
+}
+
+export interface ZkSettlementRecord {
+  id: string; transfer_id: string; status: string;
+  note_id: string | null; commitment: string | null; nullifier: string | null;
+  proof_id: string | null; merkle_root_at_settlement: string | null;
+  on_chain_tx_sig: string | null; error_message: string | null;
+  queued_at: string; settled_at: string | null; updated_at: string;
+}
+
 export const api = {
   transfers: {
     list: () => fetchJson<Transfer[]>("/api/transfers"),
@@ -148,5 +208,22 @@ export const api = {
   },
   dashboard: {
     get: () => fetchJson<DashboardStats>("/api/dashboard"),
+  },
+  zk: {
+    system:   () => fetchJson<ZkSystemInfo>("/api/zk/system"),
+    notes:    () => fetchJson<{ stats: ZkNoteStats; notes: unknown[] }>("/api/zk/notes"),
+    commitments: () => fetchJson<{ stats: ZkCommitmentStats; commitments: unknown[] }>("/api/zk/commitments"),
+    nullifiers:  () => fetchJson<{ stats: ZkNullifierStats; nullifiers: unknown[] }>("/api/zk/nullifiers"),
+    proofs:   () => fetchJson<{ stats: ZkProofStats; proofs: unknown[] }>("/api/zk/proofs"),
+    settlement: {
+      queue: () => fetchJson<{ stats: ZkSettlementStats; queue: ZkSettlementRecord[] }>("/api/zk/settlement/queue"),
+      initiate: (body: { transfer_id: string; value: number; asset?: string; recipient_fingerprint: string; memo?: string }) =>
+        fetchJson<{ settlement_id: string; status: string }>("/api/zk/settlement/initiate", {
+          method: "POST", body: JSON.stringify(body),
+        }),
+    },
+    solana: () => fetchJson<{ status: ZkSolanaStatus; config: { network: string; commitment: string } }>("/api/zk/solana"),
+    keys:   () => fetchJson<{ keys: unknown; note: string }>("/api/zk/keys"),
+    disclosure: () => fetchJson<ZkDisclosureStatus>("/api/zk/disclosure"),
   },
 };

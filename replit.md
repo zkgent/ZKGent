@@ -57,6 +57,7 @@ All product routes use `AppShell` which provides:
 - All create/update mutations automatically log to the `activity_events` table via `logActivity()` helper
 
 ## Database Schema (SQLite — zkgent.db)
+### Operational Tables
 - `applications` — Early access applications (legacy)
 - `transfers` — Confidential transfers with reference, status, proof state, asset, region
 - `payroll_batches` — Payroll batches with recipient count, approval threshold/count, scheduled date
@@ -64,6 +65,39 @@ All product routes use `AppShell` which provides:
 - `counterparties` — KYC-tracked counterparties with type, relationship, status
 - `activity_events` — Append-only audit log of all mutations (category, event, detail, operator)
 - `workspace_settings` — Singleton settings row (privacy mode, notifications, disclosure policy)
+
+### ZK Domain Tables
+- `zk_notes` — Shielded notes (unspent/spent, commitment, owner fingerprint, AES-256-GCM encrypted payload)
+- `zk_commitments` — Commitment registry (note commitments, status: pending/inserted/finalized)
+- `zk_nullifiers` — Anti-double-spend nullifier registry (unique, enforces single-spend per note)
+- `zk_merkle_nodes` — Merkle accumulator leaf nodes (depth 20, supports 1M+ commitments)
+- `zk_proofs` — Proof artifacts (status lifecycle: pending→generating→generated→verified/failed)
+- `zk_settlements` — Settlement engine records (full state machine: queued→...→settled)
+
+## ZK Domain Services (server/domain/)
+- `crypto.ts` — Hash primitives (SHA-256 now, Poseidon scaffold), domain separation, HKDF key derivation
+- `keys.ts` — Key management: operator/signing/encryption/viewing/nullifier keys from env seed
+- `note.ts` — Note model, AES-256-GCM encrypted payload, note lifecycle (create/spend)
+- `commitment.ts` — Commitment derivation H(domain||value_hash||owner||salt), persistence
+- `nullifier.ts` — Nullifier derivation, uniqueness enforcement, anti-double-spend check
+- `merkle.ts` — Binary Merkle accumulator (append-only, SHA-256 hash pairs, incremental root)
+- `proof.ts` — Proof pipeline: input builder, prover abstraction, verifier abstraction (Groth16 scaffold)
+- `settlement.ts` — Settlement state machine: note→commitment→proof→nullifier→on-chain(scaffold)
+- `solana.ts` — Solana RPC config, live devnet health check, tx builder scaffold
+- `disclosure.ts` — Compliance/disclosure model: view keys, selective disclosure, policy types
+
+## ZK API Routes (/api/zk/*)
+- `GET /api/zk/system` — Full system metrics (powers dashboard ZK observability panel)
+- `GET /api/zk/notes` — Notes list + stats
+- `GET /api/zk/commitments` — Commitment registry + stats
+- `GET /api/zk/nullifiers` — Nullifier registry + stats
+- `GET /api/zk/merkle` — Merkle tree state (root, leaf count, depth)
+- `GET /api/zk/proofs` — Proof artifacts + stats
+- `GET /api/zk/settlement/queue` — Settlement queue + stats
+- `POST /api/zk/settlement/initiate` — Initiate a confidential settlement
+- `GET /api/zk/solana` — Live Solana devnet/mainnet status via RPC
+- `GET /api/zk/keys` — Key fingerprints (no secret material ever exposed)
+- `GET /api/zk/disclosure` — Compliance disclosure status
 
 ## Architecture Notes
 - **SPA mode only**: Pure TanStack Router SPA (no SSR). Uses `createRoot`.
