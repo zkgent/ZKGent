@@ -36,7 +36,7 @@ export interface CommitmentRecord {
   id: number;
   commitment: Bytes32;
   note_id: string;
-  value_hash: Bytes32;      // H(value || asset) — hides exact value from indexed fields
+  value_hash: Bytes32; // H(value || asset) — hides exact value from indexed fields
   owner_hash: Bytes32;
   salt: Bytes32;
   merkle_index: number | null;
@@ -65,7 +65,9 @@ export function computeCommitment(input: CommitmentInput): Bytes32 {
     !Number.isSafeInteger(Math.floor(input.value)) ||
     Math.floor(input.value) > SAFE_VALUE_MAX
   ) {
-    throw new Error(`computeCommitment: invalid value ${String(input.value)} (must be non-negative safe integer)`);
+    throw new Error(
+      `computeCommitment: invalid value ${String(input.value)} (must be non-negative safe integer)`,
+    );
   }
   const valueField = BigInt(Math.floor(input.value));
   // Asset and owner are arbitrary strings/labels — always hash to field via strToField.
@@ -74,10 +76,8 @@ export function computeCommitment(input: CommitmentInput): Bytes32 {
   const assetField = strToField(input.asset);
   const ownerField = strToField(input.ownerFingerprintHash);
   // Salt MUST be a 64-char hex field element produced by randomFieldSalt().
-  const saltField  = hexToField(input.salt);
-  return fieldToHex(
-    poseidonField4(valueField, assetField, ownerField, saltField)
-  );
+  const saltField = hexToField(input.salt);
+  return fieldToHex(poseidonField4(valueField, assetField, ownerField, saltField));
 }
 
 /**
@@ -92,7 +92,9 @@ export function computeValueHash(value: number, asset: string): Bytes32 {
     !Number.isSafeInteger(Math.floor(value)) ||
     Math.floor(value) > SAFE_VALUE_MAX
   ) {
-    throw new Error(`computeValueHash: invalid value ${String(value)} (must be non-negative safe integer)`);
+    throw new Error(
+      `computeValueHash: invalid value ${String(value)} (must be non-negative safe integer)`,
+    );
   }
   return fieldToHex(poseidonField2(BigInt(Math.floor(value)), strToField(asset)));
 }
@@ -109,40 +111,44 @@ export function persistCommitment(opts: {
   const valueHash = computeValueHash(opts.input.value, opts.input.asset);
   const now = new Date().toISOString();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO zk_commitments
       (commitment, note_id, value_hash, owner_hash, salt, status, created_at)
     VALUES (?, ?, ?, ?, ?, 'pending', ?)
-  `).run(
+  `,
+  ).run(
     opts.commitment,
     opts.noteId,
     valueHash,
     opts.input.ownerFingerprintHash,
     opts.input.salt,
-    now
+    now,
   );
 
-  return db.prepare(
-    `SELECT * FROM zk_commitments WHERE commitment = ?`
-  ).get(opts.commitment) as CommitmentRecord;
+  return db
+    .prepare(`SELECT * FROM zk_commitments WHERE commitment = ?`)
+    .get(opts.commitment) as CommitmentRecord;
 }
 
 export function getCommitmentByValue(commitment: Bytes32): CommitmentRecord | null {
-  return db.prepare(
-    `SELECT * FROM zk_commitments WHERE commitment = ?`
-  ).get(commitment) as CommitmentRecord | null;
+  return db
+    .prepare(`SELECT * FROM zk_commitments WHERE commitment = ?`)
+    .get(commitment) as CommitmentRecord | null;
 }
 
 export function markCommitmentInserted(commitment: Bytes32, merkleIndex: number): void {
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE zk_commitments SET status = 'inserted', merkle_index = ? WHERE commitment = ?
-  `).run(merkleIndex, commitment);
+  `,
+  ).run(merkleIndex, commitment);
 }
 
 export function getAllCommitments(limit = 100): CommitmentRecord[] {
-  return db.prepare(
-    `SELECT * FROM zk_commitments ORDER BY created_at DESC LIMIT ?`
-  ).all(limit) as CommitmentRecord[];
+  return db
+    .prepare(`SELECT * FROM zk_commitments ORDER BY created_at DESC LIMIT ?`)
+    .all(limit) as CommitmentRecord[];
 }
 
 export interface CommitmentStats {
@@ -153,13 +159,17 @@ export interface CommitmentStats {
 }
 
 export function getCommitmentStats(): CommitmentStats {
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT
       COUNT(*) as total,
       COALESCE(SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END), 0) as pending,
       COALESCE(SUM(CASE WHEN status = 'inserted'  THEN 1 ELSE 0 END), 0) as inserted,
       COALESCE(SUM(CASE WHEN status = 'finalized' THEN 1 ELSE 0 END), 0) as finalized
     FROM zk_commitments
-  `).get() as CommitmentStats;
+  `,
+    )
+    .get() as CommitmentStats;
   return row;
 }

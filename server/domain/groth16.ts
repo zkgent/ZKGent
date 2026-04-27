@@ -25,12 +25,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { groth16 } from "snarkjs";
-import {
-  poseidonField1,
-  fieldToHex,
-  hexToField,
-  BN254_PRIME,
-} from "./crypto.js";
+import { poseidonField1, fieldToHex, hexToField, BN254_PRIME } from "./crypto.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CIRCUIT_DIR = path.join(__dirname, "..", "circuits", "preimage");
@@ -52,9 +47,9 @@ export interface Groth16ProofResult {
   scheme: "groth16";
   curve: "bn254";
   circuit: "preimage-knowledge-v1";
-  preimage_used: string;       // hex (private input — only revealed in demo)
-  expected_hash: string;       // hex (public input)
-  proof: any | null;           // snarkjs proof object
+  preimage_used: string; // hex (private input — only revealed in demo)
+  expected_hash: string; // hex (public input)
+  proof: any | null; // snarkjs proof object
   public_signals: string[] | null;
   prove_ms: number;
   verify_ms: number;
@@ -74,7 +69,7 @@ export interface Groth16ProofResult {
  * prover.
  */
 export async function proveAndVerifyPreimage(
-  preimageInput?: string | bigint
+  preimageInput?: string | bigint,
 ): Promise<Groth16ProofResult> {
   // 1. Pick a preimage (either provided or random in field)
   let preimage: bigint;
@@ -116,7 +111,7 @@ export async function proveAndVerifyPreimage(
         expected_hash: expectedHash.toString(),
       },
       WASM_PATH,
-      ZKEY_PATH
+      ZKEY_PATH,
     );
     result.prove_ms = Date.now() - proveStart;
     result.proof = proof;

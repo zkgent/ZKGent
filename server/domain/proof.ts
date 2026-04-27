@@ -43,7 +43,8 @@ import {
 } from "./crypto.js";
 import { computeValueHash } from "./commitment.js";
 import {
-  proveSpend, verifySpend,
+  proveSpend,
+  verifySpend,
   isTransferCircuitReady,
   TRANSFER_CIRCUIT_ID,
   TRANSFER_PROVER_BACKEND,
@@ -116,28 +117,28 @@ export interface ProofStats {
  */
 export const CIRCUIT_CONFIG = {
   preimage: {
-    id:        "preimage-knowledge-v1",
+    id: "preimage-knowledge-v1",
     available: true,
-    wasm:      "server/circuits/preimage/preimage_js/preimage.wasm",
-    zkey:      "server/circuits/preimage/preimage_final.zkey",
-    vkey:      "server/circuits/preimage/verification_key.json",
-    note:      "Toy circuit — proves knowledge of Poseidon preimage. Real Groth16 over BN254. Trusted setup is single-party (NOT FOR PRODUCTION).",
+    wasm: "server/circuits/preimage/preimage_js/preimage.wasm",
+    zkey: "server/circuits/preimage/preimage_final.zkey",
+    vkey: "server/circuits/preimage/verification_key.json",
+    note: "Toy circuit — proves knowledge of Poseidon preimage. Real Groth16 over BN254. Trusted setup is single-party (NOT FOR PRODUCTION).",
   },
   transfer: {
-    id:        TRANSFER_CIRCUIT_ID,
+    id: TRANSFER_CIRCUIT_ID,
     available: isTransferCircuitReady(),
-    wasm:      "server/circuits/transfer/build/transfer_js/transfer.wasm",
-    zkey:      "server/circuits/transfer/build/transfer_final.zkey",
-    vkey:      "server/circuits/transfer/build/verification_key.json",
-    note:      "Production spend-proof circuit. ~5,914 R1CS constraints over BN254 with Poseidon. Phase-1 ptau = Hermez (multi-party). Phase-2 contribution = single-party (devnet trust model — DO NOT use for production funds).",
+    wasm: "server/circuits/transfer/build/transfer_js/transfer.wasm",
+    zkey: "server/circuits/transfer/build/transfer_final.zkey",
+    vkey: "server/circuits/transfer/build/verification_key.json",
+    note: "Production spend-proof circuit. ~5,914 R1CS constraints over BN254 with Poseidon. Phase-1 ptau = Hermez (multi-party). Phase-2 contribution = single-party (devnet trust model — DO NOT use for production funds).",
   },
   membership: {
-    id:        "zkgent-membership-v1",
+    id: "zkgent-membership-v1",
     available: false,
-    wasm:      "server/circuits/membership/circuit.wasm",
-    zkey:      "server/circuits/membership/circuit.zkey",
-    vkey:      "server/circuits/membership/vkey.json",
-    note:      "Merkle membership proof. Subsumed by zkgent-transfer-v1 which embeds membership.",
+    wasm: "server/circuits/membership/circuit.wasm",
+    zkey: "server/circuits/membership/circuit.zkey",
+    vkey: "server/circuits/membership/vkey.json",
+    note: "Merkle membership proof. Subsumed by zkgent-transfer-v1 which embeds membership.",
   },
 } as const;
 
@@ -192,16 +193,16 @@ export function buildProofInput(opts: {
   // Poseidon-based recipient_hash for circuit consistency (recipient as field).
   // Use strToField for the recipient — fingerprints may be labels, not hex.
   const recipientHash = fieldToHex(
-    poseidonField2(strToField("recipient"), strToField(opts.recipientFingerprint))
+    poseidonField2(strToField("recipient"), strToField(opts.recipientFingerprint)),
   );
   return {
-    commitment:     opts.commitment,
-    nullifier:      opts.nullifier,
-    merkle_root:    opts.merkleRoot,
-    value_hash:     valueHash,
+    commitment: opts.commitment,
+    nullifier: opts.nullifier,
+    merkle_root: opts.merkleRoot,
+    value_hash: valueHash,
     recipient_hash: recipientHash,
-    salt:           opts.salt,
-    proof_type:     opts.proofType,
+    salt: opts.salt,
+    proof_type: opts.proofType,
   };
 }
 
@@ -220,9 +221,7 @@ function buildWitnessMessage(input: ProofInput, circuitId: string): Uint8Array {
     input.salt,
     input.proof_type,
   ].join(":");
-  return Buffer.from(
-    crypto.createHash("sha256").update(parts).digest()
-  );
+  return Buffer.from(crypto.createHash("sha256").update(parts).digest());
 }
 
 // ─── Proof Record Management ──────────────────────────────────────────────────
@@ -237,7 +236,7 @@ export function createProofRecord(opts: {
     DOMAIN.COMMITMENT,
     opts.input.commitment,
     opts.input.nullifier,
-    opts.input.salt
+    opts.input.salt,
   );
   const now = new Date().toISOString();
   const circuitConf = CIRCUIT_CONFIG[opts.proofType as CircuitName] ?? CIRCUIT_CONFIG.transfer;
@@ -246,15 +245,17 @@ export function createProofRecord(opts: {
   // on disk, otherwise the legacy Ed25519 operator-authorization stub.
   // The dispatcher in runProver/runVerifier reads these values back.
   const useGroth16 = opts.proofType === "transfer" && isTransferCircuitReady();
-  const proverBackend  = useGroth16 ? TRANSFER_PROVER_BACKEND : "ed25519-operator-proof-v1";
-  const circuitVersion = useGroth16 ? "groth16-v1"             : "ed25519-operator-v1";
+  const proverBackend = useGroth16 ? TRANSFER_PROVER_BACKEND : "ed25519-operator-proof-v1";
+  const circuitVersion = useGroth16 ? "groth16-v1" : "ed25519-operator-v1";
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO zk_proofs
       (id, related_transfer_id, proof_type, status, input_hash,
        prover_backend, circuit_id, circuit_version, created_at)
     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)
-  `).run(
+  `,
+  ).run(
     id,
     opts.relatedTransferId ?? null,
     opts.proofType,
@@ -262,7 +263,7 @@ export function createProofRecord(opts: {
     proverBackend,
     circuitConf.id,
     circuitVersion,
-    now
+    now,
   );
 
   return db.prepare(`SELECT * FROM zk_proofs WHERE id = ?`).get(id) as ProofArtifact;
@@ -300,7 +301,10 @@ function takeSpendWitness(proofId: string): { asset: string; witness: SpendWitne
  * NOT a zk-SNARK: the operator's public key is revealed (not zero-knowledge
  * in the traditional sense). Full ZK requires compiled Circom circuit.
  */
-export async function runProver(proofId: string, input: ProofInput): Promise<{
+export async function runProver(
+  proofId: string,
+  input: ProofInput,
+): Promise<{
   success: boolean;
   proofData?: string;
   publicSignals?: string;
@@ -310,32 +314,33 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
   db.prepare(`UPDATE zk_proofs SET status = 'generating' WHERE id = ?`).run(proofId);
 
   // Dispatch on prover_backend (set at createProofRecord time).
-  const meta = db.prepare(
-    `SELECT circuit_id, prover_backend FROM zk_proofs WHERE id = ?`
-  ).get(proofId) as { circuit_id: string; prover_backend: string } | null;
+  const meta = db
+    .prepare(`SELECT circuit_id, prover_backend FROM zk_proofs WHERE id = ?`)
+    .get(proofId) as { circuit_id: string; prover_backend: string } | null;
   if (meta?.prover_backend === TRANSFER_PROVER_BACKEND) {
     return runGroth16Prover(proofId, input);
   }
 
   try {
     const privKey = getProverPrivateKey();
-    const pubKey  = ed25519.getPublicKey(privKey);
+    const pubKey = ed25519.getPublicKey(privKey);
 
     const cid = meta?.circuit_id ?? CIRCUIT_CONFIG.transfer.id;
 
-    const message   = buildWitnessMessage(input, cid);
+    const message = buildWitnessMessage(input, cid);
     const signature = ed25519.sign(message, privKey);
-    const elapsed   = Date.now() - start;
+    const elapsed = Date.now() - start;
 
     const proofData = JSON.stringify({
-      _type:        "ed25519-operator-proof",
-      _version:     "v1",
-      _note:        "Ed25519 operator authorization proof. Full zk-SNARK requires Circom circuit compilation.",
-      signature:    Buffer.from(signature).toString("hex"),
-      public_key:   Buffer.from(pubKey).toString("hex"),
-      circuit_id:   cid,
+      _type: "ed25519-operator-proof",
+      _version: "v1",
+      _note:
+        "Ed25519 operator authorization proof. Full zk-SNARK requires Circom circuit compilation.",
+      signature: Buffer.from(signature).toString("hex"),
+      public_key: Buffer.from(pubKey).toString("hex"),
+      circuit_id: cid,
       message_hash: Buffer.from(message).toString("hex"),
-      elapsed_ms:   elapsed,
+      elapsed_ms: elapsed,
     });
 
     const publicSignals = JSON.stringify([
@@ -346,7 +351,8 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
     ]);
 
     const now = new Date().toISOString();
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_proofs SET
         status = 'generated',
         proof_data = ?,
@@ -354,13 +360,16 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
         generated_at = ?,
         prove_ms = ?
       WHERE id = ?
-    `).run(proofData, publicSignals, now, elapsed, proofId);
+    `,
+    ).run(proofData, publicSignals, now, elapsed, proofId);
 
     return { success: true, proofData, publicSignals };
   } catch (err: any) {
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_proofs SET status = 'failed', error_message = ? WHERE id = ?
-    `).run(err.message, proofId);
+    `,
+    ).run(err.message, proofId);
     return { success: false, error: err.message };
   }
 }
@@ -378,7 +387,10 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
  * so an independent verifier can re-check the proof against the published
  * verification key alone (no DB lookups required).
  */
-async function runGroth16Prover(proofId: string, _input: ProofInput): Promise<{
+async function runGroth16Prover(
+  proofId: string,
+  _input: ProofInput,
+): Promise<{
   success: boolean;
   proofData?: string;
   publicSignals?: string;
@@ -388,27 +400,29 @@ async function runGroth16Prover(proofId: string, _input: ProofInput): Promise<{
     const stash = takeSpendWitness(proofId);
     if (!stash) {
       throw new Error(
-        "groth16 prover: no spend witness attached (call attachSpendWitness before runProver)"
+        "groth16 prover: no spend witness attached (call attachSpendWitness before runProver)",
       );
     }
 
     const t0 = Date.now();
     const { proof: payload, publicSignals } = await proveSpend({
-      asset: stash.asset, witness: stash.witness,
+      asset: stash.asset,
+      witness: stash.witness,
     });
     const elapsed = Date.now() - t0;
 
     const proofData = JSON.stringify(payload);
     const signals = JSON.stringify({
-      merkle_root:      publicSignals.merkle_root,
-      nullifier:        publicSignals.nullifier,
+      merkle_root: publicSignals.merkle_root,
+      nullifier: publicSignals.nullifier,
       value_commitment: publicSignals.value_commitment,
-      asset_hash:       publicSignals.asset_hash,
-      raw:              payload.publicSignals,
+      asset_hash: publicSignals.asset_hash,
+      raw: payload.publicSignals,
     });
 
     const now = new Date().toISOString();
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_proofs SET
         status = 'generated',
         proof_data = ?,
@@ -416,13 +430,15 @@ async function runGroth16Prover(proofId: string, _input: ProofInput): Promise<{
         generated_at = ?,
         prove_ms = ?
       WHERE id = ?
-    `).run(proofData, signals, now, elapsed, proofId);
+    `,
+    ).run(proofData, signals, now, elapsed, proofId);
 
     return { success: true, proofData, publicSignals: signals };
   } catch (err: any) {
-    db.prepare(
-      `UPDATE zk_proofs SET status = 'failed', error_message = ? WHERE id = ?`
-    ).run(err.message, proofId);
+    db.prepare(`UPDATE zk_proofs SET status = 'failed', error_message = ? WHERE id = ?`).run(
+      err.message,
+      proofId,
+    );
     return { success: false, error: err.message };
   }
 }
@@ -439,11 +455,11 @@ export async function runVerifier(proofId: string): Promise<{
   valid: boolean;
   reason?: string;
 }> {
-  const proof = db.prepare(
-    `SELECT * FROM zk_proofs WHERE id = ?`
-  ).get(proofId) as ProofArtifact | null;
+  const proof = db
+    .prepare(`SELECT * FROM zk_proofs WHERE id = ?`)
+    .get(proofId) as ProofArtifact | null;
 
-  if (!proof)         return { valid: false, reason: "proof_not_found" };
+  if (!proof) return { valid: false, reason: "proof_not_found" };
   if (!proof.proof_data) return { valid: false, reason: "no_proof_data" };
 
   db.prepare(`UPDATE zk_proofs SET status = 'verifying' WHERE id = ?`).run(proofId);
@@ -457,13 +473,15 @@ export async function runVerifier(proofId: string): Promise<{
     const parsed = JSON.parse(proof.proof_data);
 
     if (parsed._type !== "ed25519-operator-proof") {
-      db.prepare(`UPDATE zk_proofs SET status = 'failed', verification_result = 0 WHERE id = ?`).run(proofId);
+      db.prepare(
+        `UPDATE zk_proofs SET status = 'failed', verification_result = 0 WHERE id = ?`,
+      ).run(proofId);
       return { valid: false, reason: "unknown_proof_type" };
     }
 
-    const signature  = Buffer.from(parsed.signature, "hex");
-    const publicKey  = Buffer.from(parsed.public_key, "hex");
-    const message    = Buffer.from(parsed.message_hash, "hex");
+    const signature = Buffer.from(parsed.signature, "hex");
+    const publicKey = Buffer.from(parsed.public_key, "hex");
+    const message = Buffer.from(parsed.message_hash, "hex");
 
     // Real Ed25519 verification — cryptographic, not structural
     const isValid = ed25519.verify(signature, message, publicKey);
@@ -475,13 +493,15 @@ export async function runVerifier(proofId: string): Promise<{
     const result = isValid && pubKeyMatch;
     const now = new Date().toISOString();
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_proofs SET
         status = ?,
         verification_result = ?,
         verified_at = ?
       WHERE id = ?
-    `).run(result ? "verified" : "failed", result ? 1 : 0, now, proofId);
+    `,
+    ).run(result ? "verified" : "failed", result ? 1 : 0, now, proofId);
 
     return {
       valid: result,
@@ -492,9 +512,11 @@ export async function runVerifier(proofId: string): Promise<{
           : "public_key_mismatch",
     };
   } catch (err: any) {
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_proofs SET status = 'failed', error_message = ?, verification_result = 0 WHERE id = ?
-    `).run(err.message, proofId);
+    `,
+    ).run(err.message, proofId);
     return { valid: false, reason: err.message };
   }
 }
@@ -507,7 +529,10 @@ export async function runVerifier(proofId: string): Promise<{
  * fetching the proof artifact itself. Anyone with the verification_key.json
  * file can perform the same check independently.
  */
-async function runGroth16Verifier(proofId: string, proofData: string): Promise<{
+async function runGroth16Verifier(
+  proofId: string,
+  proofData: string,
+): Promise<{
   valid: boolean;
   reason?: string;
 }> {
@@ -516,19 +541,21 @@ async function runGroth16Verifier(proofId: string, proofData: string): Promise<{
     const { valid, verify_ms, reason } = await verifySpend(payload);
 
     const now = new Date().toISOString();
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_proofs SET
         status = ?,
         verification_result = ?,
         verified_at = ?,
         verify_ms = ?
       WHERE id = ?
-    `).run(valid ? "verified" : "failed", valid ? 1 : 0, now, verify_ms, proofId);
+    `,
+    ).run(valid ? "verified" : "failed", valid ? 1 : 0, now, verify_ms, proofId);
 
     return { valid, reason };
   } catch (err: any) {
     db.prepare(
-      `UPDATE zk_proofs SET status = 'failed', error_message = ?, verification_result = 0 WHERE id = ?`
+      `UPDATE zk_proofs SET status = 'failed', error_message = ?, verification_result = 0 WHERE id = ?`,
     ).run(err.message, proofId);
     return { valid: false, reason: err.message };
   }
@@ -541,13 +568,15 @@ export function getProofById(id: string): ProofArtifact | null {
 }
 
 export function getAllProofs(limit = 50): ProofArtifact[] {
-  return db.prepare(
-    `SELECT * FROM zk_proofs ORDER BY created_at DESC LIMIT ?`
-  ).all(limit) as ProofArtifact[];
+  return db
+    .prepare(`SELECT * FROM zk_proofs ORDER BY created_at DESC LIMIT ?`)
+    .all(limit) as ProofArtifact[];
 }
 
 export function getProofStats(): ProofStats {
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT
       COUNT(*) as total,
       COALESCE(SUM(CASE WHEN status = 'pending'    THEN 1 ELSE 0 END), 0) as pending,
@@ -556,16 +585,18 @@ export function getProofStats(): ProofStats {
       COALESCE(SUM(CASE WHEN status = 'verified'   THEN 1 ELSE 0 END), 0) as verified,
       COALESCE(SUM(CASE WHEN status = 'failed'     THEN 1 ELSE 0 END), 0) as failed
     FROM zk_proofs
-  `).get() as Omit<ProofStats, "avg_generation_ms">;
+  `,
+    )
+    .get() as Omit<ProofStats, "avg_generation_ms">;
   return { ...row, avg_generation_ms: null };
 }
 
 export function getCircuitStatus() {
   return {
-    transfer:   { ...CIRCUIT_CONFIG.transfer,   available: CIRCUIT_CONFIG.transfer.available },
+    transfer: { ...CIRCUIT_CONFIG.transfer, available: CIRCUIT_CONFIG.transfer.available },
     membership: { ...CIRCUIT_CONFIG.membership, available: CIRCUIT_CONFIG.membership.available },
     prover_backend: "ed25519-operator-proof-v1",
-    prover_pubkey:  getProverPublicKey(),
+    prover_pubkey: getProverPublicKey(),
     note: "Ed25519 operator proof is active. zk-SNARK activation: drop compiled .wasm+.zkey into server/circuits/ and set available:true in CIRCUIT_CONFIG.",
   };
 }

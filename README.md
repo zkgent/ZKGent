@@ -51,14 +51,14 @@ ZKGent exists to make private financial operations feel first-class, not improvi
 
 ## What makes ZKGent different
 
-| Dimension | ZKGent approach |
-|---|---|
-| **Privacy** | Confidential transfer flow built around ZK commitments and nullifiers |
-| **Proof system** | Real Groth16 pipeline, not placeholder privacy branding |
-| **Operator experience** | Full console, not just protocol primitives |
-| **Transparency** | Trust assumptions disclosed in plain language |
-| **Settlement** | Solana-native path already integrated in alpha |
-| **Roadmap** | Clear D1 → D2 → D3 progression |
+| Dimension               | ZKGent approach                                                       |
+| ----------------------- | --------------------------------------------------------------------- |
+| **Privacy**             | Confidential transfer flow built around ZK commitments and nullifiers |
+| **Proof system**        | Real Groth16 pipeline, not placeholder privacy branding               |
+| **Operator experience** | Full console, not just protocol primitives                            |
+| **Transparency**        | Trust assumptions disclosed in plain language                         |
+| **Settlement**          | Solana-native path already integrated in alpha                        |
+| **Roadmap**             | Clear D1 → D2 → D3 progression                                        |
 
 ---
 
@@ -67,13 +67,13 @@ ZKGent exists to make private financial operations feel first-class, not improvi
 ZKGent is currently in **Devnet Alpha** under a **D1 operator-trusted** model.
 That means the cryptography is real, while some state and operational assumptions remain off-chain and operator-held.
 
-| Real today | Still trusted in D1 |
-|---|---|
+| Real today                                           | Still trusted in D1                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
 | Real Groth16 zk-SNARK transfer circuit (~5,914 R1CS) | Operator can still see plaintext during server-side proving |
-| BN254 + Poseidon + snarkjs verification | Operator-held note encryption keys |
-| Solana devnet anchoring via SPL Memo | Off-chain Merkle and nullifier state |
-| Public proof re-verification endpoint | Single-party phase-2 ceremony |
-| Invitation-only wallet-gated console | Unsigned wallet header for cohort gating |
+| BN254 + Poseidon + snarkjs verification              | Operator-held note encryption keys                          |
+| Solana devnet anchoring via SPL Memo                 | Off-chain Merkle and nullifier state                        |
+| Public proof re-verification endpoint                | Single-party phase-2 ceremony                               |
+| Invitation-only wallet-gated console                 | Unsigned wallet header for cohort gating                    |
 
 > **No mainnet support yet. Do not use real funds.**
 
@@ -85,14 +85,14 @@ We would rather look slightly less flashy than pretend the trust model is strong
 
 ZKGent is designed as a real operator workspace.
 
-| Surface | Role |
-|---|---|
-| **Transfers** | Confidential one-off settlements |
-| **Payroll** | Private multi-recipient payout flows |
-| **Treasury** | Internal movement and routing of funds |
-| **Counterparties** | Private directory and relationship layer |
-| **Activity** | Append-only operational audit feed |
-| **Dashboard** | Network, stack, and settlement observability |
+| Surface                | Role                                             |
+| ---------------------- | ------------------------------------------------ |
+| **Transfers**          | Confidential one-off settlements                 |
+| **Payroll**            | Private multi-recipient payout flows             |
+| **Treasury**           | Internal movement and routing of funds           |
+| **Counterparties**     | Private directory and relationship layer         |
+| **Activity**           | Append-only operational audit feed               |
+| **Dashboard**          | Network, stack, and settlement observability     |
 | **Docs + Trust Pages** | Public-facing transparency and technical clarity |
 
 ### Intended users
@@ -216,18 +216,18 @@ sequenceDiagram
 
 ZKGent sits on top of a focused set of high-signal building blocks.
 
-| Integration | Logo | Role | Status |
-|---|---|---|---|
-| **Solana** | <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="26" alt="Solana" /> | Settlement network | Active |
-| **@solana/web3.js** | <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="26" alt="Solana Web3" /> | Transaction building and submission | Active |
-| **Phantom** | <img src="https://www.phantom.app/img/phantom-logo-purple.svg" width="26" alt="Phantom" /> | Wallet connection and signing | Supported |
-| **Backpack** | <img src="https://backpack.app/favicon.ico" width="22" alt="Backpack" /> | Wallet connection and signing | Supported |
-| **Solflare** | <img src="https://solflare.com/favicon.ico" width="22" alt="Solflare" /> | Wallet connection and signing | Supported |
-| **snarkjs** | <img src="https://raw.githubusercontent.com/iden3/snarkjs/master/.github/logo.png" width="26" alt="snarkjs" /> | Groth16 proving and verification | Active |
-| **circomlib / circomlibjs** | <img src="https://avatars.githubusercontent.com/u/36546456?s=200&v=4" width="24" alt="circomlib" /> | Circuit-friendly primitives | Active |
-| **Noble** | <img src="https://raw.githubusercontent.com/paulmillr/noble-hashes/main/logo.png" width="24" alt="Noble" /> | Curves, hashes, signature utilities | Active |
-| **SPL Memo Program** | <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="24" alt="SPL Memo" /> | On-chain devnet anchoring | Active |
-| **Hermez Phase-1 Ceremony** | 🔒 | Universal powers of tau source | Inherited |
+| Integration                 | Logo                                                                                                           | Role                                | Status    |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------- |
+| **Solana**                  | <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="26" alt="Solana" />                         | Settlement network                  | Active    |
+| **@solana/web3.js**         | <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="26" alt="Solana Web3" />                    | Transaction building and submission | Active    |
+| **Phantom**                 | <img src="https://www.phantom.app/img/phantom-logo-purple.svg" width="26" alt="Phantom" />                     | Wallet connection and signing       | Supported |
+| **Backpack**                | <img src="https://backpack.app/favicon.ico" width="22" alt="Backpack" />                                       | Wallet connection and signing       | Supported |
+| **Solflare**                | <img src="https://solflare.com/favicon.ico" width="22" alt="Solflare" />                                       | Wallet connection and signing       | Supported |
+| **snarkjs**                 | <img src="https://raw.githubusercontent.com/iden3/snarkjs/master/.github/logo.png" width="26" alt="snarkjs" /> | Groth16 proving and verification    | Active    |
+| **circomlib / circomlibjs** | <img src="https://avatars.githubusercontent.com/u/36546456?s=200&v=4" width="24" alt="circomlib" />            | Circuit-friendly primitives         | Active    |
+| **Noble**                   | <img src="https://raw.githubusercontent.com/paulmillr/noble-hashes/main/logo.png" width="24" alt="Noble" />    | Curves, hashes, signature utilities | Active    |
+| **SPL Memo Program**        | <img src="https://cryptologos.cc/logos/solana-sol-logo.svg" width="24" alt="SPL Memo" />                       | On-chain devnet anchoring           | Active    |
+| **Hermez Phase-1 Ceremony** | 🔒                                                                                                             | Universal powers of tau source      | Inherited |
 
 ### Integration philosophy
 
@@ -281,12 +281,12 @@ npm start
 
 ### Important environment variables
 
-| Variable | Purpose |
-|---|---|
-| `ADMIN_KEY` | Admin panel authentication |
-| `SOLANA_NETWORK` | Use `devnet` for current alpha |
-| `SOLANA_RPC_URL` | Optional custom RPC endpoint |
-| `ZKGENT_OPERATOR_SEED` | Operator signing seed |
+| Variable               | Purpose                        |
+| ---------------------- | ------------------------------ |
+| `ADMIN_KEY`            | Admin panel authentication     |
+| `SOLANA_NETWORK`       | Use `devnet` for current alpha |
+| `SOLANA_RPC_URL`       | Optional custom RPC endpoint   |
+| `ZKGENT_OPERATOR_SEED` | Operator signing seed          |
 
 > Always confirm you are targeting **devnet**, not mainnet.
 
@@ -350,16 +350,16 @@ GET /api/zk/disclosure
 
 ## Trust model roadmap
 
-| Phase | State | Meaning |
-|---|---|---|
-| **D1** | current | real ZK, operator-trusted, devnet alpha |
+| Phase  | State       | Meaning                                                |
+| ------ | ----------- | ------------------------------------------------------ |
+| **D1** | current     | real ZK, operator-trusted, devnet alpha                |
 | **D2** | in progress | client-side proving, operator no longer sees plaintext |
-| **D3** | planned | on-chain verifier, stronger enforcement, mainnet path |
+| **D3** | planned     | on-chain verifier, stronger enforcement, mainnet path  |
 
 Further reading:
+
 - [Trust Model](https://zkgent.sbs/trust-model)
 - [Docs: Trust](https://zkgent.sbs/docs/trust)
-
 
 ---
 

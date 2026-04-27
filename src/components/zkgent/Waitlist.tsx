@@ -38,7 +38,8 @@ export function Waitlist() {
               Enter the <em className="italic text-gradient-emerald">confidential</em> console.
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-balance text-[16px] leading-relaxed text-muted-foreground">
-              ZKGent is in early-access on Solana devnet. Approved teams get a full operator workspace for confidential transfers, payroll, treasury, and counterparties.
+              ZKGent is in early-access on Solana devnet. Approved teams get a full operator
+              workspace for confidential transfers, payroll, treasury, and counterparties.
             </p>
 
             <ol className="mx-auto mt-8 grid max-w-2xl grid-cols-1 gap-3 text-left sm:grid-cols-3">
@@ -47,8 +48,13 @@ export function Waitlist() {
                 { n: "02", t: "Review", d: "5–7 business days for approval." },
                 { n: "03", t: "Connect & launch", d: "Link your Solana wallet to start." },
               ].map((s) => (
-                <li key={s.n} className="rounded-xl border border-hairline bg-surface/60 p-4 backdrop-blur">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald">{s.n}</p>
+                <li
+                  key={s.n}
+                  className="rounded-xl border border-hairline bg-surface/60 p-4 backdrop-blur"
+                >
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald">
+                    {s.n}
+                  </p>
                   <p className="mt-1.5 text-[13px] font-medium text-foreground">{s.t}</p>
                   <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{s.d}</p>
                 </li>
@@ -63,14 +69,18 @@ export function Waitlist() {
                 >
                   <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                   <span className="relative">Request Early Access</span>
-                  <span className="relative transition-transform group-hover:translate-x-0.5">→</span>
+                  <span className="relative transition-transform group-hover:translate-x-0.5">
+                    →
+                  </span>
                 </Link>
                 <Link
                   to="/trust-model"
                   className="group inline-flex items-center gap-2 rounded-full border border-hairline bg-surface/40 px-6 py-4 text-[14px] text-muted-foreground backdrop-blur-md transition-all hover:border-emerald/40 hover:text-foreground"
                 >
                   Trust model
-                  <span className="text-muted-foreground transition-colors group-hover:text-emerald">↗</span>
+                  <span className="text-muted-foreground transition-colors group-hover:text-emerald">
+                    ↗
+                  </span>
                 </Link>
               </div>
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/60">

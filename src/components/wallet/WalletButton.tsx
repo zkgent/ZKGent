@@ -16,7 +16,7 @@ export function WalletButton({ className = "", compact = false }: WalletButtonPr
   const { status, wallet, connect, disconnect, isInstalled } = useWallet();
 
   const isConnecting = status === "connecting" || status === "signing";
-  const isConnected  = status === "connected" && wallet;
+  const isConnected = status === "connected" && wallet;
   const notInstalled = status === "not_installed" || (!isInstalled && status === "disconnected");
 
   if (notInstalled && !isConnecting) {
@@ -52,7 +52,9 @@ export function WalletButton({ className = "", compact = false }: WalletButtonPr
       disabled={isConnecting}
       className={`flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground hover:border-foreground/20 hover:text-foreground transition-colors disabled:opacity-50 ${className}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${isConnecting ? "bg-cyan animate-pulse" : "bg-muted-foreground/40"}`} />
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${isConnecting ? "bg-cyan animate-pulse" : "bg-muted-foreground/40"}`}
+      />
       {isConnecting ? "Connecting…" : compact ? "Connect" : "Connect Wallet"}
     </button>
   );
@@ -63,7 +65,8 @@ export function WalletButton({ className = "", compact = false }: WalletButtonPr
  * Shows identity fingerprint, session info, and signTransaction status.
  */
 export function WalletStatusPanel() {
-  const { status, wallet, identity, error, connect, disconnect, isInstalled, signMessage } = useWallet();
+  const { status, wallet, identity, error, connect, disconnect, isInstalled, signMessage } =
+    useWallet();
   const [testSigResult, setTestSigResult] = useState<string | null>(null);
   const isConnected = status === "connected" && wallet;
 
@@ -80,8 +83,12 @@ export function WalletStatusPanel() {
     <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 border-b border-hairline">
         <div className="flex items-center gap-2">
-          <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-emerald animate-pulse" : "bg-muted-foreground/40"}`} />
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Wallet Identity</p>
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-emerald animate-pulse" : "bg-muted-foreground/40"}`}
+          />
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">
+            Wallet Identity
+          </p>
         </div>
         {isConnected && (
           <button
@@ -99,7 +106,9 @@ export function WalletStatusPanel() {
             {identity && (
               <div className="flex items-center justify-between mb-1">
                 <span className="font-mono text-[10px] text-muted-foreground/50">ID</span>
-                <span className="font-mono text-[11px] text-cyan font-medium">{identity.identity_fingerprint}</span>
+                <span className="font-mono text-[11px] text-cyan font-medium">
+                  {identity.identity_fingerprint}
+                </span>
               </div>
             )}
             <div className="flex items-center justify-between">
@@ -114,11 +123,17 @@ export function WalletStatusPanel() {
               <>
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] text-muted-foreground/50">Sessions</span>
-                  <span className="font-mono text-[10px] text-foreground">{identity.session_count}</span>
+                  <span className="font-mono text-[10px] text-foreground">
+                    {identity.session_count}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-muted-foreground/50">Network Pref</span>
-                  <span className={`font-mono text-[10px] ${identity.network_preference === "mainnet-beta" ? "text-emerald" : "text-yellow-400/70"}`}>
+                  <span className="font-mono text-[10px] text-muted-foreground/50">
+                    Network Pref
+                  </span>
+                  <span
+                    className={`font-mono text-[10px] ${identity.network_preference === "mainnet-beta" ? "text-emerald" : "text-yellow-400/70"}`}
+                  >
                     {identity.network_preference}
                   </span>
                 </div>
@@ -126,11 +141,13 @@ export function WalletStatusPanel() {
             )}
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] text-muted-foreground/50">Status</span>
-              <span className={`font-mono text-[9px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
-                status === "signing"
-                  ? "border-cyan/20 bg-cyan/8 text-cyan"
-                  : "border-emerald/20 bg-emerald/8 text-emerald"
-              }`}>
+              <span
+                className={`font-mono text-[9px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
+                  status === "signing"
+                    ? "border-cyan/20 bg-cyan/8 text-cyan"
+                    : "border-emerald/20 bg-emerald/8 text-emerald"
+                }`}
+              >
                 {status === "signing" ? "Signing…" : "Connected"}
               </span>
             </div>
@@ -146,25 +163,34 @@ export function WalletStatusPanel() {
                 {status === "signing" ? "Signing…" : "Test Auth Signature"}
               </button>
               {testSigResult && (
-                <p className="mt-1.5 font-mono text-[9px] text-emerald/70 truncate">sig: {testSigResult}</p>
+                <p className="mt-1.5 font-mono text-[9px] text-emerald/70 truncate">
+                  sig: {testSigResult}
+                </p>
               )}
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-2">
-            {error && (
-              <p className="text-[10px] text-red-400/80 text-center">{error}</p>
-            )}
+            {error && <p className="text-[10px] text-red-400/80 text-center">{error}</p>}
             {!isInstalled && (
               <p className="text-[10px] text-muted-foreground/50 text-center">
-                No Solana wallet detected.<br />
-                <a href="https://phantom.app" target="_blank" rel="noopener noreferrer"
-                  className="text-cyan/70 hover:text-cyan underline">
+                No Solana wallet detected.
+                <br />
+                <a
+                  href="https://phantom.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan/70 hover:text-cyan underline"
+                >
                   Install Phantom
-                </a>
-                {" "}or{" "}
-                <a href="https://backpack.app" target="_blank" rel="noopener noreferrer"
-                  className="text-cyan/70 hover:text-cyan underline">
+                </a>{" "}
+                or{" "}
+                <a
+                  href="https://backpack.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan/70 hover:text-cyan underline"
+                >
                   Backpack
                 </a>
               </p>

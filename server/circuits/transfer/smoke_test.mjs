@@ -31,17 +31,15 @@ async function main() {
   const F = poseidon.F;
 
   // Witness inputs (private)
-  const value        = 1234n;
-  const asset_hash   = BigInt("0x" + Buffer.from("USDC").toString("hex").padEnd(8, "0"));
-  const salt         = randField();
+  const value = 1234n;
+  const asset_hash = BigInt("0x" + Buffer.from("USDC").toString("hex").padEnd(8, "0"));
+  const salt = randField();
   const owner_secret = randField();
-  const leaf_index   = 0; // first leaf
+  const leaf_index = 0; // first leaf
 
   // Derived values
   const owner_pk = F.toObject(poseidon([owner_secret]));
-  const note_commitment = F.toObject(
-    poseidon([value, asset_hash, owner_pk, salt])
-  );
+  const note_commitment = F.toObject(poseidon([value, asset_hash, owner_pk, salt]));
   const nullifier = F.toObject(poseidon([owner_secret, BigInt(leaf_index)]));
   const value_commitment = F.toObject(poseidon([value, salt]));
 
@@ -66,7 +64,7 @@ async function main() {
   // Compute expected root by walking up.
   let cur = note_commitment;
   for (let i = 0; i < TREE_DEPTH; i++) {
-    const left  = pathIndices[i] === 0 ? cur : pathElements[i];
+    const left = pathIndices[i] === 0 ? cur : pathElements[i];
     const right = pathIndices[i] === 0 ? pathElements[i] : cur;
     cur = F.toObject(poseidon([left, right]));
   }
@@ -75,16 +73,16 @@ async function main() {
 
   // Build circuit input
   const input = {
-    merkle_root:           merkle_root.toString(),
-    nullifier:             nullifier.toString(),
-    value_commitment:      value_commitment.toString(),
-    asset_hash:            asset_hash.toString(),
-    value:                 value.toString(),
-    salt:                  salt.toString(),
-    owner_secret:          owner_secret.toString(),
-    leaf_index:            leaf_index.toString(),
-    merkle_path_elements:  pathElements.map(x => x.toString()),
-    merkle_path_indices:   pathIndices.map(x => x.toString()),
+    merkle_root: merkle_root.toString(),
+    nullifier: nullifier.toString(),
+    value_commitment: value_commitment.toString(),
+    asset_hash: asset_hash.toString(),
+    value: value.toString(),
+    salt: salt.toString(),
+    owner_secret: owner_secret.toString(),
+    leaf_index: leaf_index.toString(),
+    merkle_path_elements: pathElements.map((x) => x.toString()),
+    merkle_path_indices: pathIndices.map((x) => x.toString()),
   };
 
   console.log("\n─── Generating Groth16 proof ───");
@@ -114,4 +112,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(e => { console.error(e); process.exit(99); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(99);
+});

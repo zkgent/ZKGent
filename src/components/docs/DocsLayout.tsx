@@ -51,8 +51,12 @@ export function DocsLayout({
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-hairline bg-background/80 px-4 backdrop-blur-md sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
           <img src="/logo.png" alt="ZKGent" className="h-7 w-7 rounded-md" />
-          <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">ZKGENT</span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60">/ docs</span>
+          <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">
+            ZKGENT
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/60">
+            / docs
+          </span>
         </Link>
 
         <div className="ml-auto flex items-center gap-3">
@@ -73,7 +77,14 @@ export function DocsLayout({
             className="lg:hidden text-muted-foreground hover:text-foreground transition"
             aria-label="Open menu"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M3 12h18M3 6h18M3 18h18" />
             </svg>
           </button>
@@ -103,13 +114,22 @@ export function DocsLayout({
                 className="fixed left-0 top-0 z-50 h-screen w-60 border-r border-hairline bg-background lg:hidden"
               >
                 <div className="flex h-14 items-center justify-between border-b border-hairline px-4">
-                  <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Docs</span>
+                  <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Docs
+                  </span>
                   <button
                     onClick={() => setMobileOpen(false)}
                     className="text-muted-foreground hover:text-foreground"
                     aria-label="Close menu"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                   </button>
@@ -123,9 +143,13 @@ export function DocsLayout({
         <main className="min-w-0 flex-1 px-6 py-12 lg:px-12 lg:py-16">
           <article className="mx-auto max-w-3xl">
             <header className="mb-10 border-b border-hairline pb-8">
-              <h1 className="font-display text-3xl font-semibold text-foreground sm:text-4xl">{title}</h1>
+              <h1 className="font-display text-3xl font-semibold text-foreground sm:text-4xl">
+                {title}
+              </h1>
               {description && (
-                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{description}</p>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
               )}
             </header>
             <div className="docs-content space-y-6 text-[14px] leading-relaxed text-foreground/90">
@@ -202,7 +226,9 @@ function DocsFooter({ currentPath }: { currentPath: string }) {
             to={prev.href}
             className="group block rounded-xl border border-hairline bg-surface/50 p-4 transition hover:border-emerald/40 hover:bg-surface"
           >
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">← Previous</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              ← Previous
+            </p>
             <p className="mt-1 text-[14px] font-medium text-foreground">{prev.label}</p>
           </Link>
         )}
@@ -213,7 +239,9 @@ function DocsFooter({ currentPath }: { currentPath: string }) {
             to={next.href}
             className="group block rounded-xl border border-hairline bg-surface/50 p-4 text-right transition hover:border-emerald/40 hover:bg-surface"
           >
-            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Next →</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Next →
+            </p>
             <p className="mt-1 text-[14px] font-medium text-foreground">{next.label}</p>
           </Link>
         )}
@@ -257,7 +285,9 @@ export function Pre({ children, lang }: { children: ReactNode; lang?: string }) 
     <div className="my-4 overflow-hidden rounded-xl border border-hairline bg-surface/60">
       {lang && (
         <div className="flex items-center justify-between border-b border-hairline px-4 py-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{lang}</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            {lang}
+          </span>
         </div>
       )}
       <pre className="overflow-x-auto px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/90">
@@ -280,10 +310,9 @@ export function Callout({
     variant === "warn"
       ? "border-yellow-500/30 bg-yellow-500/[0.05]"
       : variant === "ok"
-      ? "border-emerald/30 bg-emerald/[0.05]"
-      : "border-cyan/25 bg-cyan/[0.05]";
-  const dot =
-    variant === "warn" ? "bg-yellow-400" : variant === "ok" ? "bg-emerald" : "bg-cyan";
+        ? "border-emerald/30 bg-emerald/[0.05]"
+        : "border-cyan/25 bg-cyan/[0.05]";
+  const dot = variant === "warn" ? "bg-yellow-400" : variant === "ok" ? "bg-emerald" : "bg-cyan";
 
   return (
     <div className={`my-4 rounded-xl border p-4 ${styles}`}>

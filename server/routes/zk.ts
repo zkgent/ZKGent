@@ -9,14 +9,21 @@ import { getCommitmentStats, getAllCommitments } from "../domain/commitment.js";
 import { getNullifierStats, getAllNullifiers } from "../domain/nullifier.js";
 import { getMerkleStats } from "../domain/merkle.js";
 import {
-  getProofStats, getAllProofs, getCircuitStatus, getProofById,
-  isTransferCircuitReady, TRANSFER_CIRCUIT_INFO,
+  getProofStats,
+  getAllProofs,
+  getCircuitStatus,
+  getProofById,
+  isTransferCircuitReady,
+  TRANSFER_CIRCUIT_INFO,
 } from "../domain/proof.js";
 import { verifySpend } from "../domain/transfer_circuit.js";
 import { proveAndVerifyPreimage, getGroth16Status } from "../domain/groth16.js";
 import {
-  getSettlementStats, getSettlementQueue,
-  queueSettlement, executeSettlement, getLatestOnChainTxs,
+  getSettlementStats,
+  getSettlementQueue,
+  queueSettlement,
+  executeSettlement,
+  getLatestOnChainTxs,
 } from "../domain/settlement.js";
 import { checkSolanaStatus, getSolanaConfig } from "../domain/solana.js";
 import { ensureOperatorFunded, getOperatorAddress, getLatestTxs } from "../domain/solana_tx.js";
@@ -43,44 +50,50 @@ zkRouter.get("/system", async (_req, res) => {
         Promise.resolve(getDisclosureStatus()),
       ]);
 
-    const keys     = getKeySet();
-    const circuit  = getCircuitStatus();
+    const keys = getKeySet();
+    const circuit = getCircuitStatus();
     const groth16Status = getGroth16Status();
     const latestTxs = getLatestTxs(3);
     const operatorAddress = getOperatorAddress();
 
     res.json({
-      notes, commitments, nullifiers, merkle, proofs, settlements,
-      solana, disclosure,
+      notes,
+      commitments,
+      nullifiers,
+      merkle,
+      proofs,
+      settlements,
+      solana,
+      disclosure,
       keys: {
-        operator_fingerprint:   keys.operator.fingerprint,
-        signing_fingerprint:    keys.signing.fingerprint,
+        operator_fingerprint: keys.operator.fingerprint,
+        signing_fingerprint: keys.signing.fingerprint,
         encryption_fingerprint: keys.encryption.fingerprint,
-        viewing_fingerprint:    keys.viewing.fingerprint,
-        custody_mode:           keys.operator.custody_mode,
+        viewing_fingerprint: keys.viewing.fingerprint,
+        custody_mode: keys.operator.custody_mode,
       },
       circuit,
       groth16: groth16Status,
       hash_chain: {
         scheme: "poseidon-bn254-v1",
-        curve:  "BN254 (alt_bn128)",
-        note:   "Commitments, nullifiers and Merkle nodes use Poseidon (ZK-friendly).",
+        curve: "BN254 (alt_bn128)",
+        note: "Commitments, nullifiers and Merkle nodes use Poseidon (ZK-friendly).",
       },
       on_chain: {
         operator_address: operatorAddress,
         latest_txs: latestTxs,
       },
       system: {
-        version:     "0.4.0-alpha-D1",
-        proof_real:  true,
+        version: "0.4.0-alpha-D1",
+        proof_real: true,
         // Active proof type for new settlements: real Groth16 spend proof
         // when artifacts are on disk; falls back to the legacy Ed25519
         // operator-authorization proof otherwise.
-        proof_type:  isTransferCircuitReady()
+        proof_type: isTransferCircuitReady()
           ? "groth16-zkgent-transfer-v1"
           : "ed25519-operator-proof-v1",
-        snark_ready:    isTransferCircuitReady(),
-        snark_circuit:  isTransferCircuitReady() ? TRANSFER_CIRCUIT_INFO : null,
+        snark_ready: isTransferCircuitReady(),
+        snark_circuit: isTransferCircuitReady() ? TRANSFER_CIRCUIT_INFO : null,
         // Toy demo pipeline (preimage circuit) — independent of production transfer.
         snark_demo_ready: groth16Status.available,
         snark_demo_circuit: groth16Status.circuit_id,
@@ -98,30 +111,45 @@ zkRouter.get("/system", async (_req, res) => {
 // ─── Notes, Commitments, Nullifiers ──────────────────────────────────────────
 
 zkRouter.get("/notes", (_req, res) => {
-  try { res.json({ stats: getNoteStats(), notes: getAllNotes(50) }); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json({ stats: getNoteStats(), notes: getAllNotes(50) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/commitments", (_req, res) => {
-  try { res.json({ stats: getCommitmentStats(), commitments: getAllCommitments(50) }); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json({ stats: getCommitmentStats(), commitments: getAllCommitments(50) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/nullifiers", (_req, res) => {
-  try { res.json({ stats: getNullifierStats(), nullifiers: getAllNullifiers(50) }); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json({ stats: getNullifierStats(), nullifiers: getAllNullifiers(50) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/merkle", (_req, res) => {
-  try { res.json(getMerkleStats()); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json(getMerkleStats());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Proofs ───────────────────────────────────────────────────────────────────
 
 zkRouter.get("/proofs", (_req, res) => {
-  try { res.json({ stats: getProofStats(), proofs: getAllProofs(50), circuit: getCircuitStatus() }); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json({ stats: getProofStats(), proofs: getAllProofs(50), circuit: getCircuitStatus() });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -133,12 +161,15 @@ zkRouter.get("/proofs", (_req, res) => {
 zkRouter.get("/proofs/:id/verify", async (req, res) => {
   try {
     const proof = getProofById(req.params.id);
-    if (!proof)              return res.status(404).json({ error: "proof_not_found" });
-    if (!proof.proof_data)   return res.status(400).json({ error: "proof_has_no_data" });
+    if (!proof) return res.status(404).json({ error: "proof_not_found" });
+    if (!proof.proof_data) return res.status(400).json({ error: "proof_has_no_data" });
 
     let payload: any;
-    try { payload = JSON.parse(proof.proof_data); }
-    catch { return res.status(400).json({ error: "proof_data_not_json" }); }
+    try {
+      payload = JSON.parse(proof.proof_data);
+    } catch {
+      return res.status(400).json({ error: "proof_data_not_json" });
+    }
 
     if (payload?._type !== "groth16-zkgent-transfer-v1") {
       return res.json({
@@ -152,15 +183,16 @@ zkRouter.get("/proofs/:id/verify", async (req, res) => {
 
     const result = await verifySpend(payload);
     res.json({
-      proof_id:       proof.id,
-      circuit_id:     proof.circuit_id,
+      proof_id: proof.id,
+      circuit_id: proof.circuit_id,
       circuit_version: (proof as any).circuit_version,
-      backend:        proof.prover_backend,
-      valid:          result.valid,
-      verify_ms:      result.verify_ms,
-      reason:         result.reason,
+      backend: proof.prover_backend,
+      valid: result.valid,
+      verify_ms: result.verify_ms,
+      reason: result.reason,
       public_signals: payload.publicSignals,
-      verifier_note:  "Re-verified live via snarkjs.groth16.verify against the deployed verification key. No trust in this server's stored verification_result.",
+      verifier_note:
+        "Re-verified live via snarkjs.groth16.verify against the deployed verification key. No trust in this server's stored verification_result.",
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -168,15 +200,21 @@ zkRouter.get("/proofs/:id/verify", async (req, res) => {
 });
 
 zkRouter.get("/circuit", (_req, res) => {
-  try { res.json(getCircuitStatus()); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json(getCircuitStatus());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Real Groth16 (toy preimage circuit) ──────────────────────────────────────
 
 zkRouter.get("/groth16/status", (_req, res) => {
-  try { res.json(getGroth16Status()); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json(getGroth16Status());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -202,9 +240,7 @@ zkRouter.get("/groth16/demo", async (req, res) => {
     });
   }
   try {
-    const preimageInput = typeof req.query.preimage === "string"
-      ? req.query.preimage
-      : undefined;
+    const preimageInput = typeof req.query.preimage === "string" ? req.query.preimage : undefined;
     const result = await proveAndVerifyPreimage(preimageInput);
     if (result.ok) {
       logActivity({
@@ -230,7 +266,9 @@ zkRouter.get("/settlement/queue", (_req, res) => {
     const queue = getSettlementQueue();
     const latestTxs = getLatestOnChainTxs();
     res.json({ stats: getSettlementStats(), queue, latest_on_chain_txs: latestTxs });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) => {
@@ -243,24 +281,33 @@ zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) =>
   }
   try {
     const record = queueSettlement({
-      transferId: transfer_id, value, asset: asset ?? "USDC",
-      recipientFingerprint: recipient_fingerprint, memo,
+      transferId: transfer_id,
+      value,
+      asset: asset ?? "USDC",
+      recipientFingerprint: recipient_fingerprint,
+      memo,
     });
 
     // Link settlement to wallet if provided
     if (initiated_by_wallet) {
-      db.prepare(`UPDATE zk_settlements SET initiated_by_wallet = ? WHERE id = ?`)
-        .run(initiated_by_wallet, record.id);
+      db.prepare(`UPDATE zk_settlements SET initiated_by_wallet = ? WHERE id = ?`).run(
+        initiated_by_wallet,
+        record.id,
+      );
     }
 
     // Execute asynchronously in background
     executeSettlement(record.id, {
-      value, asset: asset ?? "USDC",
-      recipientFingerprint: recipient_fingerprint, memo,
-    }).catch(err => console.error("[settlement]", err));
+      value,
+      asset: asset ?? "USDC",
+      recipientFingerprint: recipient_fingerprint,
+      memo,
+    }).catch((err) => console.error("[settlement]", err));
 
     res.json({ settlement_id: record.id, status: record.status });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/settlement/:id", (req, res) => {
@@ -268,29 +315,42 @@ zkRouter.get("/settlement/:id", (req, res) => {
     const record = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(req.params.id);
     if (!record) return res.status(404).json({ error: "not_found" });
     res.json(record);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── On-chain transactions ────────────────────────────────────────────────────
 
 zkRouter.get("/transactions", (_req, res) => {
-  try { res.json(getLatestTxs(20)); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json(getLatestTxs(20));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/solana", async (_req, res) => {
   try {
     const [status, funded] = await Promise.all([
       checkSolanaStatus(),
-      ensureOperatorFunded().catch(e => ({ address: getOperatorAddress(), balance: 0, airdropped: false, error: e.message })),
+      ensureOperatorFunded().catch((e) => ({
+        address: getOperatorAddress(),
+        balance: 0,
+        airdropped: false,
+        error: e.message,
+      })),
     ]);
     const config = getSolanaConfig();
     res.json({
-      status, funded,
+      status,
+      funded,
       config: { network: config.network, commitment: config.commitment },
       operator_address: getOperatorAddress(),
     });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Transaction preparation (real signTransaction flow) ──────────────────────
@@ -313,7 +373,9 @@ zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
     return res.status(400).json({ error: "settlement_id required" });
   }
 
-  const settlement = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(settlement_id) as any;
+  const settlement = db
+    .prepare(`SELECT * FROM zk_settlements WHERE id = ?`)
+    .get(settlement_id) as any;
   if (!settlement) return res.status(404).json({ error: "settlement_not_found" });
 
   try {
@@ -322,11 +384,11 @@ zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
 
     const config = getSolanaConfig();
     const memo = {
-      settlement_id:    settlement.id,
+      settlement_id: settlement.id,
       commitment_short: (settlement.commitment ?? "pending").slice(0, 12),
-      nullifier_short:  (settlement.nullifier  ?? "pending").slice(0, 12),
-      proof_id:         settlement.proof_id    ?? "pending",
-      version:          "v1",
+      nullifier_short: (settlement.nullifier ?? "pending").slice(0, 12),
+      proof_id: settlement.proof_id ?? "pending",
+      version: "v1",
     };
 
     const tx = await buildSettlementMemoTx(memo);
@@ -335,33 +397,37 @@ zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
     const serializedBase64 = Buffer.from(serialized).toString("base64");
 
     const requestId = generateId("TXR");
-    const now     = new Date().toISOString();
+    const now = new Date().toISOString();
     const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO zk_signing_requests
         (id, settlement_id, tx_data, status, wallet_address, requested_at, expires_at)
       VALUES (?, ?, ?, 'pending', ?, ?, ?)
-    `).run(requestId, settlement_id, serializedBase64, wallet_address, now, expires);
+    `,
+    ).run(requestId, settlement_id, serializedBase64, wallet_address, now, expires);
 
-    db.prepare(`UPDATE zk_settlements SET status = 'signing_requested', signing_request_id = ?, initiated_by_wallet = COALESCE(initiated_by_wallet, ?) WHERE id = ?`)
-      .run(requestId, wallet_address, settlement_id);
+    db.prepare(
+      `UPDATE zk_settlements SET status = 'signing_requested', signing_request_id = ?, initiated_by_wallet = COALESCE(initiated_by_wallet, ?) WHERE id = ?`,
+    ).run(requestId, wallet_address, settlement_id);
 
     logActivity({
-      category: "settlement", event: "tx_prepared",
+      category: "settlement",
+      event: "tx_prepared",
       detail: `Tx prepared for wallet ${wallet_address.slice(0, 8)}… settlement ${settlement_id}`,
       status: "info",
     });
 
     res.json({
-      request_id:         requestId,
-      serialized_tx:      serializedBase64,
-      network:            config.network,
-      is_mainnet:         config.is_mainnet,
-      memo_text:          `zkgent:v1:${settlement_id}:${memo.commitment_short}:${memo.nullifier_short}`,
-      expires_at:         expires,
-      status:             "ready_to_sign",
-      note:               "Deserialize with Transaction.from(Buffer.from(serialized_tx, 'base64')), then signTransaction + sendRawTransaction.",
+      request_id: requestId,
+      serialized_tx: serializedBase64,
+      network: config.network,
+      is_mainnet: config.is_mainnet,
+      memo_text: `zkgent:v1:${settlement_id}:${memo.commitment_short}:${memo.nullifier_short}`,
+      expires_at: expires,
+      status: "ready_to_sign",
+      note: "Deserialize with Transaction.from(Buffer.from(serialized_tx, 'base64')), then signTransaction + sendRawTransaction.",
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -388,9 +454,9 @@ zkRouter.post("/tx/confirm", async (req, res) => {
     return res.status(400).json({ error: "wallet_address required" });
   }
 
-  const signing_request = db.prepare(
-    `SELECT * FROM zk_signing_requests WHERE id = ?`
-  ).get(request_id) as any;
+  const signing_request = db
+    .prepare(`SELECT * FROM zk_signing_requests WHERE id = ?`)
+    .get(request_id) as any;
   if (!signing_request) return res.status(404).json({ error: "signing_request_not_found" });
 
   const { getTxExplorerUrl } = await import("../domain/solana.js");
@@ -398,14 +464,17 @@ zkRouter.post("/tx/confirm", async (req, res) => {
   const explorerUrl = getTxExplorerUrl(tx_signature, net);
   const now = new Date().toISOString();
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE zk_signing_requests
     SET status = 'signed', wallet_address = ?, signature = ?, responded_at = ?
     WHERE id = ?
-  `).run(wallet_address, tx_signature, now, request_id);
+  `,
+  ).run(wallet_address, tx_signature, now, request_id);
 
   if (signing_request.settlement_id) {
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE zk_settlements SET
         status = 'submitted_on_chain',
         on_chain_tx_sig = ?,
@@ -413,29 +482,31 @@ zkRouter.post("/tx/confirm", async (req, res) => {
         submitted_on_chain_at = ?,
         initiated_by_wallet = COALESCE(initiated_by_wallet, ?)
       WHERE id = ?
-    `).run(tx_signature, explorerUrl, now, wallet_address, signing_request.settlement_id);
+    `,
+    ).run(tx_signature, explorerUrl, now, wallet_address, signing_request.settlement_id);
 
     const { recordOnChainTx } = await import("../domain/solana_tx.js");
     recordOnChainTx({
       settlementId: signing_request.settlement_id,
-      signature:    tx_signature,
-      status:       "submitted",
-      memoData:     signing_request.settlement_id,
+      signature: tx_signature,
+      status: "submitted",
+      memoData: signing_request.settlement_id,
       explorerUrl,
     });
   }
 
   logActivity({
-    category: "settlement", event: "wallet_signed_and_submitted",
-    detail:   `Wallet ${wallet_address.slice(0, 8)}… submitted tx ${tx_signature.slice(0, 16)}… on ${net}`,
-    status:   "success",
+    category: "settlement",
+    event: "wallet_signed_and_submitted",
+    detail: `Wallet ${wallet_address.slice(0, 8)}… submitted tx ${tx_signature.slice(0, 16)}… on ${net}`,
+    status: "success",
   });
 
   res.json({
-    success:      true,
+    success: true,
     tx_signature,
     explorer_url: explorerUrl,
-    status:       "submitted_on_chain",
+    status: "submitted_on_chain",
   });
 });
 
@@ -445,10 +516,16 @@ zkRouter.post("/tx/confirm", async (req, res) => {
  */
 zkRouter.get("/tx/:requestId", (req, res) => {
   try {
-    const r = db.prepare(`SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`).get(req.params.requestId);
+    const r = db
+      .prepare(
+        `SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`,
+      )
+      .get(req.params.requestId);
     if (!r) return res.status(404).json({ error: "not_found" });
     res.json(r);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Legacy signing (debug/message authorization) ────────────────────────────
@@ -457,23 +534,29 @@ zkRouter.get("/tx/:requestId", (req, res) => {
 zkRouter.post("/signing/request", async (req, res) => {
   return res.status(410).json({
     error: "deprecated",
-    note:  "Use POST /api/zk/tx/prepare for real signTransaction flow.",
+    note: "Use POST /api/zk/tx/prepare for real signTransaction flow.",
   });
 });
 
 zkRouter.post("/signing/respond", async (req, res) => {
   return res.status(410).json({
     error: "deprecated",
-    note:  "Use POST /api/zk/tx/confirm after wallet signs and submits.",
+    note: "Use POST /api/zk/tx/confirm after wallet signs and submits.",
   });
 });
 
 zkRouter.get("/signing/:id", (req, res) => {
   try {
-    const r = db.prepare(`SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`).get(req.params.id);
+    const r = db
+      .prepare(
+        `SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`,
+      )
+      .get(req.params.id);
     if (!r) return res.status(404).json({ error: "not_found" });
     res.json(r);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Keys / disclosure ────────────────────────────────────────────────────────
@@ -486,10 +569,15 @@ zkRouter.get("/keys", (_req, res) => {
       prover_pubkey: getProverPublicKey(),
       note: "Only key fingerprints and public keys are returned. No private key material is ever exposed.",
     });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/disclosure", (_req, res) => {
-  try { res.json(getDisclosureStatus()); }
-  catch (err: any) { res.status(500).json({ error: err.message }); }
+  try {
+    res.json(getDisclosureStatus());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });

@@ -49,7 +49,10 @@ const PHASES: Phase[] = [
   },
 ];
 
-const STATUS_META: Record<Phase["status"], { label: string; dot: string; text: string; ring: string }> = {
+const STATUS_META: Record<
+  Phase["status"],
+  { label: string; dot: string; text: string; ring: string }
+> = {
   shipped: { label: "Active", dot: "bg-emerald", text: "text-emerald", ring: "border-emerald/30" },
   in_progress: { label: "In progress", dot: "bg-cyan", text: "text-cyan", ring: "border-cyan/30" },
   planned: { label: "Planned", dot: "bg-violet", text: "text-violet", ring: "border-violet/25" },
@@ -65,7 +68,10 @@ function TrustModelPage() {
 
       <div className="mx-auto max-w-3xl px-6 py-16">
         <div className="mb-2">
-          <Link to="/" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition">
+          <Link
+            to="/"
+            className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition"
+          >
             ← Back to home
           </Link>
         </div>
@@ -73,14 +79,16 @@ function TrustModelPage() {
           Trust model & roadmap
         </h1>
         <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
-          Confidential payment systems are only as strong as the assumptions you understand.
-          ZKGent is being built in the open. This page is the canonical, honest description of
-          what is real today, what is still trusted, and what is coming next.
+          Confidential payment systems are only as strong as the assumptions you understand. ZKGent
+          is being built in the open. This page is the canonical, honest description of what is real
+          today, what is still trusted, and what is coming next.
         </p>
 
         <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-yellow-500/25 bg-yellow-500/[0.06] px-4 py-2">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-yellow-400" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-yellow-300">Devnet alpha · Early access</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-yellow-300">
+            Devnet alpha · Early access
+          </span>
         </div>
         <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
           Mainnet is not supported. Do not deposit real funds. Access is gated to approved
@@ -96,15 +104,22 @@ function TrustModelPage() {
                   <span className={`font-mono text-[11px] uppercase tracking-widest ${m.text}`}>
                     {phase.id}
                   </span>
-                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-widest ${m.ring} ${m.text}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${m.dot} ${phase.status === "in_progress" ? "animate-pulse" : ""}`} />
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-widest ${m.ring} ${m.text}`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${m.dot} ${phase.status === "in_progress" ? "animate-pulse" : ""}`}
+                    />
                     {m.label}
                   </span>
                 </div>
                 <h2 className="text-[15px] font-semibold text-foreground">{phase.title}</h2>
                 <ul className="mt-3 space-y-2">
                   {phase.bullets.map((b) => (
-                    <li key={b} className="flex gap-3 text-[13px] leading-relaxed text-muted-foreground">
+                    <li
+                      key={b}
+                      className="flex gap-3 text-[13px] leading-relaxed text-muted-foreground"
+                    >
                       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
                       <span>{b}</span>
                     </li>
@@ -116,7 +131,9 @@ function TrustModelPage() {
         </div>
 
         <div className="mt-12 rounded-2xl border border-hairline bg-surface/60 p-6">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Verify it yourself</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3">
+            Verify it yourself
+          </p>
           <p className="text-[13px] leading-relaxed text-muted-foreground">
             Every Groth16 proof produced by ZKGent can be re-verified by anyone with the public
             verification key. Pass any proof ID to{" "}

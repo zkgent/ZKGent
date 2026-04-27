@@ -24,7 +24,9 @@ function toPublic(row: Record<string, unknown>) {
 
 settingsRouter.get("/", (_req, res) => {
   try {
-    const row = db.prepare("SELECT * FROM workspace_settings WHERE id = 'singleton'").get() as Record<string, unknown> | undefined;
+    const row = db.prepare("SELECT * FROM workspace_settings WHERE id = 'singleton'").get() as
+      | Record<string, unknown>
+      | undefined;
     if (!row) return res.status(404).json({ error: "Settings not found" });
     return res.json(toPublic(row));
   } catch (err) {
@@ -38,12 +40,14 @@ settingsRouter.put("/", (req, res) => {
     const body = req.body as Record<string, unknown>;
     const now = new Date().toISOString();
 
-    const boolToInt = (v: unknown, current: unknown) =>
-      v !== undefined ? (v ? 1 : 0) : current;
+    const boolToInt = (v: unknown, current: unknown) => (v !== undefined ? (v ? 1 : 0) : current);
 
-    const current = db.prepare("SELECT * FROM workspace_settings WHERE id = 'singleton'").get() as Record<string, unknown>;
+    const current = db
+      .prepare("SELECT * FROM workspace_settings WHERE id = 'singleton'")
+      .get() as Record<string, unknown>;
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE workspace_settings SET
         workspace_name = ?,
         environment = ?,
@@ -59,7 +63,8 @@ settingsRouter.put("/", (req, res) => {
         notifications_system_alerts = ?,
         updated_at = ?
       WHERE id = 'singleton'
-    `).run(
+    `,
+    ).run(
       body.workspaceName ?? current.workspace_name,
       body.environment ?? current.environment,
       body.defaultPaymentRail ?? current.default_payment_rail,
@@ -72,7 +77,7 @@ settingsRouter.put("/", (req, res) => {
       boolToInt(body.notifyPayrollApproved, current.notifications_payroll_approved),
       boolToInt(body.notifyCounterpartyKyc, current.notifications_counterparty_kyc),
       boolToInt(body.notifySystemAlerts, current.notifications_system_alerts),
-      now
+      now,
     );
 
     logActivity({
@@ -82,7 +87,9 @@ settingsRouter.put("/", (req, res) => {
       status: "info",
     });
 
-    const updated = db.prepare("SELECT * FROM workspace_settings WHERE id = 'singleton'").get() as Record<string, unknown>;
+    const updated = db
+      .prepare("SELECT * FROM workspace_settings WHERE id = 'singleton'")
+      .get() as Record<string, unknown>;
     return res.json(toPublic(updated));
   } catch (err) {
     console.error("PUT /api/settings error:", err);

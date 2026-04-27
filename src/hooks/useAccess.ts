@@ -63,7 +63,9 @@ export function useAccess(): AccessState {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [walletAddress, tick]);
 
   return { loading, hasAccess, reason, application, walletAddress, refresh };

@@ -261,44 +261,51 @@ db.exec(`
 // ALTER TABLE IF NOT SUPPORTED in sqlite — we use try/catch per column.
 {
   const alterCols: Array<[string, string, string]> = [
-    ["zk_settlements", "submitted_on_chain_at",  "TEXT"],
-    ["zk_settlements", "confirmed_at",            "TEXT"],
-    ["zk_settlements", "finalized_at",             "TEXT"],
-    ["zk_settlements", "on_chain_explorer_url",    "TEXT"],
-    ["zk_settlements", "signing_request_id",       "TEXT"],
-    ["zk_settlements", "initiated_by_wallet",      "TEXT"],
-    ["zk_settlements", "note_created_at",          "TEXT"],
-    ["zk_settlements", "proof_generated_at",       "TEXT"],
-    ["zk_settlements", "proof_verified_at",        "TEXT"],
-    ["zk_settlements", "circuit_version",          "TEXT NOT NULL DEFAULT 'ed25519-operator-v1'"],
-    ["zk_proofs",      "circuit_version",          "TEXT NOT NULL DEFAULT 'ed25519-operator-v1'"],
-    ["zk_proofs",      "prove_ms",                 "INTEGER"],
-    ["zk_proofs",      "verify_ms",                "INTEGER"],
-    ["transfers",        "initiated_by_wallet",    "TEXT"],
-    ["payroll_batches",  "created_by_wallet",      "TEXT"],
-    ["treasury_routes",  "created_by_wallet",      "TEXT"],
-    ["counterparties",   "created_by_wallet",      "TEXT"],
-    ["activity_events",  "wallet_address",         "TEXT"],
-    ["applications",     "wallet_address",         "TEXT"],
-    ["applications",     "approved_at",            "TEXT"],
+    ["zk_settlements", "submitted_on_chain_at", "TEXT"],
+    ["zk_settlements", "confirmed_at", "TEXT"],
+    ["zk_settlements", "finalized_at", "TEXT"],
+    ["zk_settlements", "on_chain_explorer_url", "TEXT"],
+    ["zk_settlements", "signing_request_id", "TEXT"],
+    ["zk_settlements", "initiated_by_wallet", "TEXT"],
+    ["zk_settlements", "note_created_at", "TEXT"],
+    ["zk_settlements", "proof_generated_at", "TEXT"],
+    ["zk_settlements", "proof_verified_at", "TEXT"],
+    ["zk_settlements", "circuit_version", "TEXT NOT NULL DEFAULT 'ed25519-operator-v1'"],
+    ["zk_proofs", "circuit_version", "TEXT NOT NULL DEFAULT 'ed25519-operator-v1'"],
+    ["zk_proofs", "prove_ms", "INTEGER"],
+    ["zk_proofs", "verify_ms", "INTEGER"],
+    ["transfers", "initiated_by_wallet", "TEXT"],
+    ["payroll_batches", "created_by_wallet", "TEXT"],
+    ["treasury_routes", "created_by_wallet", "TEXT"],
+    ["counterparties", "created_by_wallet", "TEXT"],
+    ["activity_events", "wallet_address", "TEXT"],
+    ["applications", "wallet_address", "TEXT"],
+    ["applications", "approved_at", "TEXT"],
   ];
   for (const [tbl, col, type] of alterCols) {
-    try { db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run(); }
-    catch {} // Column already exists — safe to ignore
+    try {
+      db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run();
+    } catch {} // Column already exists — safe to ignore
   }
 
   // Enforce one-application-per-wallet at the DB level.
   // SQLite UNIQUE indexes treat NULLs as distinct, so unlinked applications
   // are unaffected. Double-creates are caught and ignored.
   try {
-    db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_applications_wallet_address
-                ON applications(wallet_address) WHERE wallet_address IS NOT NULL`).run();
+    db.prepare(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_applications_wallet_address
+                ON applications(wallet_address) WHERE wallet_address IS NOT NULL`,
+    ).run();
   } catch {}
 
   // One-time data migration: rename legacy OBD-* references to ZKG-*
   try {
-    db.prepare(`UPDATE transfers SET reference = REPLACE(reference, 'OBD-T-', 'ZKG-T-') WHERE reference LIKE 'OBD-T-%'`).run();
-    db.prepare(`UPDATE transfers SET reference = REPLACE(reference, 'OBD-', 'ZKG-') WHERE reference LIKE 'OBD-%'`).run();
+    db.prepare(
+      `UPDATE transfers SET reference = REPLACE(reference, 'OBD-T-', 'ZKG-T-') WHERE reference LIKE 'OBD-T-%'`,
+    ).run();
+    db.prepare(
+      `UPDATE transfers SET reference = REPLACE(reference, 'OBD-', 'ZKG-') WHERE reference LIKE 'OBD-%'`,
+    ).run();
   } catch {}
 
   // ─── ZK Hash Scheme Migration ────────────────────────────────────────────────
@@ -313,12 +320,12 @@ db.exec(`
     );
   `);
   const CURRENT_HASH_SCHEME = "poseidon-bn254-v1";
-  const meta = db
-    .prepare(`SELECT value FROM zk_meta WHERE key = 'hash_scheme'`)
-    .get() as { value: string } | undefined;
+  const meta = db.prepare(`SELECT value FROM zk_meta WHERE key = 'hash_scheme'`).get() as
+    | { value: string }
+    | undefined;
   if (meta?.value !== CURRENT_HASH_SCHEME) {
     console.log(
-      `[zkgent] Hash scheme migration: ${meta?.value ?? "(none)"} → ${CURRENT_HASH_SCHEME}. Wiping incompatible ZK records...`
+      `[zkgent] Hash scheme migration: ${meta?.value ?? "(none)"} → ${CURRENT_HASH_SCHEME}. Wiping incompatible ZK records...`,
     );
     // Order matters for foreign-key-style cleanliness: dependents first.
     // zk_signing_requests references zk_settlements; wipe it before settlements.
@@ -344,11 +351,13 @@ db.exec(`
         if (!exists) continue;
         db.prepare(`DELETE FROM ${t}`).run();
       }
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO zk_meta (key, value, updated_at)
         VALUES ('hash_scheme', ?, ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-      `).run(CURRENT_HASH_SCHEME, new Date().toISOString());
+      `,
+      ).run(CURRENT_HASH_SCHEME, new Date().toISOString());
     });
     migrate();
     console.log(`[zkgent] Hash scheme migration complete.`);
@@ -385,11 +394,13 @@ export function logActivity(opts: {
 }) {
   const id = generateId("EVT");
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO activity_events
       (id, category, event, detail, operator, status, related_entity_type, related_entity_id, wallet_address, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `,
+  ).run(
     id,
     opts.category,
     opts.event,
@@ -399,7 +410,7 @@ export function logActivity(opts: {
     opts.relatedEntityType ?? "",
     opts.relatedEntityId ?? "",
     opts.walletAddress ?? null,
-    now
+    now,
   );
 }
 
@@ -442,15 +453,15 @@ export const VALID_PRIORITIES = ["low", "normal", "high"] as const;
  * Anything in this set with a linked wallet_address can call gated
  * endpoints (settlement initiate, tx prepare, etc.).
  */
-export const ACCESS_GRANTING_STATUSES = [
-  "qualified",
-  "pilot_candidate",
-  "contacted",
-] as const;
+export const ACCESS_GRANTING_STATUSES = ["qualified", "pilot_candidate", "contacted"] as const;
 
 export type AccessCheck =
-  | { hasAccess: true;  application: ApplicationRow }
-  | { hasAccess: false; reason: "no_application" | "pending_review" | "rejected"; application: ApplicationRow | null };
+  | { hasAccess: true; application: ApplicationRow }
+  | {
+      hasAccess: false;
+      reason: "no_application" | "pending_review" | "rejected";
+      application: ApplicationRow | null;
+    };
 
 export function checkWalletAccess(walletAddress: string): AccessCheck {
   const row = db

@@ -48,12 +48,25 @@ export function HowItWorks() {
           {/* Connector line — desktop */}
           <div className="pointer-events-none absolute left-0 right-0 top-[44px] hidden lg:block">
             <svg viewBox="0 0 1200 4" preserveAspectRatio="none" className="h-1 w-full">
-              <line x1="0" y1="2" x2="1200" y2="2" stroke="oklch(1 0 0 / 8%)" strokeDasharray="3 6" />
+              <line
+                x1="0"
+                y1="2"
+                x2="1200"
+                y2="2"
+                stroke="oklch(1 0 0 / 8%)"
+                strokeDasharray="3 6"
+              />
               <motion.line
-                x1="0" y1="2" x2="1200" y2="2"
-                stroke="url(#step-flow)" strokeWidth="1.5"
-                initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }}
-                viewport={{ once: true }} transition={{ duration: 2.4, ease: "easeInOut" }}
+                x1="0"
+                y1="2"
+                x2="1200"
+                y2="2"
+                stroke="url(#step-flow)"
+                strokeWidth="1.5"
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 2.4, ease: "easeInOut" }}
               />
               <defs>
                 <linearGradient id="step-flow" x1="0" x2="1">

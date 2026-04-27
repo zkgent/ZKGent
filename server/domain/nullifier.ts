@@ -51,9 +51,7 @@ export function computeNullifier(commitment: Bytes32): Bytes32 {
  * IMPLEMENTED.
  */
 export function isNullifierSpent(nullifier: Bytes32): boolean {
-  const row = db.prepare(
-    `SELECT 1 FROM zk_nullifiers WHERE nullifier = ?`
-  ).get(nullifier);
+  const row = db.prepare(`SELECT 1 FROM zk_nullifiers WHERE nullifier = ?`).get(nullifier);
   return row !== undefined;
 }
 
@@ -74,17 +72,13 @@ export function publishNullifier(opts: {
 
   const now = new Date().toISOString();
   try {
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO zk_nullifiers
         (nullifier, commitment, note_id, spent_by_transfer_id, published_at)
       VALUES (?, ?, ?, ?, ?)
-    `).run(
-      opts.nullifier,
-      opts.commitment,
-      opts.noteId,
-      opts.spentByTransferId ?? null,
-      now
-    );
+    `,
+    ).run(opts.nullifier, opts.commitment, opts.noteId, opts.spentByTransferId ?? null, now);
     return { success: true };
   } catch (err: any) {
     if (err?.code === "SQLITE_CONSTRAINT_UNIQUE") {
@@ -95,15 +89,15 @@ export function publishNullifier(opts: {
 }
 
 export function getNullifierByCommitment(commitment: Bytes32): NullifierRecord | null {
-  return db.prepare(
-    `SELECT * FROM zk_nullifiers WHERE commitment = ?`
-  ).get(commitment) as NullifierRecord | null;
+  return db
+    .prepare(`SELECT * FROM zk_nullifiers WHERE commitment = ?`)
+    .get(commitment) as NullifierRecord | null;
 }
 
 export function getAllNullifiers(limit = 100): NullifierRecord[] {
-  return db.prepare(
-    `SELECT * FROM zk_nullifiers ORDER BY published_at DESC LIMIT ?`
-  ).all(limit) as NullifierRecord[];
+  return db
+    .prepare(`SELECT * FROM zk_nullifiers ORDER BY published_at DESC LIMIT ?`)
+    .all(limit) as NullifierRecord[];
 }
 
 export interface NullifierStats {

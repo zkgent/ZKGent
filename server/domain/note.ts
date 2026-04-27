@@ -14,12 +14,16 @@
 
 import { db } from "../db.js";
 import {
-  hash, domainHash, randomSalt, randomFieldSalt, DOMAIN, shortHash, Bytes32
+  hash,
+  domainHash,
+  randomSalt,
+  randomFieldSalt,
+  DOMAIN,
+  shortHash,
+  Bytes32,
 } from "./crypto.js";
 import { computeCommitment } from "./commitment.js";
-import {
-  computeZkCommitment, deriveOwnerPk, generateOwnerSecret,
-} from "./transfer_circuit.js";
+import { computeZkCommitment, deriveOwnerPk, generateOwnerSecret } from "./transfer_circuit.js";
 import { deriveNoteEncryptionKey, deriveNoteEncryptionKeyLegacy } from "./keys.js";
 import crypto from "crypto";
 
@@ -27,16 +31,16 @@ export type NoteStatus = "unspent" | "spent" | "pending_spend";
 
 export interface Note {
   id: string;
-  commitment: Bytes32;        // H(value || asset || owner_pubkey_hash || salt)
-  owner_fingerprint: string;  // H(owner_pubkey) — no raw pubkey stored
-  value: number;              // plaintext for operator; encrypted for others
-  asset: string;              // e.g. "USDC"
-  salt: Bytes32;              // random, unique per note
+  commitment: Bytes32; // H(value || asset || owner_pubkey_hash || salt)
+  owner_fingerprint: string; // H(owner_pubkey) — no raw pubkey stored
+  value: number; // plaintext for operator; encrypted for others
+  asset: string; // e.g. "USDC"
+  salt: Bytes32; // random, unique per note
   status: NoteStatus;
-  nullifier?: Bytes32;        // set when spent
-  encrypted_payload: string;  // JSON blob encrypted with note key
+  nullifier?: Bytes32; // set when spent
+  encrypted_payload: string; // JSON blob encrypted with note key
   related_transfer_id?: string;
-  merkle_index?: number;      // position in the Merkle tree (null if not yet inserted)
+  merkle_index?: number; // position in the Merkle tree (null if not yet inserted)
   created_at: string;
   spent_at?: string;
 }
@@ -65,14 +69,14 @@ export interface NotePayload {
  */
 function encryptPayload(payload: NotePayload, noteId: string): string {
   const key = Buffer.from(deriveNoteEncryptionKey(noteId), "hex").slice(0, 32);
-  const iv  = crypto.randomBytes(12);
+  const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
   const plain = JSON.stringify(payload);
   const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return JSON.stringify({
-    iv:  iv.toString("hex"),
-    ct:  enc.toString("hex"),
+    iv: iv.toString("hex"),
+    ct: enc.toString("hex"),
     tag: tag.toString("hex"),
   });
 }
@@ -90,23 +94,17 @@ export function decryptPayload(encrypted: string, noteId: string): NotePayload |
     try {
       const { iv, ct, tag } = JSON.parse(encrypted);
       const key = Buffer.from(rawKeyHex, "hex").slice(0, 32);
-      const decipher = crypto.createDecipheriv(
-        "aes-256-gcm",
-        key,
-        Buffer.from(iv, "hex")
-      );
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "hex"));
       decipher.setAuthTag(Buffer.from(tag, "hex"));
-      const dec = Buffer.concat([
-        decipher.update(Buffer.from(ct, "hex")),
-        decipher.final(),
-      ]);
+      const dec = Buffer.concat([decipher.update(Buffer.from(ct, "hex")), decipher.final()]);
       return JSON.parse(dec.toString("utf8"));
     } catch {
       return null;
     }
   };
-  return tryDecrypt(deriveNoteEncryptionKey(noteId))
-      ?? tryDecrypt(deriveNoteEncryptionKeyLegacy(noteId));
+  return (
+    tryDecrypt(deriveNoteEncryptionKey(noteId)) ?? tryDecrypt(deriveNoteEncryptionKeyLegacy(noteId))
+  );
 }
 
 /**
@@ -154,15 +152,24 @@ export function createNote(opts: {
     created_at: now,
   };
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO zk_notes
       (id, commitment, owner_fingerprint, value, asset, salt, status,
        encrypted_payload, related_transfer_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    note.id, note.commitment, note.owner_fingerprint, note.value,
-    note.asset, note.salt, note.status, note.encrypted_payload,
-    note.related_transfer_id ?? null, note.created_at
+  `,
+  ).run(
+    note.id,
+    note.commitment,
+    note.owner_fingerprint,
+    note.value,
+    note.asset,
+    note.salt,
+    note.status,
+    note.encrypted_payload,
+    note.related_transfer_id ?? null,
+    note.created_at,
   );
 
   return note;
@@ -174,10 +181,12 @@ export function createNote(opts: {
  */
 export function markNoteSpent(noteId: string, nullifier: Bytes32): void {
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE zk_notes SET status = 'spent', nullifier = ?, spent_at = ?
     WHERE id = ? AND status = 'unspent'
-  `).run(nullifier, now, noteId);
+  `,
+  ).run(nullifier, now, noteId);
 }
 
 export function getNoteById(id: string): Note | null {
@@ -246,15 +255,24 @@ export function createZkNote(opts: {
     created_at: now,
   };
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO zk_notes
       (id, commitment, owner_fingerprint, value, asset, salt, status,
        encrypted_payload, related_transfer_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    note.id, note.commitment, note.owner_fingerprint, note.value,
-    note.asset, note.salt, note.status, note.encrypted_payload,
-    note.related_transfer_id ?? null, note.created_at
+  `,
+  ).run(
+    note.id,
+    note.commitment,
+    note.owner_fingerprint,
+    note.value,
+    note.asset,
+    note.salt,
+    note.status,
+    note.encrypted_payload,
+    note.related_transfer_id ?? null,
+    note.created_at,
   );
 
   return { note, ownerSecret, ownerPk };
@@ -262,19 +280,19 @@ export function createZkNote(opts: {
 
 export function getUnspentNotes(ownerFingerprint?: string): Note[] {
   if (ownerFingerprint) {
-    return db.prepare(
-      `SELECT * FROM zk_notes WHERE status = 'unspent' AND owner_fingerprint = ? ORDER BY created_at DESC`
-    ).all(ownerFingerprint) as Note[];
+    return db
+      .prepare(
+        `SELECT * FROM zk_notes WHERE status = 'unspent' AND owner_fingerprint = ? ORDER BY created_at DESC`,
+      )
+      .all(ownerFingerprint) as Note[];
   }
-  return db.prepare(
-    `SELECT * FROM zk_notes WHERE status = 'unspent' ORDER BY created_at DESC`
-  ).all() as Note[];
+  return db
+    .prepare(`SELECT * FROM zk_notes WHERE status = 'unspent' ORDER BY created_at DESC`)
+    .all() as Note[];
 }
 
 export function getAllNotes(limit = 100): Note[] {
-  return db.prepare(
-    `SELECT * FROM zk_notes ORDER BY created_at DESC LIMIT ?`
-  ).all(limit) as Note[];
+  return db.prepare(`SELECT * FROM zk_notes ORDER BY created_at DESC LIMIT ?`).all(limit) as Note[];
 }
 
 export interface NoteStats {
@@ -286,7 +304,9 @@ export interface NoteStats {
 }
 
 export function getNoteStats(): NoteStats {
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT
       COUNT(*) as total,
       COALESCE(SUM(CASE WHEN status = 'unspent' THEN 1 ELSE 0 END), 0) as unspent,
@@ -294,6 +314,8 @@ export function getNoteStats(): NoteStats {
       COALESCE(SUM(CASE WHEN status = 'pending_spend' THEN 1 ELSE 0 END), 0) as pending_spend,
       COALESCE(SUM(CASE WHEN status = 'unspent' THEN value ELSE 0 END), 0) as total_shielded_value
     FROM zk_notes
-  `).get() as NoteStats;
+  `,
+    )
+    .get() as NoteStats;
   return row;
 }

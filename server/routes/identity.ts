@@ -29,7 +29,7 @@ identityRouter.post("/resolve", (req, res) => {
   try {
     const user = upsertWalletUser({
       wallet_address,
-      wallet_name:        wallet_name        ?? undefined,
+      wallet_name: wallet_name ?? undefined,
       network_preference: network_preference ?? undefined,
     });
     res.json({ identity: user });
@@ -47,7 +47,9 @@ identityRouter.get("/:address", (req, res) => {
   try {
     const user = getWalletUser(address);
     if (!user) {
-      return res.status(404).json({ error: "identity_not_found", note: "Call POST /api/identity/resolve first." });
+      return res
+        .status(404)
+        .json({ error: "identity_not_found", note: "Call POST /api/identity/resolve first." });
     }
     const activity = getWalletActivity(address);
     res.json({ identity: user, activity });

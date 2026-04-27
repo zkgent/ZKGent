@@ -21,17 +21,17 @@ import { domainHash, DOMAIN, Bytes32 } from "./crypto.js";
 import { getKeySet } from "./keys.js";
 
 export type DisclosurePolicy =
-  | "none"           // no disclosure
-  | "audit"          // view key holder can see all
-  | "counterparty"   // only counterparty can see their own txns
-  | "regulator"      // regulatory reporting mode
-  | "public";        // fully transparent (emergency/compliance mode)
+  | "none" // no disclosure
+  | "audit" // view key holder can see all
+  | "counterparty" // only counterparty can see their own txns
+  | "regulator" // regulatory reporting mode
+  | "public"; // fully transparent (emergency/compliance mode)
 
 export interface ViewKey {
   fingerprint: string;
   holder: string;
   policy: DisclosurePolicy;
-  authorized_entities: string[];  // fingerprints of entities this key can view
+  authorized_entities: string[]; // fingerprints of entities this key can view
   issued_at: string;
   expires_at: string | null;
 }
@@ -40,9 +40,9 @@ export interface DisclosureRecord {
   id: string;
   note_id: string;
   commitment: Bytes32;
-  disclosed_to: string;    // fingerprint of recipient
+  disclosed_to: string; // fingerprint of recipient
   policy: DisclosurePolicy;
-  revealed_fields: string[];  // e.g. ["amount", "asset"] but not ["sender", "recipient"]
+  revealed_fields: string[]; // e.g. ["amount", "asset"] but not ["sender", "recipient"]
   proof_type: "range_proof" | "equality_proof" | "membership_proof" | "scaffold";
   proof_status: "pending" | "generated" | "verified" | "scaffold";
   created_at: string;
@@ -59,12 +59,9 @@ export function issueViewKey(opts: {
   expiresInHours?: number;
 }): ViewKey {
   const ks = getKeySet();
-  const fingerprint = domainHash(
-    DOMAIN.KEY_DERIVE,
-    "view_key",
-    ks.viewing.fingerprint,
-    opts.holder
-  ).slice(0, 16).toUpperCase();
+  const fingerprint = domainHash(DOMAIN.KEY_DERIVE, "view_key", ks.viewing.fingerprint, opts.holder)
+    .slice(0, 16)
+    .toUpperCase();
 
   return {
     fingerprint: `ZKG:VIEW:${fingerprint}`,

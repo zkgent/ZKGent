@@ -41,7 +41,8 @@ export function Footer() {
               <span className="font-mono text-[12px] tracking-[0.2em] text-foreground">ZKGENT</span>
             </div>
             <p className="mt-5 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-              A zero-knowledge confidential payments protocol on Solana. Private by default. Verifiable by mathematics.
+              A zero-knowledge confidential payments protocol on Solana. Private by default.
+              Verifiable by mathematics.
             </p>
             <div className="mt-6 flex items-center gap-3">
               {socials.map((s) => (
@@ -141,7 +142,9 @@ export function Footer() {
 function FooterCol({ title, links }: { title: string; links: { label: string; href: string }[] }) {
   return (
     <div>
-      <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">{title}</h4>
+      <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
+        {title}
+      </h4>
       <ul className="mt-4 space-y-2.5">
         {links.map((l) => {
           const isInternal = l.href.startsWith("/") && !l.href.startsWith("//");
@@ -150,7 +153,9 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
           const inner = (
             <>
               {l.label}
-              <span className="text-muted-foreground/40 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100">↗</span>
+              <span className="text-muted-foreground/40 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100">
+                ↗
+              </span>
             </>
           );
           return (

@@ -15,13 +15,7 @@
  */
 
 import crypto from "crypto";
-import {
-  poseidon1,
-  poseidon2,
-  poseidon3,
-  poseidon4,
-  poseidon5,
-} from "poseidon-lite";
+import { poseidon1, poseidon2, poseidon3, poseidon4, poseidon5 } from "poseidon-lite";
 
 export type HexString = string;
 export type Bytes32 = HexString;
@@ -29,9 +23,9 @@ export type Bytes32 = HexString;
 /** Domain separation tags to prevent cross-context hash collisions */
 export const DOMAIN = {
   COMMITMENT: "zkgent:commitment:v1",
-  NULLIFIER:  "zkgent:nullifier:v1",
-  NOTE_HASH:  "zkgent:note:v1",
-  MERKLE:     "zkgent:merkle:v1",
+  NULLIFIER: "zkgent:nullifier:v1",
+  NOTE_HASH: "zkgent:note:v1",
+  MERKLE: "zkgent:merkle:v1",
   KEY_DERIVE: "zkgent:key:v1",
 } as const;
 
@@ -123,10 +117,7 @@ export function randomFieldSalt(): Bytes32 {
 }
 
 export function deriveKey(seed: string, context: string): Bytes32 {
-  return crypto
-    .createHmac("sha256", Buffer.from(seed, "hex"))
-    .update(context)
-    .digest("hex");
+  return crypto.createHmac("sha256", Buffer.from(seed, "hex")).update(context).digest("hex");
 }
 
 export function xorHex(a: Bytes32, b: Bytes32): Bytes32 {
@@ -171,11 +162,21 @@ export function poseidonHashHex(...hexInputs: string[]): Bytes32 {
   const fields = hexInputs.map(hexToField);
   let out: bigint;
   switch (fields.length) {
-    case 1: out = poseidon1(fields); break;
-    case 2: out = poseidon2(fields); break;
-    case 3: out = poseidon3(fields); break;
-    case 4: out = poseidon4(fields); break;
-    case 5: out = poseidon5(fields); break;
+    case 1:
+      out = poseidon1(fields);
+      break;
+    case 2:
+      out = poseidon2(fields);
+      break;
+    case 3:
+      out = poseidon3(fields);
+      break;
+    case 4:
+      out = poseidon4(fields);
+      break;
+    case 5:
+      out = poseidon5(fields);
+      break;
     default:
       throw new Error(`poseidonHashHex: unsupported arity ${fields.length} (max 5)`);
   }

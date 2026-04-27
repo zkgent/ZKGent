@@ -18,12 +18,13 @@ function ApiDocs() {
 
       <H2>Authentication</H2>
       <P>
-        Most endpoints are public reads. Wallet-gated write endpoints (transfers initiation, transaction prepare)
-        require an approved early-access wallet, supplied via the <Code>x-wallet-address</Code> header.
+        Most endpoints are public reads. Wallet-gated write endpoints (transfers initiation,
+        transaction prepare) require an approved early-access wallet, supplied via the{" "}
+        <Code>x-wallet-address</Code> header.
       </P>
       <Callout variant="warn" title="D1 limitation">
-        The wallet header is unsigned. This is a soft cohort gate consistent with the D1 trust model — full
-        signature challenge-response ships with D2 (client-side proving).
+        The wallet header is unsigned. This is a soft cohort gate consistent with the D1 trust model
+        — full signature challenge-response ships with D2 (client-side proving).
       </Callout>
 
       <H2>Applications</H2>
@@ -46,7 +47,9 @@ function ApiDocs() {
     "whyConfidential": "We pay strategic suppliers and want commercial terms hidden.",
     "walletAddress": "OPTIONAL_SOLANA_ADDRESS"
   }'`}</Pre>
-      <P>Returns the new application with status <Code>under_review</Code>.</P>
+      <P>
+        Returns the new application with status <Code>under_review</Code>.
+      </P>
 
       <H3>GET /api/applications/:id</H3>
       <P>Public read of a single application's status and metadata.</P>
@@ -56,7 +59,9 @@ function ApiDocs() {
       <H3>GET /api/access/check?wallet=ADDRESS</H3>
       <P>Check whether a wallet has an approved early-access application.</P>
       <Pre lang="bash">{`curl "https://YOUR_HOST/api/access/check?wallet=ABC123..."`}</Pre>
-      <P>Returns <Code>{"{ hasAccess, reason, application }"}</Code>.</P>
+      <P>
+        Returns <Code>{"{ hasAccess, reason, application }"}</Code>.
+      </P>
 
       <H3>POST /api/access/link-wallet</H3>
       <P>Link a wallet to an existing application (one-time, atomic).</P>
@@ -69,9 +74,9 @@ function ApiDocs() {
 
       <H3>POST /api/zk/settlement/initiate</H3>
       <P>
-        Queue a confidential settlement. Requires <Code>x-wallet-address</Code> header pointing to an approved
-        wallet. The wallet you pass <em>is</em> the one the settlement is attributed to — body wallet fields are
-        ignored.
+        Queue a confidential settlement. Requires <Code>x-wallet-address</Code> header pointing to
+        an approved wallet. The wallet you pass <em>is</em> the one the settlement is attributed to
+        — body wallet fields are ignored.
       </P>
       <Pre lang="bash">{`curl -X POST https://YOUR_HOST/api/zk/settlement/initiate \\
   -H "Content-Type: application/json" \\
@@ -86,7 +91,8 @@ function ApiDocs() {
 
       <H3>POST /api/zk/tx/prepare</H3>
       <P>
-        Build the unsigned Solana transaction for a queued settlement, ready for the wallet to sign. Gated.
+        Build the unsigned Solana transaction for a queued settlement, ready for the wallet to sign.
+        Gated.
       </P>
       <Pre lang="bash">{`curl -X POST https://YOUR_HOST/api/zk/tx/prepare \\
   -H "Content-Type: application/json" \\
@@ -100,8 +106,8 @@ function ApiDocs() {
 
       <H3>GET /api/zk/proofs/:id/verify</H3>
       <P>
-        Re-verify any proof from scratch using only the proof artifact and the public verification key. No DB trust
-        in the response.
+        Re-verify any proof from scratch using only the proof artifact and the public verification
+        key. No DB trust in the response.
       </P>
       <Pre lang="bash">{`curl https://YOUR_HOST/api/zk/proofs/PROOF_ID/verify`}</Pre>
 
@@ -119,23 +125,39 @@ function ApiDocs() {
 
       <H2>Errors</H2>
       <List>
-        <Li><Code>401 wallet_required</Code> — gated endpoint called without a wallet header or body field.</Li>
-        <Li><Code>400 wallet_mismatch</Code> — header wallet differs from body wallet.</Li>
-        <Li><Code>403 access_denied</Code> — wallet has no approved application.</Li>
-        <Li><Code>404 application_not_found</Code> / <Code>404 settlement_not_found</Code>.</Li>
-        <Li><Code>409 wallet_already_linked_to_another_application</Code> — UNIQUE constraint hit.</Li>
+        <Li>
+          <Code>401 wallet_required</Code> — gated endpoint called without a wallet header or body
+          field.
+        </Li>
+        <Li>
+          <Code>400 wallet_mismatch</Code> — header wallet differs from body wallet.
+        </Li>
+        <Li>
+          <Code>403 access_denied</Code> — wallet has no approved application.
+        </Li>
+        <Li>
+          <Code>404 application_not_found</Code> / <Code>404 settlement_not_found</Code>.
+        </Li>
+        <Li>
+          <Code>409 wallet_already_linked_to_another_application</Code> — UNIQUE constraint hit.
+        </Li>
       </List>
 
       <Callout variant="info">
-        Looking for a client SDK? Not yet. For now, drive the system with raw HTTP from your backend. SDK packages
-        are on the post-D2 roadmap.
+        Looking for a client SDK? Not yet. For now, drive the system with raw HTTP from your
+        backend. SDK packages are on the post-D2 roadmap.
       </Callout>
 
       <P>
-        See the <Link to="/docs/protocol" className="text-emerald hover:underline">ZK Protocol</Link> page for what
-        each proof actually proves, and the{" "}
-        <Link to="/docs/trust" className="text-emerald hover:underline">Trust Model</Link> for the assumptions
-        behind the verifier.
+        See the{" "}
+        <Link to="/docs/protocol" className="text-emerald hover:underline">
+          ZK Protocol
+        </Link>{" "}
+        page for what each proof actually proves, and the{" "}
+        <Link to="/docs/trust" className="text-emerald hover:underline">
+          Trust Model
+        </Link>{" "}
+        for the assumptions behind the verifier.
       </P>
     </DocsLayout>
   );

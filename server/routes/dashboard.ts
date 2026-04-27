@@ -5,26 +5,47 @@ export const dashboardRouter = Router();
 
 dashboardRouter.get("/", (req, res) => {
   try {
-    const wallet = typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
+    const wallet =
+      typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
 
     const transferStats = wallet
-      ? db.prepare(`SELECT status, COUNT(*) as count FROM transfers WHERE initiated_by_wallet = ? GROUP BY status`).all(wallet) as { status: string; count: number }[]
-      : [] as { status: string; count: number }[];
+      ? (db
+          .prepare(
+            `SELECT status, COUNT(*) as count FROM transfers WHERE initiated_by_wallet = ? GROUP BY status`,
+          )
+          .all(wallet) as { status: string; count: number }[])
+      : ([] as { status: string; count: number }[]);
 
     const payrollStats = wallet
-      ? db.prepare(`SELECT status, COUNT(*) as count FROM payroll_batches WHERE created_by_wallet = ? GROUP BY status`).all(wallet) as { status: string; count: number }[]
+      ? (db
+          .prepare(
+            `SELECT status, COUNT(*) as count FROM payroll_batches WHERE created_by_wallet = ? GROUP BY status`,
+          )
+          .all(wallet) as { status: string; count: number }[])
       : [];
 
     const treasuryCount = wallet
-      ? (db.prepare("SELECT COUNT(*) as count FROM treasury_routes WHERE created_by_wallet = ?").get(wallet) as { count: number }).count
+      ? (
+          db
+            .prepare("SELECT COUNT(*) as count FROM treasury_routes WHERE created_by_wallet = ?")
+            .get(wallet) as { count: number }
+        ).count
       : 0;
 
     const cpStats = wallet
-      ? db.prepare(`SELECT status, COUNT(*) as count FROM counterparties WHERE created_by_wallet = ? GROUP BY status`).all(wallet) as { status: string; count: number }[]
+      ? (db
+          .prepare(
+            `SELECT status, COUNT(*) as count FROM counterparties WHERE created_by_wallet = ? GROUP BY status`,
+          )
+          .all(wallet) as { status: string; count: number }[])
       : [];
 
     const recentActivity = wallet
-      ? db.prepare(`SELECT * FROM activity_events WHERE wallet_address = ? ORDER BY created_at DESC LIMIT 10`).all(wallet) as Record<string, unknown>[]
+      ? (db
+          .prepare(
+            `SELECT * FROM activity_events WHERE wallet_address = ? ORDER BY created_at DESC LIMIT 10`,
+          )
+          .all(wallet) as Record<string, unknown>[])
       : [];
 
     const toMap = (arr: { status: string; count: number }[]) =>

@@ -35,9 +35,9 @@ import { generateZkMerkleWitness, computeZkMerkleRoot } from "./merkle_path.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CIRCUIT_DIR = path.resolve(__dirname, "../circuits/transfer");
-const WASM_PATH   = path.join(CIRCUIT_DIR, "build/transfer_js/transfer.wasm");
-const ZKEY_PATH   = path.join(CIRCUIT_DIR, "build/transfer_final.zkey");
-const VKEY_PATH   = path.join(CIRCUIT_DIR, "build/verification_key.json");
+const WASM_PATH = path.join(CIRCUIT_DIR, "build/transfer_js/transfer.wasm");
+const ZKEY_PATH = path.join(CIRCUIT_DIR, "build/transfer_final.zkey");
+const VKEY_PATH = path.join(CIRCUIT_DIR, "build/verification_key.json");
 
 export const TRANSFER_CIRCUIT_ID = "zkgent-transfer-v1";
 export const TRANSFER_PROVER_BACKEND = "groth16-snarkjs";
@@ -51,10 +51,7 @@ let _ready: boolean | null = null;
  */
 export function isTransferCircuitReady(): boolean {
   if (_ready !== null) return _ready;
-  const ok =
-    fs.existsSync(WASM_PATH) &&
-    fs.existsSync(ZKEY_PATH) &&
-    fs.existsSync(VKEY_PATH);
+  const ok = fs.existsSync(WASM_PATH) && fs.existsSync(ZKEY_PATH) && fs.existsSync(VKEY_PATH);
   _ready = ok;
   return ok;
 }
@@ -98,20 +95,13 @@ export function computeZkCommitment(opts: {
 }
 
 /** ZK-pipeline nullifier: Poseidon(owner_secret, leaf_index). */
-export function computeZkNullifier(opts: {
-  ownerSecret: Bytes32;
-  leafIndex: number;
-}): Bytes32 {
-  return fieldToHex(
-    poseidonField2(hexToField(opts.ownerSecret), BigInt(opts.leafIndex))
-  );
+export function computeZkNullifier(opts: { ownerSecret: Bytes32; leafIndex: number }): Bytes32 {
+  return fieldToHex(poseidonField2(hexToField(opts.ownerSecret), BigInt(opts.leafIndex)));
 }
 
 /** Public binding commitment to value: Poseidon(value, salt). */
 export function computeValueCommitment(value: number, salt: Bytes32): Bytes32 {
-  return fieldToHex(
-    poseidonField2(BigInt(Math.floor(value)), hexToField(salt))
-  );
+  return fieldToHex(poseidonField2(BigInt(Math.floor(value)), hexToField(salt)));
 }
 
 /** Generate a fresh per-note owner secret (random field element, 64-char hex). */
@@ -147,7 +137,7 @@ export interface SpendPublicSignals {
 export interface Groth16ProofPayload {
   _type: "groth16-zkgent-transfer-v1";
   _circuit_id: string;
-  proof: any;          // snarkjs Groth16 proof object {pi_a, pi_b, pi_c, ...}
+  proof: any; // snarkjs Groth16 proof object {pi_a, pi_b, pi_c, ...}
   publicSignals: string[];
   prove_ms: number;
   verify_ms?: number;
@@ -159,16 +149,13 @@ export interface Groth16ProofPayload {
  * Caller is responsible for ensuring the leaf at `leafIndex` was actually
  * inserted into the Merkle tree (so the witness path resolves).
  */
-export async function proveSpend(opts: {
-  asset: string;
-  witness: SpendWitness;
-}): Promise<{
+export async function proveSpend(opts: { asset: string; witness: SpendWitness }): Promise<{
   proof: Groth16ProofPayload;
   publicSignals: SpendPublicSignals;
 }> {
   if (!isTransferCircuitReady()) {
     throw new Error(
-      "transfer circuit not ready: missing wasm/zkey/verification_key (run npm run circuit:setup)"
+      "transfer circuit not ready: missing wasm/zkey/verification_key (run npm run circuit:setup)",
     );
   }
 
@@ -194,8 +181,8 @@ export async function proveSpend(opts: {
     salt: hexToField(witness.salt).toString(),
     owner_secret: hexToField(witness.ownerSecret).toString(),
     leaf_index: witness.leafIndex.toString(),
-    merkle_path_elements: pathElements.map(e => hexToField(e).toString()),
-    merkle_path_indices: pathIndices.map(i => i.toString()),
+    merkle_path_elements: pathElements.map((e) => hexToField(e).toString()),
+    merkle_path_indices: pathIndices.map((i) => i.toString()),
   };
 
   const t0 = Date.now();

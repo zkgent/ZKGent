@@ -23,7 +23,9 @@ export function SectionHeader({
           className={`mb-5 inline-flex items-center gap-2 ${align === "center" ? "justify-center" : ""}`}
         >
           <span className="h-px w-6 bg-emerald/60" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-emerald">{eyebrow}</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-emerald">
+            {eyebrow}
+          </span>
         </motion.div>
       )}
       <motion.h2

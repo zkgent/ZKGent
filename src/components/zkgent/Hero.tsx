@@ -11,11 +11,7 @@ export function Hero() {
   const visualY = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   return (
-    <section
-      ref={ref}
-      id="top"
-      className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48"
-    >
+    <section ref={ref} id="top" className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48">
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grid mask-radial-fade" />
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grain opacity-[0.35]" />
 
@@ -179,8 +175,7 @@ function CredItem({
   label: string;
   value: string;
 }) {
-  const cls =
-    dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
+  const cls = dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
   const glow =
     dot === "emerald"
       ? "shadow-[0_0_12px_var(--emerald-glow)]"

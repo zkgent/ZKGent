@@ -22,9 +22,12 @@ function toPublic(row: Record<string, unknown>) {
 
 payrollRouter.get("/", (req, res) => {
   try {
-    const wallet = typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
+    const wallet =
+      typeof req.query.wallet === "string" && req.query.wallet ? req.query.wallet : null;
     if (!wallet) return res.json([]);
-    const rows = db.prepare("SELECT * FROM payroll_batches WHERE created_by_wallet = ? ORDER BY created_at DESC").all(wallet);
+    const rows = db
+      .prepare("SELECT * FROM payroll_batches WHERE created_by_wallet = ? ORDER BY created_at DESC")
+      .all(wallet);
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/payroll error:", err);
@@ -34,7 +37,9 @@ payrollRouter.get("/", (req, res) => {
 
 payrollRouter.get("/:id", (req, res) => {
   try {
-    const row = db.prepare("SELECT * FROM payroll_batches WHERE id = ?").get(req.params.id) as Record<string, unknown> | undefined;
+    const row = db.prepare("SELECT * FROM payroll_batches WHERE id = ?").get(req.params.id) as
+      | Record<string, unknown>
+      | undefined;
     if (!row) return res.status(404).json({ error: "Batch not found" });
     return res.json(toPublic(row));
   } catch (err) {
@@ -52,11 +57,13 @@ payrollRouter.post("/", (req, res) => {
     const now = new Date().toISOString();
     const walletAddress = body.walletAddress ?? null;
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO payroll_batches
         (id, name, scheduled_date, recipient_count, asset, status, approval_threshold, approvals, notes, created_by_wallet, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, 'draft', ?, 0, ?, ?, ?, ?)
-    `).run(
+    `,
+    ).run(
       id,
       body.name.trim(),
       body.scheduledDate ?? null,
@@ -66,16 +73,21 @@ payrollRouter.post("/", (req, res) => {
       body.notes ?? "",
       walletAddress,
       now,
-      now
+      now,
     );
 
-    const row = db.prepare("SELECT * FROM payroll_batches WHERE id = ?").get(id) as Record<string, unknown>;
+    const row = db.prepare("SELECT * FROM payroll_batches WHERE id = ?").get(id) as Record<
+      string,
+      unknown
+    >;
 
     logActivity({
       category: "payroll",
       event: "Payroll batch created",
       detail: `${body.name.trim()}${body.scheduledDate ? " · " + body.scheduledDate : ""}`,
-      operator: walletAddress ? `wallet:${walletAddress.slice(0, 8)}` : (body.createdBy ?? "operator"),
+      operator: walletAddress
+        ? `wallet:${walletAddress.slice(0, 8)}`
+        : (body.createdBy ?? "operator"),
       status: "info",
       relatedEntityType: "payroll_batch",
       relatedEntityId: id,
@@ -94,7 +106,8 @@ payrollRouter.patch("/:id", (req, res) => {
     const body = req.body as Record<string, string | number>;
     const now = new Date().toISOString();
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE payroll_batches
       SET name = COALESCE(?, name),
           scheduled_date = COALESCE(?, scheduled_date),
@@ -105,7 +118,8 @@ payrollRouter.patch("/:id", (req, res) => {
           notes = COALESCE(?, notes),
           updated_at = ?
       WHERE id = ?
-    `).run(
+    `,
+    ).run(
       body.name ?? null,
       body.scheduledDate ?? null,
       body.recipientCount ?? null,
@@ -114,10 +128,12 @@ payrollRouter.patch("/:id", (req, res) => {
       body.approvals ?? null,
       body.notes ?? null,
       now,
-      req.params.id
+      req.params.id,
     );
 
-    const row = db.prepare("SELECT * FROM payroll_batches WHERE id = ?").get(req.params.id) as Record<string, unknown> | undefined;
+    const row = db.prepare("SELECT * FROM payroll_batches WHERE id = ?").get(req.params.id) as
+      | Record<string, unknown>
+      | undefined;
     if (!row) return res.status(404).json({ error: "Batch not found" });
 
     if (body.status) {

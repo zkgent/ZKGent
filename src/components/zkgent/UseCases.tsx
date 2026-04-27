@@ -45,7 +45,11 @@ const cases = [
 ] as const;
 
 const accentMap = {
-  emerald: { ring: "hover:border-emerald/40", glow: "group-hover:bg-emerald/10", text: "text-emerald" },
+  emerald: {
+    ring: "hover:border-emerald/40",
+    glow: "group-hover:bg-emerald/10",
+    text: "text-emerald",
+  },
   cyan: { ring: "hover:border-cyan/40", glow: "group-hover:bg-cyan/10", text: "text-cyan" },
   violet: { ring: "hover:border-violet/40", glow: "group-hover:bg-violet/10", text: "text-violet" },
 };
@@ -78,16 +82,24 @@ export function UseCases() {
                 transition={{ duration: 0.7, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
                 className={`group relative overflow-hidden rounded-2xl border border-hairline bg-surface/50 p-7 backdrop-blur transition-all duration-500 hover:-translate-y-1 hover:bg-surface ${a.ring} ${span}`}
               >
-                <div className={`pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-transparent blur-3xl transition-all duration-700 ${a.glow}`} />
+                <div
+                  className={`pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-transparent blur-3xl transition-all duration-700 ${a.glow}`}
+                />
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                 <div className="relative flex h-full flex-col">
-                  <div className={`mb-7 flex h-12 w-12 items-center justify-center rounded-lg border border-hairline bg-surface-elevated ${a.text}`}>
+                  <div
+                    className={`mb-7 flex h-12 w-12 items-center justify-center rounded-lg border border-hairline bg-surface-elevated ${a.text}`}
+                  >
                     <c.icon />
                   </div>
 
-                  <h3 className="text-[22px] font-medium leading-tight text-foreground">{c.title}</h3>
-                  <p className="mt-2.5 text-[15px] leading-relaxed text-muted-foreground">{c.body}</p>
+                  <h3 className="text-[22px] font-medium leading-tight text-foreground">
+                    {c.title}
+                  </h3>
+                  <p className="mt-2.5 text-[15px] leading-relaxed text-muted-foreground">
+                    {c.body}
+                  </p>
 
                   <div className="mt-auto flex items-center justify-between pt-8">
                     <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
@@ -109,7 +121,14 @@ export function UseCases() {
 
 function PayrollIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
       <rect x="3" y="6" width="18" height="13" rx="2" />
       <path d="M3 10h18" />
       <circle cx="8" cy="14.5" r="1" />
@@ -118,7 +137,14 @@ function PayrollIcon() {
 }
 function TreasuryIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
       <path d="M3 9 12 4l9 5" />
       <path d="M5 9v9M19 9v9M9 12v6M15 12v6M3 21h18" />
     </svg>
@@ -126,7 +152,14 @@ function TreasuryIcon() {
 }
 function MerchantIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
       <path d="M4 7h16l-1 4H5L4 7z" />
       <path d="M5 11v8h14v-8" />
       <path d="M9 15h6" />
@@ -135,7 +168,14 @@ function MerchantIcon() {
 }
 function RemittanceIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
     </svg>
@@ -143,7 +183,14 @@ function RemittanceIcon() {
 }
 function SensitiveIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
       <path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z" />
       <path d="M9 12l2 2 4-4" />
     </svg>

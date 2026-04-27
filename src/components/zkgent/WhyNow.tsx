@@ -74,7 +74,9 @@ export function WhyNow() {
                   <h3 className="text-balance text-xl font-medium leading-snug text-foreground sm:text-[22px]">
                     {it.title}
                   </h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{it.body}</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                    {it.body}
+                  </p>
                 </div>
               </motion.li>
             ))}

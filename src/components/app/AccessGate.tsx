@@ -23,8 +23,8 @@ export function AccessGate({ children }: { children: ReactNode }) {
     return (
       <Wrapper title="Connect your Solana wallet">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          ZKGENT early access is gated to approved wallets. Connect a Solana wallet
-          (Phantom, Backpack, Solflare) to check your access status.
+          ZKGENT early access is gated to approved wallets. Connect a Solana wallet (Phantom,
+          Backpack, Solflare) to check your access status.
         </p>
         <div className="flex gap-2.5">
           <button
@@ -90,8 +90,9 @@ export function AccessGate({ children }: { children: ReactNode }) {
       return (
         <Wrapper title="Link this wallet to your application">
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            You have an application on file (<span className="font-mono text-foreground">{applicationId}</span>).
-            Link this wallet to it so we know which one to grant access to once approved.
+            You have an application on file (
+            <span className="font-mono text-foreground">{applicationId}</span>). Link this wallet to
+            it so we know which one to grant access to once approved.
           </p>
           <div className="flex gap-2.5">
             <button
@@ -108,9 +109,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
               View status
             </Link>
           </div>
-          {linkError && (
-            <p className="text-[12px] text-destructive">{linkError}</p>
-          )}
+          {linkError && <p className="text-[12px] text-destructive">{linkError}</p>}
         </Wrapper>
       );
     }
@@ -118,8 +117,8 @@ export function AccessGate({ children }: { children: ReactNode }) {
     return (
       <Wrapper title="Apply for early access">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Your wallet is not on the approved list yet. ZKGENT is invitation-only during devnet
-          alpha — every operator and team is reviewed before joining.
+          Your wallet is not on the approved list yet. ZKGENT is invitation-only during devnet alpha
+          — every operator and team is reviewed before joining.
         </p>
         <div className="flex gap-2.5">
           <Link
@@ -140,9 +139,10 @@ export function AccessGate({ children }: { children: ReactNode }) {
     return (
       <Wrapper title="Application under review">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Thanks{access.application?.fullName ? `, ${access.application.fullName.split(" ")[0]}` : ""}!
-          Your application is in our review queue. We will unlock product access for this wallet
-          as soon as you are approved (typically 5–7 business days).
+          Thanks
+          {access.application?.fullName ? `, ${access.application.fullName.split(" ")[0]}` : ""}!
+          Your application is in our review queue. We will unlock product access for this wallet as
+          soon as you are approved (typically 5–7 business days).
         </p>
         <div className="flex gap-2.5">
           <Link
@@ -192,7 +192,9 @@ function Wrapper({ title, children }: { title: string; children: ReactNode }) {
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-emerald/30 bg-emerald/[0.08]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" />
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Early access</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Early access
+          </span>
         </div>
         <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
         {children}

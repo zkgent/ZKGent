@@ -21,7 +21,7 @@ export type KeyRole = "operator" | "signing" | "encryption" | "viewing" | "nulli
 
 export interface KeyDescriptor {
   role: KeyRole;
-  fingerprint: string;  // H(pubkey) — safe to display
+  fingerprint: string; // H(pubkey) — safe to display
   algorithm: string;
   derivation_path: string;
   custody_mode: "dev_ephemeral" | "env_seed" | "hsm" | "mpc";
@@ -29,10 +29,10 @@ export interface KeyDescriptor {
 }
 
 export interface OperatorKeySet {
-  operator:    KeyDescriptor;
-  signing:     KeyDescriptor;
-  encryption:  KeyDescriptor;
-  viewing:     KeyDescriptor;
+  operator: KeyDescriptor;
+  signing: KeyDescriptor;
+  encryption: KeyDescriptor;
+  viewing: KeyDescriptor;
   nullifier_sk: KeyDescriptor;
 }
 
@@ -45,7 +45,9 @@ function getOperatorSeed(): string {
   const envSeed = process.env.ZKGENT_OPERATOR_SEED;
   if (envSeed) return envSeed;
   // DEV ONLY: deterministic seed so tests are reproducible
-  console.warn("[ZKGENT:keys] No ZKGENT_OPERATOR_SEED set — using dev ephemeral seed. NOT for production.");
+  console.warn(
+    "[ZKGENT:keys] No ZKGENT_OPERATOR_SEED set — using dev ephemeral seed. NOT for production.",
+  );
   return "dev-only-seed-not-for-production-" + "zkgent-v1";
 }
 
@@ -53,7 +55,7 @@ function makeDescriptor(
   role: KeyRole,
   derivedKey: string,
   path: string,
-  custody: KeyDescriptor["custody_mode"]
+  custody: KeyDescriptor["custody_mode"],
 ): KeyDescriptor {
   const fingerprint = domainHash(DOMAIN.KEY_DERIVE, role, derivedKey).slice(0, 16);
   return {
@@ -72,22 +74,20 @@ function makeDescriptor(
  */
 export function loadOperatorKeySet(): OperatorKeySet {
   const seed = getOperatorSeed();
-  const custody = process.env.ZKGENT_OPERATOR_SEED
-    ? "env_seed"
-    : "dev_ephemeral";
+  const custody = process.env.ZKGENT_OPERATOR_SEED ? "env_seed" : "dev_ephemeral";
 
-  const opKey      = deriveKey(Buffer.from(seed).toString("hex").padStart(64, "0"), "operator");
-  const sigKey     = deriveKey(opKey, "signing");
-  const encKey     = deriveKey(opKey, "encryption");
-  const viewKey    = deriveKey(opKey, "viewing");
-  const nullSkKey  = deriveKey(opKey, "nullifier_sk");
+  const opKey = deriveKey(Buffer.from(seed).toString("hex").padStart(64, "0"), "operator");
+  const sigKey = deriveKey(opKey, "signing");
+  const encKey = deriveKey(opKey, "encryption");
+  const viewKey = deriveKey(opKey, "viewing");
+  const nullSkKey = deriveKey(opKey, "nullifier_sk");
 
   return {
-    operator:    makeDescriptor("operator",    opKey,     "m/44'/501'/0'/0'", custody),
-    signing:     makeDescriptor("signing",     sigKey,    "m/44'/501'/0'/1'", custody),
-    encryption:  makeDescriptor("encryption",  encKey,    "m/44'/501'/0'/2'", custody),
-    viewing:     makeDescriptor("viewing",     viewKey,   "m/44'/501'/0'/3'", custody),
-    nullifier_sk:makeDescriptor("nullifier_sk",nullSkKey, "m/44'/501'/0'/4'", custody),
+    operator: makeDescriptor("operator", opKey, "m/44'/501'/0'/0'", custody),
+    signing: makeDescriptor("signing", sigKey, "m/44'/501'/0'/1'", custody),
+    encryption: makeDescriptor("encryption", encKey, "m/44'/501'/0'/2'", custody),
+    viewing: makeDescriptor("viewing", viewKey, "m/44'/501'/0'/3'", custody),
+    nullifier_sk: makeDescriptor("nullifier_sk", nullSkKey, "m/44'/501'/0'/4'", custody),
   };
 }
 
@@ -117,8 +117,7 @@ export function getKeySet(): OperatorKeySet {
  * SCAFFOLD: Production should use ECIES with recipient's X25519 pubkey.
  */
 export function deriveNoteEncryptionKey(noteId: string): string {
-  const seed = process.env.ZKGENT_OPERATOR_SEED
-    ?? "dev-only-seed-not-for-production-zkgent-v1";
+  const seed = process.env.ZKGENT_OPERATOR_SEED ?? "dev-only-seed-not-for-production-zkgent-v1";
   return domainHash(DOMAIN.KEY_DERIVE, "note-enc-master-v2", seed, noteId);
 }
 

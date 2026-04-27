@@ -26,9 +26,18 @@ counterpartiesRouter.get("/", (req, res) => {
     const { status, wallet } = req.query as { status?: string; wallet?: string };
     if (!wallet) return res.json([]);
 
-    const rows = status && status !== "all"
-      ? db.prepare("SELECT * FROM counterparties WHERE created_by_wallet = ? AND status = ? ORDER BY created_at DESC").all(wallet, status)
-      : db.prepare("SELECT * FROM counterparties WHERE created_by_wallet = ? ORDER BY created_at DESC").all(wallet);
+    const rows =
+      status && status !== "all"
+        ? db
+            .prepare(
+              "SELECT * FROM counterparties WHERE created_by_wallet = ? AND status = ? ORDER BY created_at DESC",
+            )
+            .all(wallet, status)
+        : db
+            .prepare(
+              "SELECT * FROM counterparties WHERE created_by_wallet = ? ORDER BY created_at DESC",
+            )
+            .all(wallet);
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/counterparties error:", err);
@@ -38,7 +47,9 @@ counterpartiesRouter.get("/", (req, res) => {
 
 counterpartiesRouter.get("/:id", (req, res) => {
   try {
-    const row = db.prepare("SELECT * FROM counterparties WHERE id = ?").get(req.params.id) as Record<string, unknown> | undefined;
+    const row = db.prepare("SELECT * FROM counterparties WHERE id = ?").get(req.params.id) as
+      | Record<string, unknown>
+      | undefined;
     if (!row) return res.status(404).json({ error: "Counterparty not found" });
     return res.json(toPublic(row));
   } catch (err) {
@@ -56,11 +67,13 @@ counterpartiesRouter.post("/", (req, res) => {
     const now = new Date().toISOString();
     const createdByWallet = body.createdByWallet ?? null;
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO counterparties
         (id, name, type, region, relationship, status, contact_email, wallet_address, notes, created_by_wallet, created_at, updated_at, last_activity_at)
       VALUES (?, ?, ?, ?, ?, 'not_connected', ?, ?, ?, ?, ?, ?, NULL)
-    `).run(
+    `,
+    ).run(
       id,
       body.name.trim(),
       body.type ?? "Institutional",
@@ -71,16 +84,21 @@ counterpartiesRouter.post("/", (req, res) => {
       body.notes ?? "",
       createdByWallet,
       now,
-      now
+      now,
     );
 
-    const row = db.prepare("SELECT * FROM counterparties WHERE id = ?").get(id) as Record<string, unknown>;
+    const row = db.prepare("SELECT * FROM counterparties WHERE id = ?").get(id) as Record<
+      string,
+      unknown
+    >;
 
     logActivity({
       category: "counterparty",
       event: "Counterparty added",
       detail: `${body.name.trim()}${body.region ? " · " + body.region : ""}`,
-      operator: createdByWallet ? `wallet:${createdByWallet.slice(0, 8)}` : (body.createdBy ?? "operator"),
+      operator: createdByWallet
+        ? `wallet:${createdByWallet.slice(0, 8)}`
+        : (body.createdBy ?? "operator"),
       status: "info",
       relatedEntityType: "counterparty",
       relatedEntityId: id,
@@ -99,7 +117,8 @@ counterpartiesRouter.patch("/:id", (req, res) => {
     const body = req.body as Record<string, string>;
     const now = new Date().toISOString();
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE counterparties
       SET name = COALESCE(?, name),
           type = COALESCE(?, type),
@@ -112,7 +131,8 @@ counterpartiesRouter.patch("/:id", (req, res) => {
           updated_at = ?,
           last_activity_at = ?
       WHERE id = ?
-    `).run(
+    `,
+    ).run(
       body.name ?? null,
       body.type ?? null,
       body.region ?? null,
@@ -123,10 +143,12 @@ counterpartiesRouter.patch("/:id", (req, res) => {
       body.notes ?? null,
       now,
       now,
-      req.params.id
+      req.params.id,
     );
 
-    const row = db.prepare("SELECT * FROM counterparties WHERE id = ?").get(req.params.id) as Record<string, unknown> | undefined;
+    const row = db.prepare("SELECT * FROM counterparties WHERE id = ?").get(req.params.id) as
+      | Record<string, unknown>
+      | undefined;
     if (!row) return res.status(404).json({ error: "Counterparty not found" });
 
     logActivity({

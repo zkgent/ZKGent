@@ -71,7 +71,9 @@ export function Navbar() {
         >
           <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           <span className="relative">Apply</span>
-          <span className="relative text-emerald transition-transform group-hover:translate-x-0.5">→</span>
+          <span className="relative text-emerald transition-transform group-hover:translate-x-0.5">
+            →
+          </span>
         </Link>
       </nav>
     </motion.header>

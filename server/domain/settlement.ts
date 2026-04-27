@@ -27,8 +27,12 @@ import { persistCommitment } from "./commitment.js";
 import { computeNullifier, publishNullifier } from "./nullifier.js";
 import { appendLeaf, getMerkleRoot } from "./merkle.js";
 import {
-  buildProofInput, createProofRecord, runProver, runVerifier,
-  attachSpendWitness, isTransferCircuitReady,
+  buildProofInput,
+  createProofRecord,
+  runProver,
+  runVerifier,
+  attachSpendWitness,
+  isTransferCircuitReady,
 } from "./proof.js";
 import { computeZkNullifier, computeZkMerkleRoot } from "./transfer_circuit.js";
 import { loadAllLeaves } from "./merkle_path.js";
@@ -75,9 +79,15 @@ export interface SettlementRecord {
 
 function updateSettlement(id: string, patch: Record<string, unknown>): void {
   const now = new Date().toISOString();
-  const sets = Object.keys(patch).map(k => `${k} = ?`).join(", ");
+  const sets = Object.keys(patch)
+    .map((k) => `${k} = ?`)
+    .join(", ");
   const vals = Object.values(patch);
-  db.prepare(`UPDATE zk_settlements SET ${sets}, updated_at = ? WHERE id = ?`).run(...vals, now, id);
+  db.prepare(`UPDATE zk_settlements SET ${sets}, updated_at = ? WHERE id = ?`).run(
+    ...vals,
+    now,
+    id,
+  );
 }
 
 function getSettlement(id: string): SettlementRecord | null {
@@ -93,13 +103,15 @@ export function queueSettlement(opts: {
   recipientFingerprint: string;
   memo?: string;
 }): SettlementRecord {
-  const id  = generateId("STL");
+  const id = generateId("STL");
   const now = new Date().toISOString();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO zk_settlements (id, transfer_id, status, queued_at, updated_at)
     VALUES (?, ?, 'queued', ?, ?)
-  `).run(id, opts.transferId, now, now);
+  `,
+  ).run(id, opts.transferId, now, now);
 
   logActivity({
     category: "settlement",
@@ -128,7 +140,7 @@ export async function executeSettlement(
     asset: string;
     recipientFingerprint: string;
     memo?: string;
-  }
+  },
 ): Promise<{ success: boolean; error?: string; record?: SettlementRecord }> {
   const record = getSettlement(settlementId);
   if (!record) return { success: false, error: "settlement_not_found" };
@@ -153,7 +165,9 @@ export async function executeSettlement(
 
     if (useGroth16) {
       const z = createZkNote({
-        value: opts.value, asset: opts.asset, memo: opts.memo,
+        value: opts.value,
+        asset: opts.asset,
+        memo: opts.memo,
         senderFingerprint: ks.signing.fingerprint,
         relatedTransferId: record.transfer_id,
       });
@@ -165,7 +179,9 @@ export async function executeSettlement(
     } else {
       const note = createNote({
         ownerFingerprint: ks.operator.fingerprint,
-        value: opts.value, asset: opts.asset, memo: opts.memo,
+        value: opts.value,
+        asset: opts.asset,
+        memo: opts.memo,
         senderFingerprint: ks.signing.fingerprint,
         relatedTransferId: record.transfer_id,
       });
@@ -182,7 +198,8 @@ export async function executeSettlement(
       commitment: noteCommitment,
       noteId: noteId,
       input: {
-        value: opts.value, asset: opts.asset,
+        value: opts.value,
+        asset: opts.asset,
         ownerFingerprintHash: noteOwnerHashForCommitment,
         salt: noteSalt,
       },
@@ -195,9 +212,7 @@ export async function executeSettlement(
     // For the Ed25519 path we keep the legacy collapsing root since no
     // circuit witness is involved.
     const leavesSnapshot: Bytes32[] | undefined = useGroth16 ? loadAllLeaves() : undefined;
-    const merkleRoot = useGroth16
-      ? computeZkMerkleRoot(leavesSnapshot)
-      : getMerkleRoot();
+    const merkleRoot = useGroth16 ? computeZkMerkleRoot(leavesSnapshot) : getMerkleRoot();
     updateSettlement(settlementId, { commitment: noteCommitment });
 
     // ── Step 3: Build proof inputs ────────────────────────────────────────────
@@ -206,10 +221,14 @@ export async function executeSettlement(
       ? computeZkNullifier({ ownerSecret: ownerSecretForProving!, leafIndex })
       : computeNullifier(noteCommitment);
     const proofInput = buildProofInput({
-      commitment: noteCommitment, nullifier,
-      merkleRoot, value: opts.value, asset: opts.asset,
+      commitment: noteCommitment,
+      nullifier,
+      merkleRoot,
+      value: opts.value,
+      asset: opts.asset,
       recipientFingerprint: opts.recipientFingerprint,
-      salt: noteSalt, proofType: "transfer",
+      salt: noteSalt,
+      proofType: "transfer",
     });
     const proofRec = createProofRecord({
       relatedTransferId: record.transfer_id,
@@ -257,16 +276,16 @@ export async function executeSettlement(
     // a malicious witness injection. We re-read the proof_data and compare
     // to the values we just stored on the settlement record.
     if (useGroth16) {
-      const proofRow = db.prepare(
-        `SELECT proof_data FROM zk_proofs WHERE id = ?`
-      ).get(proofRec.id) as { proof_data: string } | null;
+      const proofRow = db
+        .prepare(`SELECT proof_data FROM zk_proofs WHERE id = ?`)
+        .get(proofRec.id) as { proof_data: string } | null;
       const payload = proofRow?.proof_data ? JSON.parse(proofRow.proof_data) : null;
       const ps: string[] = payload?.publicSignals ?? [];
       // Public signal order matches the circuit declaration:
       // [merkle_root, nullifier, value_commitment, asset_hash]
-      const expectedRoot      = BigInt("0x" + merkleRoot).toString();
+      const expectedRoot = BigInt("0x" + merkleRoot).toString();
       const expectedNullifier = BigInt("0x" + nullifier).toString();
-      const proofRoot      = ps[0];
+      const proofRoot = ps[0];
       const proofNullifier = ps[1];
       if (proofRoot !== expectedRoot || proofNullifier !== expectedNullifier) {
         const msg = `groth16 invariant violation: proof public signals do not match settlement (root match=${proofRoot === expectedRoot}, nullifier match=${proofNullifier === expectedNullifier})`;
@@ -278,8 +297,10 @@ export async function executeSettlement(
 
     // ── Step 6: Publish nullifier (anti-double-spend) ─────────────────────────
     const nullifierResult = publishNullifier({
-      nullifier, commitment: noteCommitment,
-      noteId: noteId, spentByTransferId: record.transfer_id,
+      nullifier,
+      commitment: noteCommitment,
+      noteId: noteId,
+      spentByTransferId: record.transfer_id,
     });
     if (!nullifierResult.success) {
       updateSettlement(settlementId, { status: "failed", error_message: nullifierResult.reason });
@@ -312,27 +333,30 @@ export async function executeSettlement(
     if (chainResult.success && chainResult.signature) {
       recordOnChainTx({
         settlementId,
-        signature:   chainResult.signature,
-        status:      chainResult.status ?? "confirmed",
-        memoData:    `zkgent:v1:${settlementId}:${noteCommitment.slice(0, 12)}:${nullifier.slice(0, 12)}`,
+        signature: chainResult.signature,
+        status: chainResult.status ?? "confirmed",
+        memoData: `zkgent:v1:${settlementId}:${noteCommitment.slice(0, 12)}:${nullifier.slice(0, 12)}`,
         explorerUrl: chainResult.explorer_url,
       });
       updateSettlement(settlementId, {
-        on_chain_tx_sig:      chainResult.signature,
+        on_chain_tx_sig: chainResult.signature,
         on_chain_explorer_url: chainResult.explorer_url,
-        status:               "confirmed",
-        confirmed_at:          now,
+        status: "confirmed",
+        confirmed_at: now,
         submitted_on_chain_at: now,
       });
     } else {
       // On-chain failed (no SOL, RPC issue) — treat as finalized locally
       // with an error note. The commitment+nullifier are still valid.
       recordOnChainTx({
-        settlementId, signature: "N/A",
-        status: "failed", memoData: "", error: chainResult.error,
+        settlementId,
+        signature: "N/A",
+        status: "failed",
+        memoData: "",
+        error: chainResult.error,
       });
       updateSettlement(settlementId, {
-        status: "confirmed",  // local state is settled
+        status: "confirmed", // local state is settled
         error_message: `On-chain submission failed (local settlement valid): ${chainResult.error}`,
         submitted_on_chain_at: now,
       });
@@ -342,7 +366,7 @@ export async function executeSettlement(
     updateSettlement(settlementId, {
       status: "finalized",
       finalized_at: new Date().toISOString(),
-      settled_at:   new Date().toISOString(),
+      settled_at: new Date().toISOString(),
     });
 
     logActivity({
@@ -360,9 +384,12 @@ export async function executeSettlement(
   } catch (err: any) {
     updateSettlement(settlementId, { status: "failed", error_message: err.message });
     logActivity({
-      category: "settlement", event: "settlement_failed",
-      detail: err.message, status: "error",
-      relatedEntityType: "settlement", relatedEntityId: settlementId,
+      category: "settlement",
+      event: "settlement_failed",
+      detail: err.message,
+      status: "error",
+      relatedEntityType: "settlement",
+      relatedEntityId: settlementId,
     });
     return { success: false, error: err.message };
   }
@@ -372,13 +399,13 @@ export async function executeSettlement(
 
 export function getSettlementQueue(status?: SettlementStatus): SettlementRecord[] {
   if (status) {
-    return db.prepare(
-      `SELECT * FROM zk_settlements WHERE status = ? ORDER BY queued_at ASC`
-    ).all(status) as SettlementRecord[];
+    return db
+      .prepare(`SELECT * FROM zk_settlements WHERE status = ? ORDER BY queued_at ASC`)
+      .all(status) as SettlementRecord[];
   }
-  return db.prepare(
-    `SELECT * FROM zk_settlements ORDER BY queued_at DESC LIMIT 50`
-  ).all() as SettlementRecord[];
+  return db
+    .prepare(`SELECT * FROM zk_settlements ORDER BY queued_at DESC LIMIT 50`)
+    .all() as SettlementRecord[];
 }
 
 export function getLatestOnChainTxs() {
@@ -395,7 +422,9 @@ export interface SettlementStats {
 }
 
 export function getSettlementStats(): SettlementStats {
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT
       COUNT(*) as total,
       COALESCE(SUM(CASE WHEN status = 'queued' THEN 1 ELSE 0 END), 0) as queued,
@@ -408,6 +437,8 @@ export function getSettlementStats(): SettlementStats {
       COALESCE(SUM(CASE WHEN status = 'finalized'  THEN 1 ELSE 0 END), 0) as finalized,
       COALESCE(SUM(CASE WHEN status = 'failed'     THEN 1 ELSE 0 END), 0) as failed
     FROM zk_settlements
-  `).get() as SettlementStats;
+  `,
+    )
+    .get() as SettlementStats;
   return row;
 }

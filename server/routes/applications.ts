@@ -81,13 +81,15 @@ applicationsRouter.post("/", (req, res) => {
       }
     }
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO applications (
         id, full_name, work_email, company, role, use_case, team_size, region,
         monthly_volume, current_rail, privacy_concern, why_confidential,
         status, internal_notes, review_priority, tags, wallet_address, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'under_review', '', 'normal', '', ?, ?, ?)
-    `).run(
+    `,
+    ).run(
       id,
       body.fullName.trim(),
       body.workEmail.toLowerCase().trim(),
@@ -102,7 +104,7 @@ applicationsRouter.post("/", (req, res) => {
       body.whyConfidential.trim(),
       walletAddress,
       now,
-      now
+      now,
     );
 
     const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(id) as ApplicationRow;
@@ -115,9 +117,9 @@ applicationsRouter.post("/", (req, res) => {
 
 applicationsRouter.get("/:id", (req, res) => {
   try {
-    const row = db
-      .prepare("SELECT * FROM applications WHERE id = ?")
-      .get(req.params.id) as ApplicationRow | undefined;
+    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id) as
+      | ApplicationRow
+      | undefined;
 
     if (!row) {
       return res.status(404).json({ error: "Application not found" });

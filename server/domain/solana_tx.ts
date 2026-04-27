@@ -89,7 +89,7 @@ export async function ensureOperatorFunded(): Promise<{
   airdropped: boolean;
   error?: string;
 }> {
-  const conn    = getSolanaConnection();
+  const conn = getSolanaConnection();
   const keypair = getOperatorKeypairCached();
   const address = keypair.publicKey.toBase58();
 
@@ -107,7 +107,9 @@ export async function ensureOperatorFunded(): Promise<{
         return { address, balance: newBalance / LAMPORTS_PER_SOL, airdropped: true };
       }
       return {
-        address, balance: balanceSol, airdropped: false,
+        address,
+        balance: balanceSol,
+        airdropped: false,
         error: "Insufficient SOL on mainnet — fund the operator account",
       };
     }
@@ -121,8 +123,8 @@ export async function ensureOperatorFunded(): Promise<{
 
 export interface SettlementMemo {
   settlement_id: string;
-  commitment_short: string;   // first 12 chars of commitment
-  nullifier_short: string;    // first 12 chars of nullifier
+  commitment_short: string; // first 12 chars of commitment
+  nullifier_short: string; // first 12 chars of nullifier
   proof_id: string;
   version: string;
 }
@@ -133,24 +135,26 @@ export interface SettlementMemo {
  * IMPLEMENTED — real @solana/web3.js Transaction object.
  */
 export async function buildSettlementMemoTx(memo: SettlementMemo): Promise<Transaction> {
-  const conn     = getSolanaConnection();
-  const keypair  = getOperatorKeypairCached();
+  const conn = getSolanaConnection();
+  const keypair = getOperatorKeypairCached();
 
   const memoText = `zkgent:v1:${memo.settlement_id}:${memo.commitment_short}:${memo.nullifier_short}:${memo.proof_id}`;
 
   const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
 
   const tx = new Transaction({
-    recentBlockhash:    blockhash,
+    recentBlockhash: blockhash,
     lastValidBlockHeight,
-    feePayer:           keypair.publicKey,
+    feePayer: keypair.publicKey,
   });
 
-  tx.add(new TransactionInstruction({
-    programId: MEMO_PROGRAM_ID,
-    keys: [{ pubkey: keypair.publicKey, isSigner: true, isWritable: false }],
-    data: Buffer.from(memoText, "utf8"),
-  }));
+  tx.add(
+    new TransactionInstruction({
+      programId: MEMO_PROGRAM_ID,
+      keys: [{ pubkey: keypair.publicKey, isSigner: true, isWritable: false }],
+      data: Buffer.from(memoText, "utf8"),
+    }),
+  );
 
   return tx;
 }
@@ -195,16 +199,16 @@ export async function submitSettlementOnChain(opts: {
       };
     }
 
-    const conn    = getSolanaConnection();
+    const conn = getSolanaConnection();
     const keypair = getOperatorKeypairCached();
-    const config  = getSolanaConfig();
+    const config = getSolanaConfig();
 
     const memo: SettlementMemo = {
-      settlement_id:    opts.settlementId,
+      settlement_id: opts.settlementId,
       commitment_short: opts.commitment.slice(0, 12),
-      nullifier_short:  opts.nullifier.slice(0, 12),
-      proof_id:         opts.proofId,
-      version:          "v1",
+      nullifier_short: opts.nullifier.slice(0, 12),
+      proof_id: opts.proofId,
+      version: "v1",
     };
 
     const tx = await buildSettlementMemoTx(memo);
@@ -219,17 +223,17 @@ export async function submitSettlementOnChain(opts: {
     const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=${network}`;
 
     return {
-      success:      true,
+      success: true,
       signature,
-      status:       "confirmed",
+      status: "confirmed",
       explorer_url: explorerUrl,
     };
   } catch (err: any) {
     return {
-      success:   false,
+      success: false,
       signature: null,
-      status:    "failed",
-      error:     err.message,
+      status: "failed",
+      error: err.message,
     };
   }
 }
@@ -257,12 +261,14 @@ export function recordOnChainTx(opts: {
   error?: string;
 }): void {
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO zk_onchain_txs
       (settlement_id, signature, status, memo_data, explorer_url,
        submitted_at, confirmed_at, error_message)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `,
+  ).run(
     opts.settlementId,
     opts.signature,
     opts.status,
@@ -270,14 +276,14 @@ export function recordOnChainTx(opts: {
     opts.explorerUrl ?? null,
     now,
     opts.status === "confirmed" || opts.status === "finalized" ? now : null,
-    opts.error ?? null
+    opts.error ?? null,
   );
 }
 
 export function getLatestTxs(limit = 10): OnChainTxRecord[] {
-  return db.prepare(
-    `SELECT * FROM zk_onchain_txs ORDER BY submitted_at DESC LIMIT ?`
-  ).all(limit) as OnChainTxRecord[];
+  return db
+    .prepare(`SELECT * FROM zk_onchain_txs ORDER BY submitted_at DESC LIMIT ?`)
+    .all(limit) as OnChainTxRecord[];
 }
 
 export function getOperatorAddress(): string {

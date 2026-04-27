@@ -1,13 +1,18 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db, VALID_STATUSES, VALID_PRIORITIES, ACCESS_GRANTING_STATUSES, type ApplicationRow } from "../db.js";
+import {
+  db,
+  VALID_STATUSES,
+  VALID_PRIORITIES,
+  ACCESS_GRANTING_STATUSES,
+  type ApplicationRow,
+} from "../db.js";
 
 export const adminRouter = Router();
 
 const ADMIN_KEY = process.env.ADMIN_KEY || "zkgent-admin-dev";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const key =
-    (req.headers["x-admin-key"] as string) || (req.query.key as string);
+  const key = (req.headers["x-admin-key"] as string) || (req.query.key as string);
   if (!key || key !== ADMIN_KEY) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -69,7 +74,9 @@ adminRouter.get("/applications", (req, res) => {
     query += " ORDER BY created_at DESC";
 
     const rows = db.prepare(query).all(...params) as ApplicationRow[];
-    const total = (db.prepare("SELECT COUNT(*) as count FROM applications").get() as { count: number }).count;
+    const total = (
+      db.prepare("SELECT COUNT(*) as count FROM applications").get() as { count: number }
+    ).count;
     const byStatus = db
       .prepare("SELECT status, COUNT(*) as count FROM applications GROUP BY status")
       .all() as { status: string; count: number }[];
@@ -86,9 +93,9 @@ adminRouter.get("/applications", (req, res) => {
 
 adminRouter.get("/applications/:id", (req, res) => {
   try {
-    const row = db
-      .prepare("SELECT * FROM applications WHERE id = ?")
-      .get(req.params.id) as ApplicationRow | undefined;
+    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id) as
+      | ApplicationRow
+      | undefined;
     if (!row) return res.status(404).json({ error: "Not found" });
     return res.json(toAdmin(row));
   } catch (err) {
@@ -98,9 +105,9 @@ adminRouter.get("/applications/:id", (req, res) => {
 
 adminRouter.patch("/applications/:id", (req, res) => {
   try {
-    const row = db
-      .prepare("SELECT * FROM applications WHERE id = ?")
-      .get(req.params.id) as ApplicationRow | undefined;
+    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id) as
+      | ApplicationRow
+      | undefined;
     if (!row) return res.status(404).json({ error: "Not found" });
 
     const body = req.body as Record<string, string>;

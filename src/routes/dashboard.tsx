@@ -21,10 +21,18 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
-const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } } };
+const item = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+};
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 function fmtHash(h: string | null | undefined, len = 8) {
   if (!h) return "—";
@@ -36,44 +44,55 @@ function fmtNum(n: number | null | undefined) {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  queued:               "bg-yellow-400",
-  note_created:         "bg-yellow-400",
-  commitment_inserted:  "bg-yellow-400",
-  proof_requested:      "bg-cyan",
-  proof_generating:     "bg-cyan animate-pulse",
-  proof_generated:      "bg-cyan",
-  proof_verified:       "bg-emerald",
-  signing_requested:    "bg-violet animate-pulse",
-  signed:               "bg-violet",
-  submitted_on_chain:   "bg-violet animate-pulse",
-  confirmed:            "bg-emerald",
-  finalized:            "bg-emerald",
-  nullifier_published:  "bg-emerald",
-  settled:              "bg-emerald",
-  failed:               "bg-red-400",
-  rolled_back:          "bg-red-400/60",
+  queued: "bg-yellow-400",
+  note_created: "bg-yellow-400",
+  commitment_inserted: "bg-yellow-400",
+  proof_requested: "bg-cyan",
+  proof_generating: "bg-cyan animate-pulse",
+  proof_generated: "bg-cyan",
+  proof_verified: "bg-emerald",
+  signing_requested: "bg-violet animate-pulse",
+  signed: "bg-violet",
+  submitted_on_chain: "bg-violet animate-pulse",
+  confirmed: "bg-emerald",
+  finalized: "bg-emerald",
+  nullifier_published: "bg-emerald",
+  settled: "bg-emerald",
+  failed: "bg-red-400",
+  rolled_back: "bg-red-400/60",
 };
 
 const CAT_COLORS: Record<string, string> = {
-  transfer:    "text-emerald bg-emerald/10 border-emerald/20",
-  payroll:     "text-cyan bg-cyan/10 border-cyan/20",
-  treasury:    "text-violet bg-violet/10 border-violet/20",
-  settlement:  "text-emerald bg-emerald/10 border-emerald/20",
-  counterparty:"text-foreground bg-surface-elevated border-hairline",
-  settings:    "text-muted-foreground bg-surface border-hairline",
-  system:      "text-muted-foreground/60 bg-surface border-hairline",
+  transfer: "text-emerald bg-emerald/10 border-emerald/20",
+  payroll: "text-cyan bg-cyan/10 border-cyan/20",
+  treasury: "text-violet bg-violet/10 border-violet/20",
+  settlement: "text-emerald bg-emerald/10 border-emerald/20",
+  counterparty: "text-foreground bg-surface-elevated border-hairline",
+  settings: "text-muted-foreground bg-surface border-hairline",
+  system: "text-muted-foreground/60 bg-surface border-hairline",
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function MetricCard({ label, value, sub, dot = "bg-muted-foreground/40", badge }: {
-  label: string; value: string | number; sub?: string;
-  dot?: string; badge?: string;
+function MetricCard({
+  label,
+  value,
+  sub,
+  dot = "bg-muted-foreground/40",
+  badge,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  dot?: string;
+  badge?: string;
 }) {
   return (
     <div className="rounded-xl border border-hairline bg-surface px-4 py-3.5 flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">{label}</p>
+        <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">
+          {label}
+        </p>
         {badge && (
           <span className="font-mono text-[8px] uppercase tracking-wider text-muted-foreground/40 border border-hairline rounded px-1.5 py-0.5">
             {badge}
@@ -82,17 +101,27 @@ function MetricCard({ label, value, sub, dot = "bg-muted-foreground/40", badge }
       </div>
       <div className="flex items-end gap-2">
         <span className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
-        <span className="text-[22px] font-semibold leading-none text-foreground tabular-nums">{fmtNum(Number(value))}</span>
+        <span className="text-[22px] font-semibold leading-none text-foreground tabular-nums">
+          {fmtNum(Number(value))}
+        </span>
       </div>
       {sub && <p className="text-[10px] text-muted-foreground/50 pl-3.5">{sub}</p>}
     </div>
   );
 }
 
-function SectionLabel({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+function SectionLabel({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">{children}</p>
+      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">
+        {children}
+      </p>
       {action}
     </div>
   );
@@ -108,18 +137,20 @@ function ScaffoldTag({ label = "scaffold" }: { label?: string }) {
 
 function StatusPill({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    settled:   "text-emerald border-emerald/20 bg-emerald/8",
-    verified:  "text-emerald border-emerald/20 bg-emerald/8",
+    settled: "text-emerald border-emerald/20 bg-emerald/8",
+    verified: "text-emerald border-emerald/20 bg-emerald/8",
     generated: "text-cyan border-cyan/20 bg-cyan/8",
-    generating:"text-cyan border-cyan/20 bg-cyan/8",
-    pending:   "text-yellow-400 border-yellow-400/20 bg-yellow-400/8",
-    queued:    "text-yellow-400 border-yellow-400/20 bg-yellow-400/8",
-    failed:    "text-red-400 border-red-400/20 bg-red-400/8",
-    scaffold:  "text-muted-foreground/60 border-hairline bg-surface",
+    generating: "text-cyan border-cyan/20 bg-cyan/8",
+    pending: "text-yellow-400 border-yellow-400/20 bg-yellow-400/8",
+    queued: "text-yellow-400 border-yellow-400/20 bg-yellow-400/8",
+    failed: "text-red-400 border-red-400/20 bg-red-400/8",
+    scaffold: "text-muted-foreground/60 border-hairline bg-surface",
   };
   const cls = colors[status] ?? "text-muted-foreground/50 border-hairline bg-surface";
   return (
-    <span className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${cls}`}>
+    <span
+      className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${cls}`}
+    >
       {status}
     </span>
   );
@@ -167,7 +198,7 @@ function DashboardPage() {
     let key = sessionStorage.getItem(ADMIN_KEY_SS) ?? "";
     if (!key) {
       const entered = window.prompt(
-        "Admin key required (proving is CPU-expensive, ~600ms).\nSee ADMIN_KEY env on the server."
+        "Admin key required (proving is CPU-expensive, ~600ms).\nSee ADMIN_KEY env on the server.",
       );
       if (!entered) return;
       key = entered.trim();
@@ -196,36 +227,53 @@ function DashboardPage() {
 
   // Load per-user activity when wallet connects
   useEffect(() => {
-    if (!wallet?.address) { setUserActivity(null); return; }
-    api.identity.get(wallet.address)
-      .then(d => setUserActivity(d.activity))
+    if (!wallet?.address) {
+      setUserActivity(null);
+      return;
+    }
+    api.identity
+      .get(wallet.address)
+      .then((d) => setUserActivity(d.activity))
       .catch(() => setUserActivity(null));
   }, [wallet?.address]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <div className="min-h-full bg-background px-5 py-8 lg:px-8">
-      <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-5xl mx-auto space-y-8">
-
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+        className="max-w-5xl mx-auto space-y-8"
+      >
         {/* Header */}
         <motion.div variants={item} className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Workspace</p>
+            <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">
+              Workspace
+            </p>
             <h1 className="font-display text-2xl font-semibold text-foreground">Dashboard</h1>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-1.5 rounded-full border border-emerald/20 bg-emerald/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-emerald">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />Privacy Active
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
+              Privacy Active
             </span>
-            <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
-              solanaPing === "ok"
-                ? "border-emerald/20 bg-emerald/8 text-emerald"
-                : solanaPing === "error"
-                  ? "border-red-400/20 bg-red-400/8 text-red-400"
-                  : "border-hairline bg-surface text-muted-foreground"
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${solanaPing === "ok" ? "bg-emerald" : solanaPing === "error" ? "bg-red-400" : "bg-muted-foreground/40 animate-pulse"}`} />
+            <span
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+                solanaPing === "ok"
+                  ? "border-emerald/20 bg-emerald/8 text-emerald"
+                  : solanaPing === "error"
+                    ? "border-red-400/20 bg-red-400/8 text-red-400"
+                    : "border-hairline bg-surface text-muted-foreground"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${solanaPing === "ok" ? "bg-emerald" : solanaPing === "error" ? "bg-red-400" : "bg-muted-foreground/40 animate-pulse"}`}
+              />
               {loading ? "…" : (zk?.solana.network ?? "devnet").toUpperCase()}
             </span>
             {!loading && zk?.solana.network !== "mainnet-beta" && (
@@ -234,21 +282,30 @@ function DashboardPage() {
                 Not Mainnet
               </span>
             )}
-            <button onClick={load} className="flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors">
+            <button
+              onClick={load}
+              className="flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+            >
               ↻ Refresh
             </button>
           </div>
         </motion.div>
 
         {error && (
-          <motion.div variants={item} className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-[13px] text-red-400">
+          <motion.div
+            variants={item}
+            className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-[13px] text-red-400"
+          >
             Failed to load: {error}
           </motion.div>
         )}
 
         {/* ── ZK Cryptographic Stack Banner ──────────────────────────────── */}
         {!loading && zk && (
-          <motion.div variants={item} className="rounded-2xl border border-cyan/15 bg-cyan/5 overflow-hidden">
+          <motion.div
+            variants={item}
+            className="rounded-2xl border border-cyan/15 bg-cyan/5 overflow-hidden"
+          >
             <div className="px-5 py-3 border-b border-cyan/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
@@ -263,7 +320,9 @@ function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-cyan/10">
               {/* Hash chain */}
               <div className="px-5 py-3.5 space-y-1">
-                <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Hash chain</p>
+                <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                  Hash chain
+                </p>
                 <p className="font-mono text-[12px] text-foreground">
                   {zk.hash_chain?.scheme ?? "poseidon-bn254-v1"}
                 </p>
@@ -274,7 +333,9 @@ function DashboardPage() {
               {/* Groth16 toolchain */}
               <div className="px-5 py-3.5 space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Groth16 toolchain</p>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                    Groth16 toolchain
+                  </p>
                   {zk.groth16?.available && (
                     <span className="font-mono text-[8px] uppercase tracking-wider rounded px-1.5 py-0.5 border border-emerald/20 text-emerald">
                       ready
@@ -291,7 +352,9 @@ function DashboardPage() {
               {/* Production circuit */}
               <div className="px-5 py-3.5 space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Production transfer SNARK</p>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                    Production transfer SNARK
+                  </p>
                   {zk.system.snark_ready && (
                     <span className="font-mono text-[8px] uppercase tracking-wider rounded px-1.5 py-0.5 border border-emerald/30 bg-emerald/10 text-emerald">
                       active
@@ -300,15 +363,18 @@ function DashboardPage() {
                 </div>
                 <p className="font-mono text-[12px] text-foreground">
                   {zk.system.snark_ready
-                    ? (typeof zk.system.snark_circuit === "object"
-                        ? (zk.system.snark_circuit as any).id
-                        : (zk.system.snark_circuit ?? "—"))
+                    ? typeof zk.system.snark_circuit === "object"
+                      ? (zk.system.snark_circuit as any).id
+                      : (zk.system.snark_circuit ?? "—")
                     : "not built"}
                 </p>
                 {zk.system.snark_ready && typeof zk.system.snark_circuit === "object" ? (
                   <>
                     <p className="font-mono text-[10px] text-emerald/80">
-                      {(zk.system.snark_circuit as any).constraints?.toLocaleString()} R1CS · {(zk.system.snark_circuit as any).proving_system} · {(zk.system.snark_circuit as any).hash} / {(zk.system.snark_circuit as any).curve}
+                      {(zk.system.snark_circuit as any).constraints?.toLocaleString()} R1CS ·{" "}
+                      {(zk.system.snark_circuit as any).proving_system} ·{" "}
+                      {(zk.system.snark_circuit as any).hash} /{" "}
+                      {(zk.system.snark_circuit as any).curve}
                     </p>
                     <p className="font-mono text-[9px] text-yellow-400/60">
                       ptau: Hermez (multi-party) · phase-2: single-party (devnet)
@@ -336,16 +402,16 @@ function DashboardPage() {
             </div>
             {(demoResult || demoError) && (
               <div className="px-5 py-3 border-t border-cyan/10 bg-background/40">
-                {demoError && (
-                  <p className="font-mono text-[10px] text-red-400">{demoError}</p>
-                )}
+                {demoError && <p className="font-mono text-[10px] text-red-400">{demoError}</p>}
                 {demoResult?.ok && demoResult.verified && (
                   <div className="space-y-1">
                     <p className="font-mono text-[10px] text-emerald">
-                      ✓ Proof verified · prove {demoResult.prove_ms}ms · verify {demoResult.verify_ms}ms
+                      ✓ Proof verified · prove {demoResult.prove_ms}ms · verify{" "}
+                      {demoResult.verify_ms}ms
                     </p>
                     <p className="font-mono text-[9px] text-muted-foreground/60">
-                      circuit: {demoResult.circuit} · hash: {demoResult.expected_hash?.slice(0, 24)}…
+                      circuit: {demoResult.circuit} · hash: {demoResult.expected_hash?.slice(0, 24)}
+                      …
                     </p>
                   </div>
                 )}
@@ -366,26 +432,40 @@ function DashboardPage() {
               <div className="flex items-center justify-between px-5 py-3 border-b border-emerald/10">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-emerald/70">Your Wallet Identity</p>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-emerald/70">
+                    Your Wallet Identity
+                  </p>
                 </div>
-                <span className="font-mono text-[10px] text-emerald/60 font-medium">{identity.identity_fingerprint}</span>
+                <span className="font-mono text-[10px] text-emerald/60 font-medium">
+                  {identity.identity_fingerprint}
+                </span>
               </div>
               <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Provider</p>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">
+                    Provider
+                  </p>
                   <p className="font-mono text-[11px] text-foreground">{wallet.walletName}</p>
                 </div>
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Address</p>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">
+                    Address
+                  </p>
                   <p className="font-mono text-[11px] text-foreground">{wallet.shortAddress}</p>
                 </div>
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Sessions</p>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">
+                    Sessions
+                  </p>
                   <p className="font-mono text-[11px] text-foreground">{identity.session_count}</p>
                 </div>
                 <div>
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Network Pref</p>
-                  <p className={`font-mono text-[11px] ${identity.network_preference === "mainnet-beta" ? "text-emerald" : "text-yellow-400/70"}`}>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">
+                    Network Pref
+                  </p>
+                  <p
+                    className={`font-mono text-[11px] ${identity.network_preference === "mainnet-beta" ? "text-emerald" : "text-yellow-400/70"}`}
+                  >
                     {identity.network_preference}
                   </p>
                 </div>
@@ -393,16 +473,28 @@ function DashboardPage() {
               {userActivity && (
                 <div className="border-t border-emerald/10 px-5 py-3 grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">Your Settlements</p>
-                    <p className="font-mono text-[15px] font-semibold text-foreground">{userActivity.settlements.length}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">
+                      Your Settlements
+                    </p>
+                    <p className="font-mono text-[15px] font-semibold text-foreground">
+                      {userActivity.settlements.length}
+                    </p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">Signing Requests</p>
-                    <p className="font-mono text-[15px] font-semibold text-foreground">{userActivity.signing_requests.length}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">
+                      Signing Requests
+                    </p>
+                    <p className="font-mono text-[15px] font-semibold text-foreground">
+                      {userActivity.signing_requests.length}
+                    </p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">On-chain Txs</p>
-                    <p className="font-mono text-[15px] font-semibold text-foreground">{userActivity.onchain_txs.length}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">
+                      On-chain Txs
+                    </p>
+                    <p className="font-mono text-[15px] font-semibold text-foreground">
+                      {userActivity.onchain_txs.length}
+                    </p>
                   </div>
                 </div>
               )}
@@ -410,10 +502,15 @@ function DashboardPage() {
           ) : (
             <div className="rounded-2xl border border-hairline bg-surface px-5 py-5 flex items-center justify-between gap-4">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50 mb-1">Wallet Identity</p>
-                <p className="text-[13px] text-foreground">Connect your Solana wallet to get a personal identity</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50 mb-1">
+                  Wallet Identity
+                </p>
+                <p className="text-[13px] text-foreground">
+                  Connect your Solana wallet to get a personal identity
+                </p>
                 <p className="text-[11px] text-muted-foreground/50 mt-0.5">
-                  Your settlements, signing requests, and on-chain transactions will be linked to your wallet address.
+                  Your settlements, signing requests, and on-chain transactions will be linked to
+                  your wallet address.
                 </p>
               </div>
               <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider border border-hairline rounded px-2 py-1 text-muted-foreground/40">
@@ -428,27 +525,64 @@ function DashboardPage() {
           <SectionLabel>System State</SectionLabel>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {loading ? (
-              Array(8).fill(0).map((_, i) => (
-                <div key={i} className="h-20 rounded-xl border border-hairline bg-surface animate-pulse" />
-              ))
+              Array(8)
+                .fill(0)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-20 rounded-xl border border-hairline bg-surface animate-pulse"
+                  />
+                ))
             ) : zk ? (
               <>
-                <MetricCard label="Commitments" value={zk.commitments.total}
-                  sub={`${zk.commitments.pending} pending`} dot="bg-cyan" />
-                <MetricCard label="Nullifiers" value={zk.nullifiers.total}
-                  sub="anti-double-spend" dot="bg-violet" />
-                <MetricCard label="Active Notes" value={zk.notes.unspent}
-                  sub={`${zk.notes.spent} spent`} dot="bg-emerald" />
-                <MetricCard label="Total Notes" value={zk.notes.total}
-                  sub={`${(zk.notes.total_shielded_value ?? 0).toLocaleString()} USDC`} dot="bg-emerald/60" />
-                <MetricCard label="Proofs Verified" value={zk.proofs.verified}
-                  sub={`${zk.proofs.generated} generated`} dot="bg-cyan" />
-                <MetricCard label="Proofs Failed" value={zk.proofs.failed}
-                  sub={`${zk.proofs.pending} pending`} dot="bg-red-400/60" />
-                <MetricCard label="Settlements" value={zk.settlements.finalized ?? zk.settlements.settled ?? 0}
-                  sub={`${zk.settlements.queued} queued`} dot="bg-emerald" />
-                <MetricCard label="Merkle Leaves" value={zk.merkle.leaf_count}
-                  sub={`depth ${zk.merkle.tree_depth}`} dot="bg-violet/60" />
+                <MetricCard
+                  label="Commitments"
+                  value={zk.commitments.total}
+                  sub={`${zk.commitments.pending} pending`}
+                  dot="bg-cyan"
+                />
+                <MetricCard
+                  label="Nullifiers"
+                  value={zk.nullifiers.total}
+                  sub="anti-double-spend"
+                  dot="bg-violet"
+                />
+                <MetricCard
+                  label="Active Notes"
+                  value={zk.notes.unspent}
+                  sub={`${zk.notes.spent} spent`}
+                  dot="bg-emerald"
+                />
+                <MetricCard
+                  label="Total Notes"
+                  value={zk.notes.total}
+                  sub={`${(zk.notes.total_shielded_value ?? 0).toLocaleString()} USDC`}
+                  dot="bg-emerald/60"
+                />
+                <MetricCard
+                  label="Proofs Verified"
+                  value={zk.proofs.verified}
+                  sub={`${zk.proofs.generated} generated`}
+                  dot="bg-cyan"
+                />
+                <MetricCard
+                  label="Proofs Failed"
+                  value={zk.proofs.failed}
+                  sub={`${zk.proofs.pending} pending`}
+                  dot="bg-red-400/60"
+                />
+                <MetricCard
+                  label="Settlements"
+                  value={zk.settlements.finalized ?? zk.settlements.settled ?? 0}
+                  sub={`${zk.settlements.queued} queued`}
+                  dot="bg-emerald"
+                />
+                <MetricCard
+                  label="Merkle Leaves"
+                  value={zk.merkle.leaf_count}
+                  sub={`depth ${zk.merkle.tree_depth}`}
+                  dot="bg-violet/60"
+                />
               </>
             ) : null}
           </div>
@@ -466,16 +600,24 @@ function DashboardPage() {
               <div className="divide-y divide-hairline">
                 <div className="grid grid-cols-5 gap-0 text-center divide-x divide-hairline">
                   {[
-                    { label: "Pending",    value: zk.proofs.pending,    dot: "bg-muted-foreground/40" },
-                    { label: "Generating", value: zk.proofs.generating, dot: "bg-cyan animate-pulse" },
-                    { label: "Generated",  value: zk.proofs.generated,  dot: "bg-cyan" },
-                    { label: "Verified",   value: zk.proofs.verified,   dot: "bg-emerald" },
-                    { label: "Failed",     value: zk.proofs.failed,     dot: "bg-red-400" },
+                    { label: "Pending", value: zk.proofs.pending, dot: "bg-muted-foreground/40" },
+                    {
+                      label: "Generating",
+                      value: zk.proofs.generating,
+                      dot: "bg-cyan animate-pulse",
+                    },
+                    { label: "Generated", value: zk.proofs.generated, dot: "bg-cyan" },
+                    { label: "Verified", value: zk.proofs.verified, dot: "bg-emerald" },
+                    { label: "Failed", value: zk.proofs.failed, dot: "bg-red-400" },
                   ].map((p) => (
                     <div key={p.label} className="px-3 py-4 flex flex-col items-center gap-1">
                       <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
-                      <span className="text-[18px] font-semibold text-foreground tabular-nums">{p.value}</span>
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">{p.label}</span>
+                      <span className="text-[18px] font-semibold text-foreground tabular-nums">
+                        {p.value}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                        {p.label}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -484,18 +626,23 @@ function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald shrink-0" />
                     <p className="font-mono text-[10px] text-emerald">
-                      Active: <strong>Operator Authorization Proof</strong>
-                      {" "}· Ed25519 cryptographic signature (real, not ZK-SNARK)
+                      Active: <strong>Operator Authorization Proof</strong> · Ed25519 cryptographic
+                      signature (real, not ZK-SNARK)
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
                     <p className="font-mono text-[10px] text-muted-foreground/50">
-                      Operator pubkey: <span className="text-foreground/60">{zk.circuit?.prover_pubkey?.slice(0, 24) ?? "…"}…</span>
+                      Operator pubkey:{" "}
+                      <span className="text-foreground/60">
+                        {zk.circuit?.prover_pubkey?.slice(0, 24) ?? "…"}…
+                      </span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${zk.circuit?.transfer?.available ? "bg-emerald" : "bg-muted-foreground/20"}`} />
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full shrink-0 ${zk.circuit?.transfer?.available ? "bg-emerald" : "bg-muted-foreground/20"}`}
+                    />
                     <p className="font-mono text-[10px] text-muted-foreground/40">
                       Future zk-SNARK circuit ({zk.circuit?.transfer?.id ?? "zkgent-transfer-v1"}):
                       {zk.circuit?.transfer?.available
@@ -513,7 +660,10 @@ function DashboardPage() {
         <motion.div variants={item}>
           <SectionLabel>
             Settlement Queue
-            <Link to="/transfers" className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition">
+            <Link
+              to="/transfers"
+              className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition"
+            >
               View Transfers →
             </Link>
           </SectionLabel>
@@ -528,22 +678,40 @@ function DashboardPage() {
             ) : zk && zk.settlements.total === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <p className="text-[13px] text-muted-foreground">No settlements yet</p>
-                <p className="text-[11px] text-muted-foreground/50">Create a transfer to initiate a confidential settlement</p>
+                <p className="text-[11px] text-muted-foreground/50">
+                  Create a transfer to initiate a confidential settlement
+                </p>
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-5 gap-0 text-center divide-x divide-hairline">
                   {[
-                    { label: "Queued",     value: zk?.settlements.queued ?? 0,      dot: "bg-yellow-400" },
-                    { label: "In Progress",value: zk?.settlements.in_progress ?? 0, dot: "bg-cyan animate-pulse" },
-                    { label: "Confirmed",  value: zk?.settlements.confirmed ?? 0,   dot: "bg-emerald/60" },
-                    { label: "Finalized",  value: zk?.settlements.finalized ?? 0,   dot: "bg-emerald" },
-                    { label: "Failed",     value: zk?.settlements.failed ?? 0,      dot: "bg-red-400" },
+                    { label: "Queued", value: zk?.settlements.queued ?? 0, dot: "bg-yellow-400" },
+                    {
+                      label: "In Progress",
+                      value: zk?.settlements.in_progress ?? 0,
+                      dot: "bg-cyan animate-pulse",
+                    },
+                    {
+                      label: "Confirmed",
+                      value: zk?.settlements.confirmed ?? 0,
+                      dot: "bg-emerald/60",
+                    },
+                    {
+                      label: "Finalized",
+                      value: zk?.settlements.finalized ?? 0,
+                      dot: "bg-emerald",
+                    },
+                    { label: "Failed", value: zk?.settlements.failed ?? 0, dot: "bg-red-400" },
                   ].map((s) => (
                     <div key={s.label} className="px-3 py-3 flex flex-col items-center gap-1">
                       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                      <span className="text-[18px] font-semibold text-foreground tabular-nums">{s.value}</span>
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">{s.label}</span>
+                      <span className="text-[18px] font-semibold text-foreground tabular-nums">
+                        {s.value}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                        {s.label}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -554,41 +722,53 @@ function DashboardPage() {
 
         {/* ── Wallet + On-chain Transactions ──────────────────────────────── */}
         <motion.div variants={item} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
           {/* Wallet status */}
           <WalletStatusPanel />
 
           {/* On-chain transactions */}
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             <div className="border-b border-hairline px-5 py-3 flex items-center justify-between gap-2 flex-wrap">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">On-chain Transactions</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">
+                On-chain Transactions
+              </p>
               <div className="flex items-center gap-1.5">
                 {solana?.funded && (
-                  <span className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
-                    solana.funded.balance >= 0.05
-                      ? "text-emerald border-emerald/20"
-                      : "text-red-400 border-red-400/20"
-                  }`}
+                  <span
+                    className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                      solana.funded.balance >= 0.05
+                        ? "text-emerald border-emerald/20"
+                        : "text-red-400 border-red-400/20"
+                    }`}
                     title={`Operator balance — funded via ${solana.status.network} faucet`}
                   >
                     {solana.funded.balance.toFixed(4)} SOL
                   </span>
                 )}
-                <span className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
-                  zk?.solana.network === "mainnet-beta"
-                    ? "text-emerald border-emerald/20"
-                    : "text-yellow-400/70 border-yellow-400/20"
-                }`}>
+                <span
+                  className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                    zk?.solana.network === "mainnet-beta"
+                      ? "text-emerald border-emerald/20"
+                      : "text-yellow-400/70 border-yellow-400/20"
+                  }`}
+                >
                   {zk?.solana.network ?? "devnet"}
                 </span>
               </div>
             </div>
             {loading ? (
-              <div className="px-5 py-4 space-y-2">{[0,1,2].map(i=><div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse"/>)}</div>
+              <div className="px-5 py-4 space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse" />
+                ))}
+              </div>
             ) : !zk || !zk.on_chain?.latest_txs?.length ? (
               <div className="px-5 py-6 flex flex-col items-center gap-2">
-                <p className="font-mono text-[11px] text-muted-foreground/40">No on-chain txs yet</p>
-                <p className="font-mono text-[10px] text-muted-foreground/30">Initiate a settlement to anchor on Solana devnet</p>
+                <p className="font-mono text-[11px] text-muted-foreground/40">
+                  No on-chain txs yet
+                </p>
+                <p className="font-mono text-[10px] text-muted-foreground/30">
+                  Initiate a settlement to anchor on Solana devnet
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-hairline">
@@ -596,18 +776,28 @@ function DashboardPage() {
                   <div key={tx.id} className="px-5 py-3 space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${tx.status === "confirmed" || tx.status === "finalized" ? "bg-emerald" : tx.status === "failed" ? "bg-red-400" : "bg-cyan animate-pulse"}`} />
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${tx.status === "confirmed" || tx.status === "finalized" ? "bg-emerald" : tx.status === "failed" ? "bg-red-400" : "bg-cyan animate-pulse"}`}
+                        />
                         <span className="font-mono text-[10px] text-foreground truncate">
-                          {tx.signature === "N/A" ? "N/A (no SOL)" : `${tx.signature.slice(0, 16)}…`}
+                          {tx.signature === "N/A"
+                            ? "N/A (no SOL)"
+                            : `${tx.signature.slice(0, 16)}…`}
                         </span>
                       </div>
-                      <span className={`font-mono text-[8px] uppercase tracking-wider shrink-0 border rounded px-1 py-0.5 ${tx.status === "confirmed" || tx.status === "finalized" ? "border-emerald/20 text-emerald" : tx.status === "failed" ? "border-red-400/20 text-red-400" : "border-cyan/20 text-cyan"}`}>
+                      <span
+                        className={`font-mono text-[8px] uppercase tracking-wider shrink-0 border rounded px-1 py-0.5 ${tx.status === "confirmed" || tx.status === "finalized" ? "border-emerald/20 text-emerald" : tx.status === "failed" ? "border-red-400/20 text-red-400" : "border-cyan/20 text-cyan"}`}
+                      >
                         {tx.status}
                       </span>
                     </div>
                     {tx.explorer_url && (
-                      <a href={tx.explorer_url} target="_blank" rel="noopener noreferrer"
-                        className="font-mono text-[9px] text-cyan/60 hover:text-cyan transition-colors ml-3">
+                      <a
+                        href={tx.explorer_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[9px] text-cyan/60 hover:text-cyan transition-colors ml-3"
+                      >
                         View on Explorer →
                       </a>
                     )}
@@ -616,7 +806,10 @@ function DashboardPage() {
                 {zk.on_chain.operator_address && (
                   <div className="px-5 py-2.5 border-t border-hairline flex items-center justify-between gap-2 flex-wrap">
                     <p className="font-mono text-[9px] text-muted-foreground/40">
-                      Operator: <span className="text-foreground/40">{zk.on_chain.operator_address.slice(0, 16)}…</span>
+                      Operator:{" "}
+                      <span className="text-foreground/40">
+                        {zk.on_chain.operator_address.slice(0, 16)}…
+                      </span>
                     </p>
                     {zk.solana.network === "devnet" && (
                       <a
@@ -637,46 +830,58 @@ function DashboardPage() {
 
         {/* ── Solana Network + Key Status ──────────────────────────────────── */}
         <motion.div variants={item} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
           {/* Solana */}
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             <div className="border-b border-hairline px-5 py-3 flex items-center justify-between">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Solana Network</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">
+                Solana Network
+              </p>
               {zk && !loading && (
-                <span className={`font-mono text-[9px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
-                  zk.solana.network === "mainnet-beta"
-                    ? "border-emerald/20 text-emerald"
-                    : "border-yellow-400/30 text-yellow-400/70"
-                }`}>
+                <span
+                  className={`font-mono text-[9px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
+                    zk.solana.network === "mainnet-beta"
+                      ? "border-emerald/20 text-emerald"
+                      : "border-yellow-400/30 text-yellow-400/70"
+                  }`}
+                >
                   {zk.solana.network === "mainnet-beta" ? "Mainnet" : "Non-mainnet"}
                 </span>
               )}
             </div>
             {loading ? (
               <div className="px-5 py-4 space-y-2">
-                {[0, 1, 2].map(i => <div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse" />)}
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse" />
+                ))}
               </div>
             ) : zk ? (
               <div className="px-5 py-4 space-y-3">
                 {zk.solana.network !== "mainnet-beta" && (
                   <div className="rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-3 py-2">
                     <p className="font-mono text-[9px] text-yellow-400/70">
-                      Running on <strong>{zk.solana.network}</strong> — not production mainnet.
-                      Set <code>SOLANA_NETWORK=mainnet-beta</code> for production.
+                      Running on <strong>{zk.solana.network}</strong> — not production mainnet. Set{" "}
+                      <code>SOLANA_NETWORK=mainnet-beta</code> for production.
                     </p>
                   </div>
                 )}
                 {[
-                  { label: "Cluster",    value: zk.solana.network },
-                  { label: "Status",     value: zk.solana.reachable ? "Reachable" : `Unreachable · ${zk.solana.error ?? ""}`,
-                    dot: zk.solana.reachable ? "bg-emerald" : "bg-red-400" },
-                  { label: "Slot",       value: fmtNum(zk.solana.slot) },
-                  { label: "Epoch",      value: fmtNum(zk.solana.epoch) },
+                  { label: "Cluster", value: zk.solana.network },
+                  {
+                    label: "Status",
+                    value: zk.solana.reachable
+                      ? "Reachable"
+                      : `Unreachable · ${zk.solana.error ?? ""}`,
+                    dot: zk.solana.reachable ? "bg-emerald" : "bg-red-400",
+                  },
+                  { label: "Slot", value: fmtNum(zk.solana.slot) },
+                  { label: "Epoch", value: fmtNum(zk.solana.epoch) },
                   { label: "Commitment", value: "confirmed" },
                   { label: "Custom Program", value: "Not deployed yet" },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] text-muted-foreground/50">{row.label}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground/50">
+                      {row.label}
+                    </span>
                     <span className="flex items-center gap-1.5 font-mono text-[11px] text-foreground">
                       {row.dot && <span className={`h-1.5 w-1.5 rounded-full ${row.dot}`} />}
                       {row.value}
@@ -690,24 +895,32 @@ function DashboardPage() {
           {/* Keys */}
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             <div className="border-b border-hairline px-5 py-3 flex items-center justify-between">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Key Status</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">
+                Key Status
+              </p>
             </div>
             {loading ? (
               <div className="px-5 py-4 space-y-2">
-                {[0, 1, 2, 3].map(i => <div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse" />)}
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse" />
+                ))}
               </div>
             ) : zk ? (
               <div className="px-5 py-4 space-y-3">
                 {[
-                  { label: "Operator",    value: zk.keys.operator_fingerprint },
-                  { label: "Signing",     value: zk.keys.signing_fingerprint },
-                  { label: "Encryption",  value: zk.keys.encryption_fingerprint },
-                  { label: "Viewing",     value: zk.keys.viewing_fingerprint },
-                  { label: "Custody",     value: zk.keys.custody_mode },
+                  { label: "Operator", value: zk.keys.operator_fingerprint },
+                  { label: "Signing", value: zk.keys.signing_fingerprint },
+                  { label: "Encryption", value: zk.keys.encryption_fingerprint },
+                  { label: "Viewing", value: zk.keys.viewing_fingerprint },
+                  { label: "Custody", value: zk.keys.custody_mode },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between gap-2 min-w-0">
-                    <span className="font-mono text-[10px] text-muted-foreground/50 shrink-0">{row.label}</span>
-                    <span className="font-mono text-[10px] text-foreground truncate text-right">{row.value}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground/50 shrink-0">
+                      {row.label}
+                    </span>
+                    <span className="font-mono text-[10px] text-foreground truncate text-right">
+                      {row.value}
+                    </span>
                   </div>
                 ))}
                 <div className="pt-1 border-t border-hairline">
@@ -731,13 +944,15 @@ function DashboardPage() {
             ) : zk ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: "Leaves",     value: fmtNum(zk.merkle.leaf_count) },
+                  { label: "Leaves", value: fmtNum(zk.merkle.leaf_count) },
                   { label: "Tree Depth", value: String(zk.merkle.tree_depth) },
-                  { label: "Capacity",   value: `${(zk.merkle.capacity / 1_000_000).toFixed(1)}M` },
-                  { label: "Root",       value: fmtHash(zk.merkle.current_root, 12) },
+                  { label: "Capacity", value: `${(zk.merkle.capacity / 1_000_000).toFixed(1)}M` },
+                  { label: "Root", value: fmtHash(zk.merkle.current_root, 12) },
                 ].map((m) => (
                   <div key={m.label}>
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">{m.label}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                      {m.label}
+                    </p>
                     <p className="mt-1 font-mono text-[12px] text-foreground">{m.value || "—"}</p>
                   </div>
                 ))}
@@ -757,14 +972,19 @@ function DashboardPage() {
             ) : zk ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: "Policy",      value: zk.disclosure.current_policy },
-                  { label: "Audit Key",   value: zk.disclosure.audit_key_active ? "Active" : "Inactive",
-                    dot: zk.disclosure.audit_key_active ? "bg-emerald" : "bg-red-400" },
+                  { label: "Policy", value: zk.disclosure.current_policy },
+                  {
+                    label: "Audit Key",
+                    value: zk.disclosure.audit_key_active ? "Active" : "Inactive",
+                    dot: zk.disclosure.audit_key_active ? "bg-emerald" : "bg-red-400",
+                  },
                   { label: "Compliance Mode", value: zk.disclosure.compliance_mode ? "On" : "Off" },
-                  { label: "View Key",    value: fmtHash(zk.disclosure.viewing_key_fingerprint, 14) },
+                  { label: "View Key", value: fmtHash(zk.disclosure.viewing_key_fingerprint, 14) },
                 ].map((d) => (
                   <div key={d.label} className="flex flex-col gap-1">
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">{d.label}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                      {d.label}
+                    </p>
                     <p className="flex items-center gap-1.5 font-mono text-[12px] text-foreground">
                       {"dot" in d && <span className={`h-1.5 w-1.5 rounded-full ${d.dot}`} />}
                       {d.value}
@@ -781,17 +1001,40 @@ function DashboardPage() {
           <SectionLabel>Operational Metrics</SectionLabel>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {loading ? (
-              Array(4).fill(0).map((_, i) => <div key={i} className="h-20 rounded-xl border border-hairline bg-surface animate-pulse" />)
+              Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-20 rounded-xl border border-hairline bg-surface animate-pulse"
+                  />
+                ))
             ) : legacy ? (
               <>
-                <MetricCard label="Transfers" value={legacy.transfers.total}
-                  sub={`${legacy.transfers.pending} pending`} dot="bg-cyan" />
-                <MetricCard label="Payroll Batches" value={legacy.payroll.total}
-                  sub={`${legacy.payroll.draft} draft`} dot="bg-emerald" />
-                <MetricCard label="Treasury Routes" value={legacy.treasury.total}
-                  sub="configured" dot="bg-violet" />
-                <MetricCard label="Counterparties" value={legacy.counterparties.total}
-                  sub={`${legacy.counterparties.verified} verified`} dot="bg-emerald/60" />
+                <MetricCard
+                  label="Transfers"
+                  value={legacy.transfers.total}
+                  sub={`${legacy.transfers.pending} pending`}
+                  dot="bg-cyan"
+                />
+                <MetricCard
+                  label="Payroll Batches"
+                  value={legacy.payroll.total}
+                  sub={`${legacy.payroll.draft} draft`}
+                  dot="bg-emerald"
+                />
+                <MetricCard
+                  label="Treasury Routes"
+                  value={legacy.treasury.total}
+                  sub="configured"
+                  dot="bg-violet"
+                />
+                <MetricCard
+                  label="Counterparties"
+                  value={legacy.counterparties.total}
+                  sub={`${legacy.counterparties.verified} verified`}
+                  dot="bg-emerald/60"
+                />
               </>
             ) : null}
           </div>
@@ -801,7 +1044,10 @@ function DashboardPage() {
         <motion.div variants={item}>
           <SectionLabel>
             Recent Activity
-            <Link to="/activity" className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition">
+            <Link
+              to="/activity"
+              className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition"
+            >
               View all →
             </Link>
           </SectionLabel>
@@ -816,34 +1062,47 @@ function DashboardPage() {
             ) : !legacy || legacy.recentActivity.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <p className="text-[13px] text-muted-foreground">No activity yet</p>
-                <p className="text-[11px] text-muted-foreground/50">Actions you take will appear here</p>
+                <p className="text-[11px] text-muted-foreground/50">
+                  Actions you take will appear here
+                </p>
               </div>
             ) : (
               legacy.recentActivity.map((ev) => {
                 const catCls = CAT_COLORS[ev.category] ?? CAT_COLORS.system;
                 return (
-                  <div key={ev.id} className="flex items-center gap-3 px-5 py-3 hover:bg-surface-elevated transition-colors">
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${catCls}`}>
+                  <div
+                    key={ev.id}
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-surface-elevated transition-colors"
+                  >
+                    <span
+                      className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${catCls}`}
+                    >
                       {ev.category}
                     </span>
                     <p className="flex-1 min-w-0 text-[12px] text-foreground truncate">
-                      {ev.event}{ev.detail ? ` · ${ev.detail}` : ""}
+                      {ev.event}
+                      {ev.detail ? ` · ${ev.detail}` : ""}
                     </p>
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground/40">{fmtDate(ev.createdAt)}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground/40">
+                      {fmtDate(ev.createdAt)}
+                    </span>
                   </div>
                 );
               })
             )}
           </div>
         </motion.div>
-
       </motion.div>
     </div>
   );
 }
 
 function DashboardWrapper() {
-  return <AppShell><DashboardPage /></AppShell>;
+  return (
+    <AppShell>
+      <DashboardPage />
+    </AppShell>
+  );
 }
 
 export default DashboardWrapper;

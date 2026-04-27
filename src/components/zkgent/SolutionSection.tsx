@@ -56,60 +56,187 @@ function ArchitectureDiagram() {
           </linearGradient>
           <filter id="g">
             <feGaussianBlur stdDeviation="2" result="b" />
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
         </defs>
 
         {/* Sender */}
         <g>
-          <rect x="40" y="40" width="180" height="90" rx="12" fill="url(#layer)" stroke="oklch(1 0 0 / 12%)" />
-          <text x="60" y="68" fontSize="10" fontFamily="JetBrains Mono" letterSpacing="2" fill="oklch(0.62 0.012 260)">SENDER</text>
-          <text x="60" y="98" fontSize="14" fontFamily="Inter" fontWeight="500" fill="oklch(0.985 0.002 240)">Hidden identity</text>
+          <rect
+            x="40"
+            y="40"
+            width="180"
+            height="90"
+            rx="12"
+            fill="url(#layer)"
+            stroke="oklch(1 0 0 / 12%)"
+          />
+          <text
+            x="60"
+            y="68"
+            fontSize="10"
+            fontFamily="JetBrains Mono"
+            letterSpacing="2"
+            fill="oklch(0.62 0.012 260)"
+          >
+            SENDER
+          </text>
+          <text
+            x="60"
+            y="98"
+            fontSize="14"
+            fontFamily="Inter"
+            fontWeight="500"
+            fill="oklch(0.985 0.002 240)"
+          >
+            Hidden identity
+          </text>
           <circle cx="195" cy="65" r="4" fill="oklch(0.78 0.16 160)" filter="url(#g)" />
         </g>
 
         {/* Receiver */}
         <g>
-          <rect x="580" y="40" width="180" height="90" rx="12" fill="url(#layer)" stroke="oklch(1 0 0 / 12%)" />
-          <text x="600" y="68" fontSize="10" fontFamily="JetBrains Mono" letterSpacing="2" fill="oklch(0.62 0.012 260)">RECEIVER</text>
-          <text x="600" y="98" fontSize="14" fontFamily="Inter" fontWeight="500" fill="oklch(0.985 0.002 240)">Hidden identity</text>
+          <rect
+            x="580"
+            y="40"
+            width="180"
+            height="90"
+            rx="12"
+            fill="url(#layer)"
+            stroke="oklch(1 0 0 / 12%)"
+          />
+          <text
+            x="600"
+            y="68"
+            fontSize="10"
+            fontFamily="JetBrains Mono"
+            letterSpacing="2"
+            fill="oklch(0.62 0.012 260)"
+          >
+            RECEIVER
+          </text>
+          <text
+            x="600"
+            y="98"
+            fontSize="14"
+            fontFamily="Inter"
+            fontWeight="500"
+            fill="oklch(0.985 0.002 240)"
+          >
+            Hidden identity
+          </text>
           <circle cx="735" cy="65" r="4" fill="oklch(0.82 0.12 200)" filter="url(#g)" />
         </g>
 
         {/* Amount badge floating */}
         <g>
-          <rect x="340" y="40" width="120" height="40" rx="20" fill="oklch(0.13 0.005 260)" stroke="oklch(0.7 0.18 295 / 40%)" />
-          <text x="400" y="65" textAnchor="middle" fontSize="11" fontFamily="JetBrains Mono" letterSpacing="2" fill="oklch(0.7 0.18 295)">amount: ████</text>
+          <rect
+            x="340"
+            y="40"
+            width="120"
+            height="40"
+            rx="20"
+            fill="oklch(0.13 0.005 260)"
+            stroke="oklch(0.7 0.18 295 / 40%)"
+          />
+          <text
+            x="400"
+            y="65"
+            textAnchor="middle"
+            fontSize="11"
+            fontFamily="JetBrains Mono"
+            letterSpacing="2"
+            fill="oklch(0.7 0.18 295)"
+          >
+            amount: ████
+          </text>
         </g>
 
         {/* Flow lines to ZK layer */}
         <motion.path
-          d="M 220 85 Q 300 85 320 180" stroke="url(#flow)" strokeWidth="1.5" fill="none" strokeDasharray="4 4"
-          initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 1.5, delay: 0.3 }}
+          d="M 220 85 Q 300 85 320 180"
+          stroke="url(#flow)"
+          strokeWidth="1.5"
+          fill="none"
+          strokeDasharray="4 4"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5, delay: 0.3 }}
         />
         <motion.path
-          d="M 580 85 Q 500 85 480 180" stroke="url(#flow)" strokeWidth="1.5" fill="none" strokeDasharray="4 4"
-          initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 1.5, delay: 0.5 }}
+          d="M 580 85 Q 500 85 480 180"
+          stroke="url(#flow)"
+          strokeWidth="1.5"
+          fill="none"
+          strokeDasharray="4 4"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5, delay: 0.5 }}
         />
         <motion.path
-          d="M 400 80 L 400 180" stroke="url(#flow)" strokeWidth="1.5" fill="none" strokeDasharray="4 4"
-          initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.7 }}
+          d="M 400 80 L 400 180"
+          stroke="url(#flow)"
+          strokeWidth="1.5"
+          fill="none"
+          strokeDasharray="4 4"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, delay: 0.7 }}
         />
 
         {/* ZK Verification Layer */}
         <motion.g
-          initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.9 }}
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.9 }}
         >
-          <rect x="200" y="180" width="400" height="100" rx="16" fill="oklch(0.78 0.16 160 / 6%)" stroke="oklch(0.78 0.16 160 / 40%)" />
-          <text x="225" y="208" fontSize="10" fontFamily="JetBrains Mono" letterSpacing="2" fill="oklch(0.78 0.16 160)">ZK VERIFICATION LAYER</text>
-          <text x="225" y="240" fontSize="18" fontFamily="Instrument Serif" fontStyle="italic" fill="oklch(0.985 0.002 240)">prove without revealing</text>
-          <text x="225" y="262" fontSize="12" fontFamily="Inter" fill="oklch(0.62 0.012 260)">Validity, balance, and authorization — verified in zero knowledge.</text>
+          <rect
+            x="200"
+            y="180"
+            width="400"
+            height="100"
+            rx="16"
+            fill="oklch(0.78 0.16 160 / 6%)"
+            stroke="oklch(0.78 0.16 160 / 40%)"
+          />
+          <text
+            x="225"
+            y="208"
+            fontSize="10"
+            fontFamily="JetBrains Mono"
+            letterSpacing="2"
+            fill="oklch(0.78 0.16 160)"
+          >
+            ZK VERIFICATION LAYER
+          </text>
+          <text
+            x="225"
+            y="240"
+            fontSize="18"
+            fontFamily="Instrument Serif"
+            fontStyle="italic"
+            fill="oklch(0.985 0.002 240)"
+          >
+            prove without revealing
+          </text>
+          <text x="225" y="262" fontSize="12" fontFamily="Inter" fill="oklch(0.62 0.012 260)">
+            Validity, balance, and authorization — verified in zero knowledge.
+          </text>
 
           {/* Verification dots animated */}
           {[0, 1, 2, 3, 4].map((i) => (
             <motion.circle
               key={i}
-              cx={520 + i * 14} cy={210} r="3"
+              cx={520 + i * 14}
+              cy={210}
+              r="3"
               fill="oklch(0.78 0.16 160)"
               animate={{ opacity: [0.2, 1, 0.2] }}
               transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
@@ -119,21 +246,62 @@ function ArchitectureDiagram() {
 
         {/* Connection to Solana */}
         <motion.path
-          d="M 400 280 L 400 340" stroke="url(#flow)" strokeWidth="1.5" fill="none" strokeDasharray="4 4"
-          initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 1.2 }}
+          d="M 400 280 L 400 340"
+          stroke="url(#flow)"
+          strokeWidth="1.5"
+          fill="none"
+          strokeDasharray="4 4"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, delay: 1.2 }}
         />
 
         {/* Solana settlement */}
         <motion.g
-          initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 1.4 }}
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 1.4 }}
         >
-          <rect x="120" y="340" width="560" height="80" rx="14" fill="url(#layer)" stroke="oklch(0.82 0.12 200 / 35%)" />
-          <text x="145" y="368" fontSize="10" fontFamily="JetBrains Mono" letterSpacing="2" fill="oklch(0.82 0.12 200)">SOLANA SETTLEMENT LAYER</text>
-          <text x="145" y="396" fontSize="14" fontFamily="Inter" fontWeight="500" fill="oklch(0.985 0.002 240)">Sub-second finality · low fees · global liquidity</text>
+          <rect
+            x="120"
+            y="340"
+            width="560"
+            height="80"
+            rx="14"
+            fill="url(#layer)"
+            stroke="oklch(0.82 0.12 200 / 35%)"
+          />
+          <text
+            x="145"
+            y="368"
+            fontSize="10"
+            fontFamily="JetBrains Mono"
+            letterSpacing="2"
+            fill="oklch(0.82 0.12 200)"
+          >
+            SOLANA SETTLEMENT LAYER
+          </text>
+          <text
+            x="145"
+            y="396"
+            fontSize="14"
+            fontFamily="Inter"
+            fontWeight="500"
+            fill="oklch(0.985 0.002 240)"
+          >
+            Sub-second finality · low fees · global liquidity
+          </text>
           {/* Pulse */}
           <motion.circle
-            cx="660" cy="380" r="6" fill="oklch(0.82 0.12 200)" filter="url(#g)"
-            animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }}
+            cx="660"
+            cy="380"
+            r="6"
+            fill="oklch(0.82 0.12 200)"
+            filter="url(#g)"
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 2, repeat: Infinity }}
           />
         </motion.g>
       </svg>

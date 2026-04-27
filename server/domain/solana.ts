@@ -19,8 +19,8 @@ export interface SolanaConfig {
 }
 
 const ENDPOINTS: Record<SolanaNetwork, string> = {
-  "devnet":       "https://api.devnet.solana.com",
-  "testnet":      "https://api.testnet.solana.com",
+  devnet: "https://api.devnet.solana.com",
+  testnet: "https://api.testnet.solana.com",
   "mainnet-beta": "https://api.mainnet-beta.solana.com",
 };
 
@@ -43,11 +43,11 @@ export function getSolanaConfig(): SolanaConfig {
 
   return {
     network,
-    rpc_endpoint:  process.env.SOLANA_RPC_ENDPOINT ?? ENDPOINTS[network],
-    commitment:    (process.env.SOLANA_COMMITMENT ?? "confirmed") as SolanaCommitment,
-    program_id:    process.env.ZKGENT_PROGRAM_ID ?? "not_deployed",
-    ct_mint:       process.env.ZKGENT_CT_MINT    ?? "not_deployed",
-    is_mainnet:    network === "mainnet-beta",
+    rpc_endpoint: process.env.SOLANA_RPC_ENDPOINT ?? ENDPOINTS[network],
+    commitment: (process.env.SOLANA_COMMITMENT ?? "confirmed") as SolanaCommitment,
+    program_id: process.env.ZKGENT_PROGRAM_ID ?? "not_deployed",
+    ct_mint: process.env.ZKGENT_CT_MINT ?? "not_deployed",
+    is_mainnet: network === "mainnet-beta",
     is_production: network === "mainnet-beta",
   };
 }
@@ -66,13 +66,13 @@ export interface SolanaNetworkStatus {
 
 export async function checkSolanaStatus(): Promise<SolanaNetworkStatus> {
   const config = getSolanaConfig();
-  const now    = new Date().toISOString();
+  const now = new Date().toISOString();
   const base = {
-    network:          config.network,
-    is_mainnet:       config.is_mainnet,
-    rpc_endpoint:     config.rpc_endpoint,
+    network: config.network,
+    is_mainnet: config.is_mainnet,
+    rpc_endpoint: config.rpc_endpoint,
     program_deployed: false,
-    last_checked_at:  now,
+    last_checked_at: now,
   };
 
   try {
@@ -80,10 +80,10 @@ export async function checkSolanaStatus(): Promise<SolanaNetworkStatus> {
     const timeout = setTimeout(() => controller.abort(), 5000);
 
     const res = await fetch(config.rpc_endpoint, {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getEpochInfo", params: [] }),
-      signal:  controller.signal,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getEpochInfo", params: [] }),
+      signal: controller.signal,
     });
     clearTimeout(timeout);
 
@@ -91,21 +91,21 @@ export async function checkSolanaStatus(): Promise<SolanaNetworkStatus> {
       return { ...base, reachable: false, slot: null, epoch: null, error: `HTTP ${res.status}` };
     }
 
-    const data = await res.json() as { result?: { absoluteSlot?: number; epoch?: number } };
+    const data = (await res.json()) as { result?: { absoluteSlot?: number; epoch?: number } };
     return {
       ...base,
       reachable: true,
-      slot:      data.result?.absoluteSlot ?? null,
-      epoch:     data.result?.epoch ?? null,
-      error:     null,
+      slot: data.result?.absoluteSlot ?? null,
+      epoch: data.result?.epoch ?? null,
+      error: null,
     };
   } catch (err: any) {
     return {
       ...base,
       reachable: false,
-      slot:      null,
-      epoch:     null,
-      error:     err.name === "AbortError" ? "timeout" : err.message,
+      slot: null,
+      epoch: null,
+      error: err.name === "AbortError" ? "timeout" : err.message,
     };
   }
 }

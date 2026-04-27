@@ -44,7 +44,8 @@ accessRouter.get("/check", (req, res) => {
  */
 accessRouter.post("/link-wallet", (req, res) => {
   const { applicationId, walletAddress } = (req.body ?? {}) as {
-    applicationId?: string; walletAddress?: string;
+    applicationId?: string;
+    walletAddress?: string;
   };
   if (!applicationId || !walletAddress) {
     return res.status(400).json({ error: "applicationId and walletAddress required" });
@@ -55,31 +56,42 @@ accessRouter.post("/link-wallet", (req, res) => {
     | { ok: false; status: number; body: Record<string, unknown> };
 
   const linkTx = db.transaction((): LinkResult => {
-    const row = db
-      .prepare("SELECT * FROM applications WHERE id = ?")
-      .get(applicationId) as ApplicationRow | undefined;
+    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(applicationId) as
+      | ApplicationRow
+      | undefined;
     if (!row) return { ok: false, status: 404, body: { error: "application_not_found" } };
 
     if (row.wallet_address && row.wallet_address !== walletAddress) {
-      return { ok: false, status: 409, body: {
-        error: "application_already_linked_to_another_wallet",
-        hint: "Contact support if you need to change the wallet on file.",
-      }};
+      return {
+        ok: false,
+        status: 409,
+        body: {
+          error: "application_already_linked_to_another_wallet",
+          hint: "Contact support if you need to change the wallet on file.",
+        },
+      };
     }
 
     const collision = db
       .prepare("SELECT id FROM applications WHERE wallet_address = ? AND id != ?")
       .get(walletAddress, applicationId) as { id: string } | undefined;
     if (collision) {
-      return { ok: false, status: 409, body: {
-        error: "wallet_already_linked_to_another_application",
-        otherApplicationId: collision.id,
-      }};
+      return {
+        ok: false,
+        status: 409,
+        body: {
+          error: "wallet_already_linked_to_another_application",
+          otherApplicationId: collision.id,
+        },
+      };
     }
 
     if (!row.wallet_address) {
-      db.prepare("UPDATE applications SET wallet_address = ?, updated_at = ? WHERE id = ?")
-        .run(walletAddress, new Date().toISOString(), applicationId);
+      db.prepare("UPDATE applications SET wallet_address = ?, updated_at = ? WHERE id = ?").run(
+        walletAddress,
+        new Date().toISOString(),
+        applicationId,
+      );
     }
 
     const updated = db
@@ -132,8 +144,10 @@ accessRouter.post("/link-wallet", (req, res) => {
 export function requireApprovedWallet(req: Request, res: Response, next: NextFunction) {
   const headerWallet = (req.headers["x-wallet-address"] as string | undefined)?.trim() || undefined;
   const bodyWallet =
-    ((req.body?.wallet_address as string | undefined) ||
-      (req.body?.initiated_by_wallet as string | undefined))?.trim() || undefined;
+    (
+      (req.body?.wallet_address as string | undefined) ||
+      (req.body?.initiated_by_wallet as string | undefined)
+    )?.trim() || undefined;
 
   const walletAddress = headerWallet ?? bodyWallet;
 
@@ -162,8 +176,8 @@ export function requireApprovedWallet(req: Request, res: Response, next: NextFun
         result.reason === "no_application"
           ? "Apply for early access at /apply, then link this wallet."
           : result.reason === "pending_review"
-          ? "Your application is still under review. You will be notified when approved."
-          : "Your application was not approved for early access.",
+            ? "Your application is still under review. You will be notified when approved."
+            : "Your application was not approved for early access.",
       applicationId: result.application?.id ?? null,
     });
   }

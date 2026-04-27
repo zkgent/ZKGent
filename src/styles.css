@@ -146,13 +146,19 @@
   }
 
   .glow-emerald {
-    box-shadow: 0 0 0 1px oklch(0.78 0.16 160 / 25%), 0 10px 60px -10px var(--emerald-glow);
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.16 160 / 25%),
+      0 10px 60px -10px var(--emerald-glow);
   }
   .glow-cyan {
-    box-shadow: 0 0 0 1px oklch(0.82 0.12 200 / 25%), 0 10px 60px -10px var(--cyan-glow);
+    box-shadow:
+      0 0 0 1px oklch(0.82 0.12 200 / 25%),
+      0 10px 60px -10px var(--cyan-glow);
   }
   .glow-violet {
-    box-shadow: 0 0 0 1px oklch(0.7 0.18 295 / 25%), 0 10px 60px -10px var(--violet-glow);
+    box-shadow:
+      0 0 0 1px oklch(0.7 0.18 295 / 25%),
+      0 10px 60px -10px var(--violet-glow);
   }
 
   .hairline {
@@ -160,11 +166,7 @@
   }
 
   .glass {
-    background: linear-gradient(
-      180deg,
-      oklch(1 0 0 / 4%) 0%,
-      oklch(1 0 0 / 1%) 100%
-    );
+    background: linear-gradient(180deg, oklch(1 0 0 / 4%) 0%, oklch(1 0 0 / 1%) 100%);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--hairline);
@@ -178,35 +180,57 @@
   }
 
   .divider-gradient {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(1 0 0 / 12%) 50%,
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 12%) 50%, transparent);
     height: 1px;
   }
 
   @keyframes pulse-ring {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.05); }
+    0%,
+    100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
   }
-  .animate-pulse-ring { animation: pulse-ring 3s ease-in-out infinite; }
+  .animate-pulse-ring {
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
 
   @keyframes float-y {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
   }
-  .animate-float { animation: float-y 6s ease-in-out infinite; }
+  .animate-float {
+    animation: float-y 6s ease-in-out infinite;
+  }
 
   @keyframes dash-flow {
-    to { stroke-dashoffset: -200; }
+    to {
+      stroke-dashoffset: -200;
+    }
   }
-  .animate-dash { animation: dash-flow 6s linear infinite; }
+  .animate-dash {
+    animation: dash-flow 6s linear infinite;
+  }
 
   @keyframes border-glow {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 1;
+    }
   }
-  .animate-border-glow { animation: border-glow 4s ease-in-out infinite; }
+  .animate-border-glow {
+    animation: border-glow 4s ease-in-out infinite;
+  }
 }

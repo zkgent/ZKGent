@@ -13,12 +13,7 @@
  */
 
 import { db } from "../db.js";
-import {
-  Bytes32,
-  fieldToHex,
-  hexToField,
-  poseidonField2,
-} from "./crypto.js";
+import { Bytes32, fieldToHex, hexToField, poseidonField2 } from "./crypto.js";
 import { TREE_DEPTH, ZERO_VALUE } from "./merkle.js";
 
 /** Empty-subtree value at each level, computed once and cached. */
@@ -27,9 +22,7 @@ export function getEmptySubtrees(): Bytes32[] {
   if (EMPTY_SUBTREES_CACHE) return EMPTY_SUBTREES_CACHE;
   const z: Bytes32[] = [ZERO_VALUE];
   for (let i = 0; i < TREE_DEPTH; i++) {
-    z.push(
-      fieldToHex(poseidonField2(hexToField(z[i]), hexToField(z[i])))
-    );
+    z.push(fieldToHex(poseidonField2(hexToField(z[i]), hexToField(z[i]))));
   }
   EMPTY_SUBTREES_CACHE = z;
   return z;
@@ -42,10 +35,10 @@ function hashPair(left: Bytes32, right: Bytes32): Bytes32 {
 
 /** Read all current leaves (level-0 nodes) in insertion order. */
 export function loadAllLeaves(): Bytes32[] {
-  const rows = db.prepare(
-    `SELECT value FROM zk_merkle_nodes WHERE level = 0 ORDER BY idx ASC`
-  ).all() as { value: Bytes32 }[];
-  return rows.map(r => r.value);
+  const rows = db
+    .prepare(`SELECT value FROM zk_merkle_nodes WHERE level = 0 ORDER BY idx ASC`)
+    .all() as { value: Bytes32 }[];
+  return rows.map((r) => r.value);
 }
 
 /**
@@ -106,7 +99,7 @@ export function generateZkMerkleWitness(
 
   if (leafIndex < 0 || leafIndex >= leaves.length) {
     throw new Error(
-      `generateZkMerkleWitness: leafIndex ${leafIndex} out of range (leaves=${leaves.length})`
+      `generateZkMerkleWitness: leafIndex ${leafIndex} out of range (leaves=${leaves.length})`,
     );
   }
 
@@ -147,7 +140,7 @@ export function generateZkMerkleWitness(
   }
   if (acc !== root) {
     throw new Error(
-      `generateZkMerkleWitness: internal consistency check failed (computed=${acc.slice(0, 16)} root=${root.slice(0, 16)})`
+      `generateZkMerkleWitness: internal consistency check failed (computed=${acc.slice(0, 16)} root=${root.slice(0, 16)})`,
     );
   }
 

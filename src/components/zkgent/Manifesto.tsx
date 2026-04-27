@@ -34,7 +34,9 @@ export function Manifesto() {
           className="mb-12 inline-flex items-center gap-2"
         >
           <span className="h-px w-8 bg-emerald/60" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-emerald">Manifesto</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-emerald">
+            Manifesto
+          </span>
           <span className="h-px w-8 bg-emerald/60" />
         </motion.div>
 

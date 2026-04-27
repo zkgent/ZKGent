@@ -64,9 +64,7 @@ export function Architecture() {
                 <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/80">
                   {layer.label}
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground/60">
-                  L{4 - i}
-                </span>
+                <span className="font-mono text-[10px] text-muted-foreground/60">L{4 - i}</span>
               </motion.div>
             ))}
           </div>

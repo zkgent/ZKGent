@@ -36,10 +36,10 @@ export function merkleHashPair(left: Bytes32, right: Bytes32): Bytes32 {
 
 export interface MerkleNode {
   id: number;
-  level: number;        // 0 = leaf, TREE_DEPTH = root
-  index: number;        // position at this level
+  level: number; // 0 = leaf, TREE_DEPTH = root
+  index: number; // position at this level
   value: Bytes32;
-  commitment: Bytes32 | null;  // only for leaf nodes
+  commitment: Bytes32 | null; // only for leaf nodes
   created_at: string;
 }
 
@@ -48,9 +48,9 @@ export interface MerkleNode {
  * IMPLEMENTED.
  */
 export function getLeafCount(): number {
-  const row = db.prepare(
-    `SELECT COUNT(*) as cnt FROM zk_merkle_nodes WHERE level = 0`
-  ).get() as { cnt: number };
+  const row = db.prepare(`SELECT COUNT(*) as cnt FROM zk_merkle_nodes WHERE level = 0`).get() as {
+    cnt: number;
+  };
   return row.cnt;
 }
 
@@ -65,15 +65,15 @@ export function getMerkleRoot(): Bytes32 | null {
   const leafCount = getLeafCount();
   if (leafCount === 0) return null;
 
-  const leaves = db.prepare(
-    `SELECT value FROM zk_merkle_nodes WHERE level = 0 ORDER BY idx ASC`
-  ).all() as { value: Bytes32 }[];
+  const leaves = db
+    .prepare(`SELECT value FROM zk_merkle_nodes WHERE level = 0 ORDER BY idx ASC`)
+    .all() as { value: Bytes32 }[];
 
-  let currentLevel = leaves.map(l => l.value);
+  let currentLevel = leaves.map((l) => l.value);
   while (currentLevel.length > 1) {
     const nextLevel: Bytes32[] = [];
     for (let i = 0; i < currentLevel.length; i += 2) {
-      const left  = currentLevel[i];
+      const left = currentLevel[i];
       const right = i + 1 < currentLevel.length ? currentLevel[i + 1] : ZERO_VALUE;
       nextLevel.push(merkleHashPair(left, right));
     }
@@ -90,10 +90,12 @@ export function appendLeaf(commitment: Bytes32): number {
   const index = getLeafCount();
   const now = new Date().toISOString();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO zk_merkle_nodes (level, idx, value, commitment, created_at)
     VALUES (0, ?, ?, ?, ?)
-  `).run(index, commitment, commitment, now);
+  `,
+  ).run(index, commitment, commitment, now);
 
   return index;
 }
