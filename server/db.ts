@@ -2,11 +2,20 @@ import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
+import fs from "fs";
+import os from "os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "..", "zkgent.db");
+const projectRoot = path.join(__dirname, "..");
+const localDataDir = path.join(projectRoot, ".local", "data");
+const defaultDataDir = process.env.ZKGENT_DATA_DIR || localDataDir;
+
+fs.mkdirSync(defaultDataDir, { recursive: true });
+
+const DB_PATH = process.env.ZKGENT_DB_PATH || path.join(defaultDataDir, "zkgent.db");
 
 export const db = new Database(DB_PATH);
+export { DB_PATH, defaultDataDir as DATA_DIR };
 
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");

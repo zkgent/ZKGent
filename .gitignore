@@ -37,3 +37,5 @@ zkgent.db-shm
 zkgent.db-wal
 *.db-shm
 *.db-wal
+.local/
+

@@ -270,6 +270,9 @@ npm run dev
 - frontend: `http://localhost:5000`
 - API: `http://localhost:3001`
 
+Local SQLite data is stored outside the repo root by default at `.local/data/zkgent.db`.
+Override with `ZKGENT_DB_PATH` or `ZKGENT_DATA_DIR` if needed.
+
 ### Useful commands
 
 ```bash

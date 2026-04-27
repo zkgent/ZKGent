@@ -13,6 +13,30 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 
+interface WalletProviderLike {
+  isPhantom?: boolean;
+  isSolflare?: boolean;
+  isBackpack?: boolean;
+  publicKey?: { toBase58?: () => string; toString?: () => string } | null;
+  connect: () => Promise<{
+    publicKey?: { toBase58?: () => string; toString?: () => string } | null;
+  }>;
+  disconnect?: () => Promise<void>;
+  signMessage?: (message: Uint8Array, display?: string) => Promise<{ signature: Uint8Array }>;
+  signTransaction?: <T>(tx: T) => Promise<T>;
+}
+
+interface WalletWindow extends Window {
+  phantom?: { solana?: WalletProviderLike };
+  backpack?: WalletProviderLike;
+  solflare?: WalletProviderLike;
+  solana?: WalletProviderLike;
+}
+
+interface ApiErrorPayload {
+  error?: string;
+}
+
 export type WalletStatus =
   | "not_installed"
   | "disconnected"
@@ -65,8 +89,8 @@ export function useWallet(): WalletContextValue {
   return ctx;
 }
 
-function detectWallet(): { provider: any; name: string } | null {
-  const win = window as any;
+function detectWallet(): { provider: WalletProviderLike; name: string } | null {
+  const win = window as WalletWindow;
   if (win.phantom?.solana?.isPhantom) return { provider: win.phantom.solana, name: "Phantom" };
   if (win.backpack?.isBackpack) return { provider: win.backpack, name: "Backpack" };
   if (win.solflare?.isSolflare) return { provider: win.solflare, name: "Solflare" };
@@ -133,8 +157,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setStatus("connected");
       // Resolve/create wallet identity
       resolveIdentity(address, detected.name).then((id) => setIdentity(id));
-    } catch (err: any) {
-      setError(err.message ?? "Connection rejected");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Connection rejected");
       setStatus("disconnected");
     }
   }, []);
@@ -144,7 +168,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (detected?.provider?.disconnect) {
       try {
         await detected.provider.disconnect();
-      } catch {}
+      } catch (_err) {
+        // ignore wallet disconnect errors
+      }
     }
     setWallet(null);
     setIdentity(null);
@@ -163,8 +189,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const sig = Buffer.from(res.signature).toString("hex");
         setStatus("connected");
         return { signature: sig, publicKey: wallet.address };
-      } catch (err: any) {
-        setError(err.message ?? "Sign rejected");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Sign rejected");
         setStatus("connected");
         return null;
       }
@@ -196,7 +222,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ settlement_id: settlementId, wallet_address: wallet.address }),
         });
         if (!prepRes.ok) {
-          const err = await prepRes.json();
+          const err = (await prepRes.json()) as ApiErrorPayload;
           throw new Error(err.error ?? "tx preparation failed");
         }
         const { request_id, serialized_tx, network } = await prepRes.json();
@@ -210,7 +236,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const signedTx = await detected.provider.signTransaction(tx);
 
         // Step 4: submit signed tx to Solana
-        const cluster = (network === "mainnet-beta" ? "mainnet-beta" : network) as any;
+        const cluster = network === "mainnet-beta" ? "mainnet-beta" : network;
         const rpcUrl =
           cluster === "mainnet-beta"
             ? "https://api.mainnet-beta.solana.com"
@@ -241,8 +267,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           explorer_url: confirmData.explorer_url ?? "",
           status: confirmData.status ?? "submitted_on_chain",
         };
-      } catch (err: any) {
-        setError(err.message ?? "Transaction failed");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Transaction failed");
         setStatus("connected");
         return null;
       }
