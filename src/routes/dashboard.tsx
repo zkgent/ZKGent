@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
-import { api, type ZkSystemInfo, type DashboardStats } from "@/lib/api";
+import { api, type ZkSystemInfo, type DashboardStats, type ZkOnChainTx } from "@/lib/api";
+import { WalletStatusPanel } from "@/components/wallet/WalletButton";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardWrapper,
@@ -24,17 +25,22 @@ function fmtNum(n: number | null | undefined) {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  queued:              "bg-yellow-400",
-  note_created:        "bg-yellow-400",
-  commitment_inserted: "bg-yellow-400",
-  proof_requested:     "bg-cyan",
-  proof_generating:    "bg-cyan animate-pulse",
-  proof_verified:      "bg-emerald",
-  nullifier_published: "bg-emerald",
-  sending_to_chain:    "bg-violet animate-pulse",
-  settled:             "bg-emerald",
-  failed:              "bg-red-400",
-  rolled_back:         "bg-red-400/60",
+  queued:               "bg-yellow-400",
+  note_created:         "bg-yellow-400",
+  commitment_inserted:  "bg-yellow-400",
+  proof_requested:      "bg-cyan",
+  proof_generating:     "bg-cyan animate-pulse",
+  proof_generated:      "bg-cyan",
+  proof_verified:       "bg-emerald",
+  signing_requested:    "bg-violet animate-pulse",
+  signed:               "bg-violet",
+  submitted_on_chain:   "bg-violet animate-pulse",
+  confirmed:            "bg-emerald",
+  finalized:            "bg-emerald",
+  nullifier_published:  "bg-emerald",
+  settled:              "bg-emerald",
+  failed:               "bg-red-400",
+  rolled_back:          "bg-red-400/60",
 };
 
 const CAT_COLORS: Record<string, string> = {
@@ -200,9 +206,7 @@ function DashboardPage() {
 
         {/* ── Proof Pipeline ──────────────────────────────────────────────── */}
         <motion.div variants={item}>
-          <SectionLabel>
-            Proof Pipeline <ScaffoldTag />
-          </SectionLabel>
+          <SectionLabel>Proof Pipeline</SectionLabel>
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             {loading ? (
               <div className="px-5 py-8 text-center">
@@ -225,11 +229,30 @@ function DashboardPage() {
                     </div>
                   ))}
                 </div>
-                <div className="px-5 py-3 flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-400/70 shrink-0" />
-                  <p className="font-mono text-[10px] text-yellow-400/70">
-                    Prover backend: <strong>snarkjs-groth16-scaffold</strong> · Circuit: zkgent-transfer-v1 · Real ZK requires compiled .wasm + .zkey
-                  </p>
+                {/* Prover backend info */}
+                <div className="px-5 py-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald shrink-0" />
+                    <p className="font-mono text-[10px] text-emerald">
+                      Backend: <strong>{zk.circuit?.prover_backend ?? "ed25519-operator-proof-v1"}</strong>
+                      {" "}· Ed25519 signing (real cryptographic verification)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
+                    <p className="font-mono text-[10px] text-muted-foreground/50">
+                      Prover pubkey: <span className="text-foreground/60">{zk.circuit?.prover_pubkey?.slice(0, 24) ?? "…"}…</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${zk.circuit?.transfer?.available ? "bg-emerald" : "bg-yellow-400/60"}`} />
+                    <p className="font-mono text-[10px] text-yellow-400/70">
+                      zk-SNARK circuit ({zk.circuit?.transfer?.id ?? "zkgent-transfer-v1"}):
+                      {zk.circuit?.transfer?.available
+                        ? " ✓ Available"
+                        : " Pending — run: npm run circuits:build to compile .wasm + .zkey"}
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -259,12 +282,13 @@ function DashboardPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-4 gap-0 text-center divide-x divide-hairline">
+                <div className="grid grid-cols-5 gap-0 text-center divide-x divide-hairline">
                   {[
-                    { label: "Queued",    value: zk?.settlements.queued ?? 0,     dot: "bg-yellow-400" },
-                    { label: "In Progress", value: zk?.settlements.in_progress ?? 0, dot: "bg-cyan animate-pulse" },
-                    { label: "Settled",   value: zk?.settlements.settled ?? 0,    dot: "bg-emerald" },
-                    { label: "Failed",    value: zk?.settlements.failed ?? 0,     dot: "bg-red-400" },
+                    { label: "Queued",     value: zk?.settlements.queued ?? 0,      dot: "bg-yellow-400" },
+                    { label: "In Progress",value: zk?.settlements.in_progress ?? 0, dot: "bg-cyan animate-pulse" },
+                    { label: "Confirmed",  value: zk?.settlements.confirmed ?? 0,   dot: "bg-emerald/60" },
+                    { label: "Finalized",  value: zk?.settlements.finalized ?? 0,   dot: "bg-emerald" },
+                    { label: "Failed",     value: zk?.settlements.failed ?? 0,      dot: "bg-red-400" },
                   ].map((s) => (
                     <div key={s.label} className="px-3 py-3 flex flex-col items-center gap-1">
                       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
@@ -274,6 +298,60 @@ function DashboardPage() {
                   ))}
                 </div>
               </>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── Wallet + On-chain Transactions ──────────────────────────────── */}
+        <motion.div variants={item} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+          {/* Wallet status */}
+          <WalletStatusPanel />
+
+          {/* On-chain transactions */}
+          <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
+            <div className="border-b border-hairline px-5 py-3 flex items-center justify-between">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">On-chain Transactions</p>
+              <span className="font-mono text-[9px] uppercase tracking-wider text-emerald border border-emerald/20 rounded px-1.5 py-0.5">devnet</span>
+            </div>
+            {loading ? (
+              <div className="px-5 py-4 space-y-2">{[0,1,2].map(i=><div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse"/>)}</div>
+            ) : !zk || !zk.on_chain?.latest_txs?.length ? (
+              <div className="px-5 py-6 flex flex-col items-center gap-2">
+                <p className="font-mono text-[11px] text-muted-foreground/40">No on-chain txs yet</p>
+                <p className="font-mono text-[10px] text-muted-foreground/30">Initiate a settlement to anchor on Solana devnet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-hairline">
+                {zk.on_chain.latest_txs.slice(0, 4).map((tx: ZkOnChainTx) => (
+                  <div key={tx.id} className="px-5 py-3 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${tx.status === "confirmed" || tx.status === "finalized" ? "bg-emerald" : tx.status === "failed" ? "bg-red-400" : "bg-cyan animate-pulse"}`} />
+                        <span className="font-mono text-[10px] text-foreground truncate">
+                          {tx.signature === "N/A" ? "N/A (no SOL)" : `${tx.signature.slice(0, 16)}…`}
+                        </span>
+                      </div>
+                      <span className={`font-mono text-[8px] uppercase tracking-wider shrink-0 border rounded px-1 py-0.5 ${tx.status === "confirmed" || tx.status === "finalized" ? "border-emerald/20 text-emerald" : tx.status === "failed" ? "border-red-400/20 text-red-400" : "border-cyan/20 text-cyan"}`}>
+                        {tx.status}
+                      </span>
+                    </div>
+                    {tx.explorer_url && (
+                      <a href={tx.explorer_url} target="_blank" rel="noopener noreferrer"
+                        className="font-mono text-[9px] text-cyan/60 hover:text-cyan transition-colors ml-3">
+                        View on Explorer →
+                      </a>
+                    )}
+                  </div>
+                ))}
+                {zk.on_chain.operator_address && (
+                  <div className="px-5 py-2.5 border-t border-hairline">
+                    <p className="font-mono text-[9px] text-muted-foreground/40">
+                      Operator: <span className="text-foreground/40">{zk.on_chain.operator_address.slice(0, 16)}…</span>
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </motion.div>

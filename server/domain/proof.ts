@@ -1,25 +1,45 @@
 /**
  * ZKGENT Proof Pipeline
  *
- * The proof pipeline manages the lifecycle of zero-knowledge proofs
- * for confidential transfers.
+ * PROOF STACK DECISION:
+ *   We implement Ed25519 operator authorization proofs using @noble/ed25519.
  *
- * STATUS:
- *   - Proof artifact model and DB persistence: IMPLEMENTED
- *   - Proof input/witness preparation: IMPLEMENTED (scaffold inputs)
- *   - Prover abstraction (interface): IMPLEMENTED
- *   - Actual ZK proof generation (Groth16/PLONK via snarkjs): SCAFFOLD
- *   - Verifier abstraction (interface): IMPLEMENTED
- *   - Actual on-chain verification: SCAFFOLD
- *   - Proof status lifecycle: IMPLEMENTED
+ *   WHY NOT GROTH16/PLONK (Circom/snarkjs):
+ *   Real zk-SNARKs require pre-compiled circuit artifacts (.wasm + .zkey) from
+ *   the Circom compiler toolchain (Rust-based, requires offline compilation).
+ *   These cannot be generated at runtime without the compiler binary.
  *
- * When a real ZK library (snarkjs, bellman, arkworks) is integrated,
- * only the prover/verifier implementation functions need to change —
- * the pipeline interface and persistence layer remain the same.
+ *   WHAT IS IMPLEMENTED (REAL):
+ *   - Ed25519 signing of H(commitment || nullifier || merkle_root || circuit_id)
+ *   - Real elliptic curve cryptography (Ed25519 / Curve25519)
+ *   - Real verification via ed25519.verify() — cryptographic, not structural
+ *   - Proof artifact: 64-byte Ed25519 signature + 32-byte public key
+ *   - Full proof lifecycle tracked in zk_proofs table
+ *
+ *   WHAT IS SCAFFOLD (PARTIAL):
+ *   - zk-SNARK / Groth16 circuit: requires compiled .wasm + .zkey from Circom
+ *   - Poseidon hash (ZK-native): requires circuit compilation
+ *   - Range proof / membership proof circuit: requires circuit compilation
+ *
+ *   NEXT STEP FOR FULL ZK:
+ *   1. Run: circom circuit/commitment.circom --r1cs --wasm --sym
+ *   2. Run: snarkjs groth16 setup circuit.r1cs pot14_final.ptau circuit.zkey
+ *   3. Export vkey: snarkjs zkey export verificationkey circuit.zkey vkey.json
+ *   4. Drop artifacts in server/circuits/ and update CIRCUIT_CONFIG below
  */
 
+import * as ed from "@noble/ed25519";
 import { db } from "../db.js";
 import { domainHash, randomSalt, DOMAIN, Bytes32, shortHash } from "./crypto.js";
+import crypto from "crypto";
+
+// @noble/ed25519 v2 requires SHA-512 sync implementation.
+// We provide it via Node.js native crypto — no external hash import needed.
+ed.etc.sha512Sync = (...m: Uint8Array[]) => {
+  const h = crypto.createHash("sha512");
+  for (const msg of m) h.update(msg);
+  return new Uint8Array(h.digest());
+};
 
 export type ProofStatus =
   | "pending"
@@ -47,10 +67,10 @@ export interface ProofArtifact {
   related_transfer_id: string | null;
   proof_type: ProofType;
   status: ProofStatus;
-  input_hash: Bytes32;    // H(inputs) — proof of input set without exposing values
-  proof_data: string | null;   // JSON: { pi_a, pi_b, pi_c } when generated
-  public_signals: string | null;  // JSON array of public inputs
-  verification_result: number | null;  // 1=valid, 0=invalid, null=not verified
+  input_hash: Bytes32;
+  proof_data: string | null;
+  public_signals: string | null;
+  verification_result: number | null;
   error_message: string | null;
   created_at: string;
   generated_at: string | null;
@@ -69,9 +89,69 @@ export interface ProofStats {
   avg_generation_ms: number | null;
 }
 
+// ─── Circuit / Artifact Config ───────────────────────────────────────────────
+
+/**
+ * Circuit configuration.
+ * When Circom artifacts are compiled and placed in server/circuits/,
+ * update the paths here and set available: true.
+ *
+ * STATUS: SCAFFOLD — circuit files not yet compiled.
+ * BACKEND: Ed25519 operator proof is used in the interim.
+ */
+export const CIRCUIT_CONFIG = {
+  transfer: {
+    id:        "zkgent-transfer-v1",
+    available: false,   // set true when .wasm + .zkey are in place
+    wasm:      "server/circuits/transfer/circuit.wasm",
+    zkey:      "server/circuits/transfer/circuit.zkey",
+    vkey:      "server/circuits/transfer/vkey.json",
+    note:      "Requires Circom compilation. Use: npm run circuits:build",
+  },
+  membership: {
+    id:        "zkgent-membership-v1",
+    available: false,
+    wasm:      "server/circuits/membership/circuit.wasm",
+    zkey:      "server/circuits/membership/circuit.zkey",
+    vkey:      "server/circuits/membership/vkey.json",
+    note:      "Merkle membership proof. Requires Circom compilation.",
+  },
+} as const;
+
+export type CircuitName = keyof typeof CIRCUIT_CONFIG;
+
+// ─── Operator Signing Key ─────────────────────────────────────────────────────
+
+/**
+ * Derive the operator Ed25519 private key from the operator seed.
+ * Returns the 32-byte private key as Uint8Array.
+ *
+ * IMPLEMENTED: Real Ed25519 key derivation.
+ * The private key is NEVER stored or logged — derived on demand only.
+ */
+export function getProverPrivateKey(): Uint8Array {
+  const seed = process.env.ZKGENT_OPERATOR_SEED ?? "dev-only-seed-not-for-production-zkgent-v1";
+  const keyMaterial = crypto
+    .createHmac("sha256", "zkgent:proof:signing_key:v1")
+    .update(seed)
+    .digest();
+  return keyMaterial; // 32 bytes → valid Ed25519 private key
+}
+
+/**
+ * Get the operator Ed25519 public key (hex).
+ * Safe to store and display.
+ * IMPLEMENTED.
+ */
+export function getProverPublicKey(): string {
+  return Buffer.from(ed.getPublicKey(getProverPrivateKey())).toString("hex");
+}
+
+// ─── Proof Input Builder ──────────────────────────────────────────────────────
+
 /**
  * Build proof inputs for a confidential transfer.
- * IMPLEMENTED: input structure is correct for a Groth16/PLONK circuit.
+ * IMPLEMENTED: correct input structure for Ed25519 proof and future SNARK.
  */
 export function buildProofInput(opts: {
   commitment: Bytes32;
@@ -96,9 +176,27 @@ export function buildProofInput(opts: {
 }
 
 /**
- * Create a proof record in the database (status: pending).
+ * Normalize the witness message: deterministic encoding of proof inputs.
  * IMPLEMENTED.
  */
+function buildWitnessMessage(input: ProofInput, circuitId: string): Uint8Array {
+  const parts = [
+    circuitId,
+    input.commitment,
+    input.nullifier,
+    input.merkle_root ?? "null",
+    input.value_hash,
+    input.recipient_hash,
+    input.salt,
+    input.proof_type,
+  ].join(":");
+  return Buffer.from(
+    crypto.createHash("sha256").update(parts).digest()
+  );
+}
+
+// ─── Proof Record Management ──────────────────────────────────────────────────
+
 export function createProofRecord(opts: {
   relatedTransferId?: string;
   proofType: ProofType;
@@ -112,6 +210,7 @@ export function createProofRecord(opts: {
     opts.input.salt
   );
   const now = new Date().toISOString();
+  const circuitConf = CIRCUIT_CONFIG[opts.proofType as CircuitName] ?? CIRCUIT_CONFIG.transfer;
 
   db.prepare(`
     INSERT INTO zk_proofs
@@ -123,22 +222,29 @@ export function createProofRecord(opts: {
     opts.relatedTransferId ?? null,
     opts.proofType,
     inputHash,
-    "snarkjs-groth16-scaffold",
-    `zkgent-${opts.proofType}-v1`,
+    "ed25519-operator-proof-v1",
+    circuitConf.id,
     now
   );
 
   return db.prepare(`SELECT * FROM zk_proofs WHERE id = ?`).get(id) as ProofArtifact;
 }
 
+// ─── Real Prover (Ed25519) ────────────────────────────────────────────────────
+
 /**
- * Prover abstraction.
+ * Generate a real Ed25519 operator authorization proof.
  *
- * SCAFFOLD: This function logs what a real prover would do.
- * Replace with: await snarkjs.groth16.fullProve(input, wasmPath, zkeyPath)
+ * IMPLEMENTED: Real elliptic curve signing (Ed25519 / Curve25519).
+ * The proof proves: "the ZKGENT operator authorized this commitment-nullifier pair"
  *
- * When a real circuit is available, this function is the only one that needs
- * to change. The rest of the pipeline (status management, persistence) remains.
+ * Proof structure:
+ *   - message = SHA-256(circuit_id:commitment:nullifier:merkle_root:...)
+ *   - signature = Ed25519.sign(message, operator_private_key)   [64 bytes]
+ *   - public_key = Ed25519.getPublicKey(operator_private_key)   [32 bytes]
+ *
+ * NOT a zk-SNARK: the operator's public key is revealed (not zero-knowledge
+ * in the traditional sense). Full ZK requires compiled Circom circuit.
  */
 export async function runProver(proofId: string, input: ProofInput): Promise<{
   success: boolean;
@@ -146,59 +252,66 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
   publicSignals?: string;
   error?: string;
 }> {
-  const now = new Date().toISOString();
+  const start = Date.now();
+  db.prepare(`UPDATE zk_proofs SET status = 'generating' WHERE id = ?`).run(proofId);
 
-  // Mark as generating
-  db.prepare(
-    `UPDATE zk_proofs SET status = 'generating' WHERE id = ?`
-  ).run(proofId);
+  try {
+    const privKey = getProverPrivateKey();
+    const pubKey  = ed.getPublicKey(privKey);
 
-  // SCAFFOLD: Simulate proof generation delay (1-3s in real system)
-  // In production: const { proof, publicSignals } = await snarkjs.groth16.fullProve(...)
-  await new Promise(r => setTimeout(r, 200));
+    const circuitId = db.prepare(
+      `SELECT circuit_id FROM zk_proofs WHERE id = ?`
+    ).get(proofId) as { circuit_id: string } | null;
+    const cid = circuitId?.circuit_id ?? CIRCUIT_CONFIG.transfer.id;
 
-  const scaffoldProof = {
-    _scaffold: true,
-    _note: "Real Groth16/PLONK proof requires compiled circuit (.wasm + .zkey). SCAFFOLD only.",
-    pi_a: [domainHash(DOMAIN.COMMITMENT, "pi_a", input.commitment), "1"],
-    pi_b: [[domainHash(DOMAIN.COMMITMENT, "pi_b_0", input.commitment), domainHash(DOMAIN.COMMITMENT, "pi_b_1", input.commitment)], ["1", "0"]],
-    pi_c: [domainHash(DOMAIN.COMMITMENT, "pi_c", input.commitment), "1"],
-    protocol: "groth16",
-    curve: "bn128",
-  };
+    const message   = buildWitnessMessage(input, cid);
+    const signature = await ed.signAsync(message, privKey);
+    const elapsed   = Date.now() - start;
 
-  const publicSignals = [
-    input.commitment,
-    input.nullifier,
-    input.merkle_root ?? DOMAIN.MERKLE,
-  ];
+    const proofData = JSON.stringify({
+      _type:        "ed25519-operator-proof",
+      _version:     "v1",
+      _note:        "Ed25519 operator authorization proof. Full zk-SNARK requires Circom circuit compilation.",
+      signature:    Buffer.from(signature).toString("hex"),
+      public_key:   Buffer.from(pubKey).toString("hex"),
+      circuit_id:   cid,
+      message_hash: Buffer.from(message).toString("hex"),
+      elapsed_ms:   elapsed,
+    });
 
-  db.prepare(`
-    UPDATE zk_proofs SET
-      status = 'generated',
-      proof_data = ?,
-      public_signals = ?,
-      generated_at = ?
-    WHERE id = ?
-  `).run(
-    JSON.stringify(scaffoldProof),
-    JSON.stringify(publicSignals),
-    now,
-    proofId
-  );
+    const publicSignals = JSON.stringify([
+      input.commitment,
+      input.nullifier,
+      input.merkle_root ?? "null",
+      Buffer.from(pubKey).toString("hex"),
+    ]);
 
-  return {
-    success: true,
-    proofData: JSON.stringify(scaffoldProof),
-    publicSignals: JSON.stringify(publicSignals),
-  };
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE zk_proofs SET
+        status = 'generated',
+        proof_data = ?,
+        public_signals = ?,
+        generated_at = ?
+      WHERE id = ?
+    `).run(proofData, publicSignals, now, proofId);
+
+    return { success: true, proofData, publicSignals };
+  } catch (err: any) {
+    db.prepare(`
+      UPDATE zk_proofs SET status = 'failed', error_message = ? WHERE id = ?
+    `).run(err.message, proofId);
+    return { success: false, error: err.message };
+  }
 }
 
+// ─── Real Verifier (Ed25519) ──────────────────────────────────────────────────
+
 /**
- * Verifier abstraction.
+ * Verify an Ed25519 operator authorization proof.
  *
- * SCAFFOLD: Structural verification only (checks proof has expected fields).
- * Replace with: await snarkjs.groth16.verify(vKey, publicSignals, proof)
+ * IMPLEMENTED: Real cryptographic verification via ed25519.verify().
+ * This is NOT a structural check — it verifies the elliptic curve signature.
  */
 export async function runVerifier(proofId: string): Promise<{
   valid: boolean;
@@ -208,37 +321,58 @@ export async function runVerifier(proofId: string): Promise<{
     `SELECT * FROM zk_proofs WHERE id = ?`
   ).get(proofId) as ProofArtifact | null;
 
-  if (!proof) return { valid: false, reason: "proof_not_found" };
+  if (!proof)         return { valid: false, reason: "proof_not_found" };
   if (!proof.proof_data) return { valid: false, reason: "no_proof_data" };
 
   db.prepare(`UPDATE zk_proofs SET status = 'verifying' WHERE id = ?`).run(proofId);
-  await new Promise(r => setTimeout(r, 100));
 
-  // SCAFFOLD: Structural check only
-  const parsedProof = JSON.parse(proof.proof_data);
-  const isStructurallyValid = !!(parsedProof.pi_a && parsedProof.pi_b && parsedProof.pi_c);
+  try {
+    const parsed = JSON.parse(proof.proof_data);
 
-  const now = new Date().toISOString();
-  db.prepare(`
-    UPDATE zk_proofs SET
-      status = ?,
-      verification_result = ?,
-      verified_at = ?
-    WHERE id = ?
-  `).run(
-    isStructurallyValid ? "verified" : "failed",
-    isStructurallyValid ? 1 : 0,
-    now,
-    proofId
-  );
+    if (parsed._type !== "ed25519-operator-proof") {
+      db.prepare(`UPDATE zk_proofs SET status = 'failed', verification_result = 0 WHERE id = ?`).run(proofId);
+      return { valid: false, reason: "unknown_proof_type" };
+    }
 
-  return {
-    valid: isStructurallyValid,
-    reason: isStructurallyValid
-      ? "structural_check_passed_scaffold"
-      : "structural_check_failed",
-  };
+    const signature  = Buffer.from(parsed.signature, "hex");
+    const publicKey  = Buffer.from(parsed.public_key, "hex");
+    const message    = Buffer.from(parsed.message_hash, "hex");
+
+    // Real Ed25519 verification — cryptographic, not structural
+    const isValid = await ed.verifyAsync(signature, message, publicKey);
+
+    // Cross-check: the public key must match the operator's current public key
+    const expectedPubKey = getProverPublicKey();
+    const pubKeyMatch = parsed.public_key === expectedPubKey;
+
+    const result = isValid && pubKeyMatch;
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      UPDATE zk_proofs SET
+        status = ?,
+        verification_result = ?,
+        verified_at = ?
+      WHERE id = ?
+    `).run(result ? "verified" : "failed", result ? 1 : 0, now, proofId);
+
+    return {
+      valid: result,
+      reason: result
+        ? "ed25519_signature_valid"
+        : !isValid
+          ? "ed25519_signature_invalid"
+          : "public_key_mismatch",
+    };
+  } catch (err: any) {
+    db.prepare(`
+      UPDATE zk_proofs SET status = 'failed', error_message = ?, verification_result = 0 WHERE id = ?
+    `).run(err.message, proofId);
+    return { valid: false, reason: err.message };
+  }
 }
+
+// ─── Queries ──────────────────────────────────────────────────────────────────
 
 export function getProofById(id: string): ProofArtifact | null {
   return db.prepare(`SELECT * FROM zk_proofs WHERE id = ?`).get(id) as ProofArtifact | null;
@@ -262,4 +396,14 @@ export function getProofStats(): ProofStats {
     FROM zk_proofs
   `).get() as Omit<ProofStats, "avg_generation_ms">;
   return { ...row, avg_generation_ms: null };
+}
+
+export function getCircuitStatus() {
+  return {
+    transfer:   { ...CIRCUIT_CONFIG.transfer,   available: CIRCUIT_CONFIG.transfer.available },
+    membership: { ...CIRCUIT_CONFIG.membership, available: CIRCUIT_CONFIG.membership.available },
+    prover_backend: "ed25519-operator-proof-v1",
+    prover_pubkey:  getProverPublicKey(),
+    note: "Ed25519 operator proof is active. zk-SNARK activation: drop compiled .wasm+.zkey into server/circuits/ and set available:true in CIRCUIT_CONFIG.",
+  };
 }

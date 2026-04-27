@@ -1,0 +1,250 @@
+Lanjutkan aplikasi ZKGent yang sudah ada ke tahap berikutnya.                 
+                                                                                
+  Fokus tahap ini SANGAT SPESIFIK. Jangan melebar.                              
+                                                                                
+  TUJUAN TAHAP INI:                                                             
+  Ubah fondasi/scaffold yang sudah ada menjadi implementasi yang lebih nyata    
+untuk 3 area berikut:                                                           
+  1. zero-knowledge proof generation + verification yang nyata                  
+  2. wallet signing flow yang nyata                                             
+  3. integrasi Solana on-chain yang nyata                                       
+                                                                                
+  BATASAN WAJIB:                                                                
+  - JANGAN ubah landing page                                                    
+  - JANGAN redesign UI marketing                                                
+  - JANGAN mengacak modul yang tidak relevan                                    
+  - PERTAHANKAN dashboard yang sudah ada, lalu sambungkan ke implementasi baru  
+  - Fokus pada penggantian scaffold menjadi implementasi yang lebih nyata       
+  - Jangan overclaim. Jika ada bagian belum selesai penuh, labeli dengan jujur  
+                                                                                
+  KONTEKS SAAT INI:                                                             
+  Aplikasi sudah punya:                                                         
+  - domain layer untuk notes, commitments, nullifiers, proofs, settlements,     
+keys, disclosure, merkle, solana                                                
+  - API `/api/zk/*`                                                             
+  - dashboard observability ZK                                                  
+  - settlement engine dasar                                                     
+  - tetapi proof generation masih scaffold                                      
+  - verifier masih structural check                                             
+  - wallet signing masih scaffold                                               
+  - on-chain settlement masih scaffold                                          
+  - Solana status check sudah ada                                               
+  - landing page harus tetap utuh                                               
+                                                                                
+  PRIORITAS IMPLEMENTASI                                                        
+                                                                                
+  A. REAL PROOF PIPELINE                                                        
+  Ganti proof scaffold saat ini dengan pipeline yang lebih nyata.               
+                                                                                
+  Kerjakan:                                                                     
+  1. pilih stack proof yang paling realistis untuk codebase saat ini            
+     - kalau memungkinkan gunakan `snarkjs`                                     
+     - kalau butuh circuit sederhana, buat circuit minimal yang realistis untuk 
+transfer membership/nullifier flow                                              
+     - dokumentasikan pilihan stack secara singkat di code/comments             
+                                                                                
+  2. implement proof generation nyata                                           
+     - gunakan real proving call, bukan dummy object                            
+     - hasilkan artifact proof nyata                                            
+     - simpan public signals nyata                                              
+     - hubungkan ke tabel `zk_proofs`                                           
+                                                                                
+  3. implement proof verification nyata                                         
+     - verifier harus memverifikasi proof secara kriptografis                   
+     - hapus pendekatan “cek struktur object saja”                              
+     - simpan hasil verifikasi secara benar ke DB                               
+                                                                                
+  4. build proof input pipeline yang benar                                      
+     - input builder                                                            
+     - witness input normalization                                              
+     - circuit identifier/versioning                                            
+     - error handling yang jelas                                                
+                                                                                
+  5. jika full confidential transfer circuit terlalu besar untuk sekali jalan   
+     - implement minimal circuit nyata yang membuktikan subset yang jujur,      
+misalnya:                                                                       
+       - knowledge of commitment preimage                                       
+       - consistency between commitment and public signals                      
+       - nullifier derivation consistency                                       
+     - lebih baik proof kecil tapi nyata daripada sistem besar tapi bohong      
+                                                                                
+  6. tambahkan artifact management                                              
+     - lokasi circuit / wasm / zkey / verification_key                          
+     - loader utility                                                           
+     - config yang rapi                                                         
+                                                                                
+  B. WALLET SIGNING FLOW NYATA                                                  
+  Implement flow signing yang benar untuk Solana wallet.                        
+                                                                                
+  Kerjakan:                                                                     
+  1. tambahkan integrasi frontend wallet                                        
+     - gunakan wallet adapter yang masuk akal untuk Solana                      
+     - minimal support arsitektur untuk Phantom / Backpack style wallet         
+     - buat provider/state yang rapi                                            
+                                                                                
+  2. implement signing flow nyata                                               
+     - request transaction dari backend                                         
+     - serialize transaction                                                    
+     - sign transaction di frontend wallet                                      
+     - kirim signed transaction / signature result kembali ke backend bila perlu
+     - tampilkan status signing yang nyata                                      
+                                                                                
+  3. sambungkan ke workflow settlement                                          
+     - settlement yang membutuhkan signing harus punya lifecycle jelas          
+     - dashboard harus bisa melihat apakah signing masih pending / signed /     
+failed                                                                          
+                                                                                
+  4. jangan hardcode wallet behavior                                            
+     - buat abstraction yang bersih                                             
+     - kalau perlu, bedakan mode:                                               
+       - mock/dev fallback                                                      
+       - real wallet mode                                                       
+                                                                                
+  5. update dashboard/state observability                                       
+     - tampilkan wallet readiness                                               
+     - wallet connected/disconnected                                            
+     - signing queue/status                                                     
+     - recent signing attempts jika relevan                                     
+                                                                                
+  C. SOLANA ON-CHAIN NYATA                                                      
+  Naikkan integrasi Solana dari scaffold menjadi eksekusi yang lebih nyata.     
+                                                                                
+  Kerjakan:                                                                     
+  1. gunakan `@solana/web3.js` atau stack yang paling tepat                     
+  2. bangun transaction builder yang nyata                                      
+     - real transaction object                                                  
+     - proper instruction assembly                                              
+     - fee payer handling                                                       
+     - recent blockhash handling                                                
+  3. buat program client abstraction yang benar                                 
+     - walaupun program custom belum sempurna, boundary client-nya harus nyata  
+  4. jika custom ZKGent program belum ada                                       
+     - implement minimal on-chain path yang jujur dan berjalan di devnet        
+     - misalnya anchoring commitment / settlement metadata / memo / state       
+reference                                                                       
+     - jangan berpura-pura sudah confidential on-chain jika belum               
+  5. jika memungkinkan:                                                         
+     - kirim transaksi nyata ke devnet                                          
+     - simpan tx signature nyata                                                
+     - update settlement status berdasarkan hasil transaksi nyata               
+  6. tambahkan confirmation handling                                            
+     - submitted                                                                
+     - confirmed                                                                
+     - finalized                                                                
+     - failed                                                                   
+  7. update dashboard                                                           
+     - show real network info                                                   
+     - latest tx signature                                                      
+     - last confirmed settlement                                                
+     - pending on-chain submissions                                             
+     - program deployment status yang jujur                                     
+                                                                                
+  D. SETTLEMENT ENGINE REFACTOR                                                 
+  Refactor settlement engine agar bisa memakai:                                 
+  - proof generation nyata                                                      
+  - proof verification nyata                                                    
+  - wallet signing nyata                                                        
+  - transaction submission nyata                                                
+                                                                                
+  State machine harus diperjelas jika perlu, misalnya:                          
+  - queued                                                                      
+  - note_created                                                                
+  - commitment_inserted                                                         
+  - proof_requested                                                             
+  - proof_generating                                                            
+  - proof_generated                                                             
+  - proof_verified                                                              
+  - signing_requested                                                           
+  - signed                                                                      
+  - submitted_on_chain                                                          
+  - confirmed                                                                   
+  - finalized                                                                   
+  - failed                                                                      
+                                                                                
+  Gunakan status nyata, bukan istilah ambigu.                                   
+                                                                                
+  E. DASHBOARD                                                                  
+  Dashboard harus diperbarui agar mencerminkan implementasi baru.               
+                                                                                
+  Tambahkan/upgrade observability:                                              
+  - proof backend yang dipakai                                                  
+  - circuit status / artifact availability                                      
+  - proof generated vs verified                                                 
+  - wallet connection/signing status                                            
+  - latest signing request                                                      
+  - submitted / confirmed / finalized on-chain tx                               
+  - tx signature nyata                                                          
+  - devnet/mainnet mode                                                         
+  - settlement lifecycle baru                                                   
+  - program readiness / deployment status                                       
+                                                                                
+  Jangan rusak tampilan utama dashboard, tapi isi datanya harus naik level.     
+                                                                                
+  F. VALIDASI DAN TESTING                                                       
+  Tambahkan testing untuk:                                                      
+  - proof generation path                                                       
+  - proof verification path                                                     
+  - transaction building                                                        
+  - settlement state transitions                                                
+  - wallet request/response contracts                                           
+  - Solana submission helpers                                                   
+                                                                                
+  Kalau test end-to-end penuh terlalu besar, minimal tambahkan                  
+test/unit/integration pada komponen kritis.                                     
+                                                                                
+  G. DOKUMENTASI JUJUR                                                          
+  Update dokumentasi agar jelas:                                                
+  - apa yang sekarang benar-benar nyata                                         
+  - apa yang masih partial                                                      
+  - apakah proof sudah real atau baru minimal-circuit                           
+  - apakah on-chain path benar-benar submit ke devnet                           
+  - apakah wallet flow benar-benar sign transaction                             
+                                                                                
+  ATURAN PENTING KEJUJURAN                                                      
+  - Jangan sebut proof “real” jika masih dummy object                           
+  - Jangan sebut verification “real” jika cuma structural check                 
+  - Jangan sebut on-chain integration “real” jika masih string `SCAFFOLD-TX-*`  
+  - Jangan sebut wallet signing “implemented” jika belum ada sign transaction   
+flow nyata                                                                      
+                                                                                
+  STRATEGI IMPLEMENTASI YANG DIINGINKAN                                         
+  Kerjakan secara bertahap dan aman:                                            
+                                                                                
+  Phase A:                                                                      
+  - audit scaffold proof/wallet/solana saat ini                                 
+  - tentukan stack implementasi                                                 
+  - pasang dependency yang dibutuhkan                                           
+  - siapkan struktur file/artifact/config                                       
+                                                                                
+  Phase B:                                                                      
+  - implement proof generation + verification nyata minimal                     
+  - refactor proof persistence and lifecycle                                    
+                                                                                
+  Phase C:                                                                      
+  - implement wallet connection + sign flow                                     
+  - sambungkan ke frontend/backend API                                          
+                                                                                
+  Phase D:                                                                      
+  - implement real devnet transaction submission                                
+  - refactor settlement engine                                                  
+  - update dashboard observability                                              
+                                                                                
+  Phase E:                                                                      
+  - test + docs + final cleanup                                                 
+                                                                                
+  OUTPUT YANG WAJIB DIBERIKAN SAAT SELESAI                                      
+  1. apa yang berhasil dibuat nyata                                             
+  2. apa yang masih partial                                                     
+  3. proof stack yang dipilih                                                   
+  4. wallet flow yang dipakai                                                   
+  5. bagaimana transaksi on-chain dikirim                                       
+  6. perubahan settlement lifecycle                                             
+  7. perubahan dashboard                                                        
+  8. cara menjalankan dan menguji                                               
+                                                                                
+  Mulai sekarang.                                                               
+  Fokus hanya pada:                                                             
+  - proof                                                                       
+  - wallet signing                                                              
+  - Solana on-chain                                                             
+  - dashboard yang berkaitan dengan tiga hal itu  

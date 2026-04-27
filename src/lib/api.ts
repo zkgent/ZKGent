@@ -126,7 +126,8 @@ export interface ZkProofStats {
 }
 export interface ZkSettlementStats {
   total: number; queued: number; in_progress: number;
-  settled: number; failed: number;
+  confirmed: number; finalized: number; failed: number;
+  settled?: number;   // legacy field, use finalized instead
 }
 export interface ZkSolanaStatus {
   network: string; rpc_endpoint: string; reachable: boolean;
@@ -143,6 +144,21 @@ export interface ZkKeyStatus {
   encryption_fingerprint: string; viewing_fingerprint: string;
   custody_mode: string;
 }
+export interface ZkCircuitConfig {
+  id: string; available: boolean; wasm: string; zkey: string; vkey: string; note: string;
+}
+export interface ZkCircuitStatus {
+  transfer: ZkCircuitConfig;
+  membership: ZkCircuitConfig;
+  prover_backend: string;
+  prover_pubkey: string;
+  note: string;
+}
+export interface ZkOnChainTx {
+  id: number; settlement_id: string; signature: string; status: string;
+  memo_data: string; explorer_url: string | null;
+  submitted_at: string; confirmed_at: string | null; error_message: string | null;
+}
 export interface ZkSystemInfo {
   notes: ZkNoteStats;
   commitments: ZkCommitmentStats;
@@ -153,7 +169,9 @@ export interface ZkSystemInfo {
   solana: ZkSolanaStatus;
   disclosure: ZkDisclosureStatus;
   keys: ZkKeyStatus;
-  system: { version: string; zk_ready: boolean; note: string };
+  circuit: ZkCircuitStatus;
+  on_chain: { operator_address: string; latest_txs: ZkOnChainTx[] };
+  system: { version: string; proof_real: boolean; proof_type: string; snark_ready: boolean; note: string };
   fetched_at: string;
 }
 
@@ -161,9 +179,13 @@ export interface ZkSettlementRecord {
   id: string; transfer_id: string; status: string;
   note_id: string | null; commitment: string | null; nullifier: string | null;
   proof_id: string | null; merkle_root_at_settlement: string | null;
-  on_chain_tx_sig: string | null; error_message: string | null;
-  queued_at: string; settled_at: string | null; updated_at: string;
+  on_chain_tx_sig: string | null; on_chain_explorer_url: string | null;
+  error_message: string | null;
+  queued_at: string; submitted_on_chain_at: string | null;
+  confirmed_at: string | null; finalized_at: string | null;
+  settled_at: string | null; updated_at: string;
 }
+
 
 export const api = {
   transfers: {

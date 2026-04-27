@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
+import { WalletButton } from "@/components/wallet/WalletButton";
 
 type NavItem = {
   href: string;
@@ -260,7 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
@@ -270,9 +271,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="hidden sm:flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-cyan" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">
-                Solana devnet
+                Devnet
               </span>
             </div>
+            <WalletButton compact />
           </div>
         </header>
 

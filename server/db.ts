@@ -201,10 +201,39 @@ db.exec(`
     proof_id TEXT,
     merkle_root_at_settlement TEXT,
     on_chain_tx_sig TEXT,
+    on_chain_explorer_url TEXT,
+    signing_request_id TEXT,
     error_message TEXT,
     queued_at TEXT NOT NULL,
+    submitted_on_chain_at TEXT,
+    confirmed_at TEXT,
+    finalized_at TEXT,
     settled_at TEXT,
     updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_onchain_txs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    settlement_id TEXT NOT NULL,
+    signature TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'submitted',
+    memo_data TEXT NOT NULL,
+    explorer_url TEXT,
+    submitted_at TEXT NOT NULL,
+    confirmed_at TEXT,
+    error_message TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS zk_signing_requests (
+    id TEXT PRIMARY KEY,
+    settlement_id TEXT NOT NULL,
+    tx_data TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    wallet_address TEXT,
+    signature TEXT,
+    requested_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    responded_at TEXT
   );
 `);
 
