@@ -63,4 +63,5 @@ run = ["npm", "start"]
 
 [userenv.shared]
 ADMIN_KEY = "obsidian-admin-dev"
-SOLANA_NETWORK = "mainnet-beta"
+SOLANA_NETWORK = "devnet"
+ZKGENT_OPERATOR_SEED = "170d16096bf9216326c5f1f21985e58e19f313308e735b6eb612a5e8127b020e"
