@@ -1,0 +1,327 @@
+Lanjutkan aplikasi ZKGent yang sudah ada.                                     
+                                                                                
+  Fokus tahap ini HARUS sempit dan disiplin.                                    
+  Jangan melebar ke redesign, refactor kosmetik, atau fitur sampingan.          
+                                                                                
+  TUJUAN UTAMA TAHAP INI:                                                       
+  Menutup 3 celah kritis yang masih tersisa:                                    
+  1. dependency integrity harus benar                                           
+  2. wallet flow harus naik dari signMessage ke signTransaction nyata           
+  3. istilah dan arsitektur proof harus jujur dan user-centric, bukan           
+admin-centric                                                                   
+                                                                                
+  TAMBAHAN PENTING:                                                             
+  - sistem harus bergerak ke model USER-BY-USER, bukan admin-only view          
+  - setiap user harus punya identitasnya sendiri setelah connect wallet         
+  - arsitektur harus mengarah ke penggunaan MAINNET sebagai target utama        
+  - boleh tetap menyediakan fallback/test mode, tapi default design dan copy    
+harus mengarah ke mainnet readiness                                             
+  - jangan merusak landing page                                                 
+  - jangan redesign marketing page                                              
+  - jangan mengacak modul di luar scope ini                                     
+                                                                                
+  ================================                                              
+  ATURAN KERJA                                                                  
+  ================================                                              
+                                                                                
+  - High agency                                                                 
+  - Kerjakan langsung                                                           
+  - Jangan kabur ke area lain                                                   
+  - Jangan overclaim                                                            
+  - Jangan menyebut sesuatu “ZK proof” jika itu bukan zero-knowledge proof      
+  - Jangan menyebut sesuatu “wallet signing implemented” jika masih             
+signMessage-only                                                                
+  - Jangan menyebut sesuatu “mainnet ready” jika dependency, tx flow, atau key  
+flow masih belum konsisten                                                      
+  - Pertahankan dashboard yang sudah ada, tapi ubah isinya agar mencerminkan    
+model user-by-user dan signTransaction/on-chain yang lebih nyata                
+                                                                                
+  ================================                                              
+  PRIORITAS 1 — DEPENDENCY INTEGRITY                                            
+  ================================                                              
+                                                                                
+  Rapikan dependency dan build integrity sekarang juga.                         
+                                                                                
+  Kerjakan:                                                                     
+  1. periksa semua import yang saat ini digunakan, terutama:                    
+     - @solana/web3.js                                                          
+     - @noble/curves                                                            
+     - library wallet yang benar-benar dipakai                                  
+  2. pastikan semua dependency itu benar-benar ada di:                          
+     - package.json                                                             
+     - lockfile                                                                 
+  3. hapus mismatch antara code dan dependency state                            
+  4. pastikan fresh install bisa build                                          
+  5. jika perlu, tambahkan script verifikasi sederhana                          
+  6. jangan tinggalkan code yang mengandalkan package yang tidak tercatat       
+                                                                                
+  Output yang diharapkan:                                                       
+  - dependency bersih                                                           
+  - import valid                                                                
+  - build reproducible                                                          
+  - tidak ada “works only in current environment” trap                          
+                                                                                
+  ================================                                              
+  PRIORITAS 2 — USER-BY-USER IDENTITY MODEL                                     
+  ================================                                              
+                                                                                
+  ZKGent harus bergerak dari operator/admin-centric menuju                      
+wallet-identity-centric.                                                        
+                                                                                
+  Kerjakan:                                                                     
+  1. buat model identitas user berbasis wallet                                  
+  2. setiap wallet yang connect harus direpresentasikan sebagai user identity   
+yang unik                                                                       
+  3. simpan identity minimal:                                                   
+     - wallet address                                                           
+     - fingerprint / derived identity id                                        
+     - first_seen_at                                                            
+     - last_seen_at                                                             
+     - network preference                                                       
+     - signing status / connection metadata                                     
+  4. relasikan note / settlement / signing request / activity ke identity user  
+yang relevan                                                                    
+  5. ubah asumsi “operator melakukan semua” menjadi model:                      
+     - operator/system role tetap ada bila perlu                                
+     - tetapi transaksi dan signing harus bisa ditelusuri per-user              
+  6. dashboard harus menampilkan state user-aware, bukan hanya global/admin view
+  7. jika perlu, tambahkan API:                                                 
+     - current wallet identity                                                  
+     - wallet session status                                                    
+     - user-linked settlements                                                  
+     - user-linked notes / transactions                                         
+  8. jangan buat auth web2 aneh-aneh, gunakan wallet identity sebagai pusat     
+                                                                                
+  Yang penting:                                                                 
+  - setiap user punya identitas sendiri setelah connect wallet                  
+  - jangan lagi berpikir sistem ini murni admin panel                           
+                                                                                
+  ================================                                              
+  PRIORITAS 3 — SIGNTRANSACTION NYATA                                           
+  ================================                                              
+                                                                                
+  Wallet flow harus naik level dari signMessage menjadi signTransaction yang    
+benar.                                                                          
+                                                                                
+  Kerjakan:                                                                     
+  1. implement browser wallet transaction signing yang nyata                    
+  2. alurnya harus menjadi:                                                     
+     - backend/build layer menyiapkan transaction nyata                         
+     - frontend wallet connect                                                  
+     - wallet melakukan signTransaction atau signAndSendTransaction             
+     - backend menerima hasil yang relevan                                      
+     - settlement lifecycle diupdate berdasarkan hasil nyata                    
+  3. jangan pakai base64 JSON pura-pura sebagai “tx_data”                       
+  4. jika wallet provider mengharuskan frontend submit langsung ke chain, desain
+flow itu dengan benar                                                           
+  5. jika backend yang submit, pastikan serialized transaction/signature flow   
+valid                                                                           
+  6. status settlement harus mencerminkan:                                      
+     - signing_requested                                                        
+     - transaction_prepared                                                     
+     - signed                                                                   
+     - submitted_on_chain                                                       
+     - confirmed                                                                
+     - finalized                                                                
+     - failed                                                                   
+  7. dashboard harus menampilkan:                                               
+     - wallet connected/disconnected                                            
+     - current user wallet                                                      
+     - pending signing requests user                                            
+     - latest signed transactions                                               
+     - per-user on-chain status                                                 
+                                                                                
+  Catatan:                                                                      
+  - signMessage boleh tetap ada untuk testing/debugging                         
+  - tapi jangan jadikan itu jalur utama settlement                              
+                                                                                
+  ================================                                              
+  PRIORITAS 4 — MAINNET-FIRST ARCHITECTURE                                      
+  ================================                                              
+                                                                                
+  Ubah orientasi sistem ke MAINNET-FIRST, dengan fallback yang aman.            
+                                                                                
+  Kerjakan:                                                                     
+  1. arsitektur config harus menjadikan mainnet sebagai target production utama 
+  2. devnet/testnet tetap boleh ada, tetapi jelas sebagai fallback/development  
+mode                                                                            
+  3. semua config network harus explicit dan konsisten                          
+  4. dashboard/network panel harus menunjukkan:                                 
+     - current cluster                                                          
+     - whether this is mainnet or non-mainnet                                   
+     - operator funding status                                                  
+     - tx explorer links sesuai cluster                                         
+  5. jika ada perilaku yang hanya aman di devnet, tandai jelas                  
+  6. jangan menipu dengan menyebut mainnet jika yang dipakai masih devnet       
+default                                                                         
+  7. kalau ada code yang auto-airdrop, itu harus dibatasi hanya untuk           
+devnet/testnet                                                                  
+                                                                                
+  Yang penting:                                                                 
+  - desain dan wording harus mengarah ke mainnet reality                        
+  - jangan jadikan devnet lagi sebagai asumsi default diam-diam                 
+                                                                                
+  ================================                                              
+  PRIORITAS 5 — JUJURKAN PROOF MODEL                                            
+  ================================                                              
+                                                                                
+  Rapikan istilah proof agar tidak misleading.                                  
+                                                                                
+  Kerjakan:                                                                     
+  1. audit semua tempat yang masih menyebut proof seolah itu zero-knowledge     
+proof                                                                           
+  2. jika implementasi saat ini adalah Ed25519 authorization proof, sebut itu   
+dengan jujur:                                                                   
+     - operator authorization proof                                             
+     - wallet authorization proof                                               
+     - cryptographic authorization proof                                        
+  3. bedakan dengan jelas:                                                      
+     - real implemented cryptographic proof                                     
+     - future zk-SNARK / zk circuit proof                                       
+  4. update:                                                                    
+     - dashboard wording                                                        
+     - API metadata                                                             
+     - comments                                                                 
+     - README/docs bila perlu                                                   
+  5. jangan pakai istilah “ZK verified” jika sebenarnya yang diverifikasi adalah
+signature authorization                                                         
+  6. kalau ada jalur future circuit, labeli sebagai:                            
+     - future zk circuit                                                        
+     - snark pending                                                            
+     - not active yet                                                           
+                                                                                
+  ================================                                              
+  PRIORITAS 6 — SOLANA FLOW HARUS KONSISTEN                                     
+  ================================                                              
+                                                                                
+  Saat ini ada split aneh antara solana.ts dan solana_tx.ts. Rapikan.           
+                                                                                
+  Kerjakan:                                                                     
+  1. satukan boundary yang masuk akal untuk Solana integration                  
+  2. jangan biarkan satu file bilang scaffold sementara file lain sudah real    
+  3. pisahkan dengan jelas:                                                     
+     - network/config/status                                                    
+     - transaction builder                                                      
+     - transaction submission                                                   
+     - explorer helpers                                                         
+     - funding checks                                                           
+  4. kalau custom ZKGent program belum ada:                                     
+     - akui itu                                                                 
+     - tetap gunakan jalur on-chain yang jujur dan nyata                        
+  5. semua on-chain metadata harus terhubung ke identity user jika relevan      
+                                                                                
+  ================================                                              
+  PRIORITAS 7 — DASHBOARD HARUS USER-CENTRIC                                    
+  ================================                                              
+                                                                                
+  Dashboard jangan lagi terasa seperti admin-only observability wall.           
+                                                                                
+  Upgrade dashboard agar bisa menunjukkan:                                      
+  1. current connected wallet identity                                          
+  2. network cluster                                                            
+  3. per-user signing status                                                    
+  4. per-user latest settlements / notes / txs jika user terhubung              
+  5. global metrics tetap boleh ada, tapi jangan mendominasi sampai identitas   
+user hilang                                                                     
+  6. bedakan:                                                                   
+     - system-wide metrics                                                      
+     - user-specific metrics                                                    
+                                                                                
+  Jika tidak ada wallet terkoneksi:                                             
+  - tampilkan clear empty/user onboarding state                                 
+                                                                                
+  Jika wallet terkoneksi:                                                       
+  - tampilkan panel identitas user dan aktivitas mereka                         
+                                                                                
+  ================================                                              
+  PRIORITAS 8 — API YANG DIPERLUKAN                                             
+  ================================                                              
+                                                                                
+  Tambahkan/refactor API seperlunya untuk mendukung scope ini:                  
+  - current identity / resolve identity by wallet                               
+  - create or fetch user identity                                               
+  - transaction preparation endpoint                                            
+  - signing request status                                                      
+  - user-linked settlement list                                                 
+  - user-linked on-chain transaction list                                       
+  - system network mode                                                         
+  - proof model metadata yang jujur                                             
+                                                                                
+  Gunakan validasi yang baik.                                                   
+  Jangan biarkan body request longgar.                                          
+                                                                                
+  ================================                                              
+  PRIORITAS 9 — TESTING                                                         
+  ================================                                              
+                                                                                
+  Tambahkan testing minimal untuk:                                              
+  1. dependency/build sanity                                                    
+  2. wallet identity resolution                                                 
+  3. transaction preparation flow                                               
+  4. settlement state transitions untuk signing path                            
+  5. network mode config logic                                                  
+  6. proof metadata honesty / mapping bila relevan                              
+                                                                                
+  ================================                                              
+  PRIORITAS 10 — BATASAN KEJUJURAN                                              
+  ================================                                              
+                                                                                
+  Ini wajib:                                                                    
+  - jangan menyebut “zero-knowledge proof” untuk Ed25519 signature proof        
+  - jangan menyebut “wallet signing flow complete” jika masih signMessage       
+sebagai jalur utama                                                             
+  - jangan menyebut “mainnet ready” jika cluster handling, tx flow, atau        
+dependencies belum konsisten                                                    
+  - jangan fallback ke admin-centric worldview                                  
+                                                                                
+  ================================                                              
+  URUTAN EKSEKUSI YANG HARUS KAMU IKUTI                                         
+  ================================                                              
+                                                                                
+  Langkah 1:                                                                    
+  - audit dependency + import + lockfile                                        
+  - perbaiki integritas package dulu                                            
+                                                                                
+  Langkah 2:                                                                    
+  - implement identity model berbasis wallet per-user                           
+  - tambahkan persistence dan relasi secukupnya                                 
+                                                                                
+  Langkah 3:                                                                    
+  - refactor wallet flow ke signTransaction nyata                               
+  - siapkan tx preparation dan response lifecycle                               
+                                                                                
+  Langkah 4:                                                                    
+  - rapikan arsitektur Solana menjadi konsisten                                 
+  - orientasikan config ke mainnet-first dengan fallback yang aman              
+                                                                                
+  Langkah 5:                                                                    
+  - audit wording proof                                                         
+  - ganti istilah misleading                                                    
+                                                                                
+  Langkah 6:                                                                    
+  - update dashboard agar user-centric                                          
+                                                                                
+  Langkah 7:                                                                    
+  - update docs + test + final cleanup                                          
+                                                                                
+  ================================                                              
+  OUTPUT YANG WAJIB DIBERIKAN SAAT SELESAI                                      
+  ================================                                              
+                                                                                
+  Berikan dengan tegas:                                                         
+  1. dependency yang ditambahkan/diperbaiki                                     
+  2. bagaimana identity user by wallet sekarang bekerja                         
+  3. apakah signTransaction sudah benar-benar menjadi jalur utama               
+  4. cluster default sekarang apa, dan bagaimana fallback network bekerja       
+  5. istilah proof apa yang diganti dan kenapa                                  
+  6. perubahan dashboard apa saja                                               
+  7. apa yang masih belum selesai / masih partial                               
+                                                                                
+  Mulai sekarang.                                                               
+  Fokus hanya pada:                                                             
+  - dependency integrity                                                        
+  - wallet identity per-user                                                    
+  - signTransaction nyata                                                       
+  - mainnet-first Solana flow                                                   
+  - perapian istilah proof                                                      
+  - dashboard user-centric 
