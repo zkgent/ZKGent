@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 const links = [
-  { label: "Vision", href: "#vision" },
-  { label: "Use Cases", href: "#use-cases" },
-  { label: "Architecture", href: "#architecture" },
+  { label: "Vision", href: "#vision", external: false, internal: false },
+  { label: "Use Cases", href: "#use-cases", external: false, internal: false },
+  { label: "Architecture", href: "#architecture", external: false, internal: false },
+  { label: "Trust", href: "/trust-model", external: false, internal: true },
 ];
 
 export function Navbar() {
@@ -41,25 +43,35 @@ export function Navbar() {
         <ul className="hidden items-center gap-1 md:flex">
           {links.map((l) => (
             <li key={l.href}>
-              <a
-                href={l.href}
-                className="group relative inline-block rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {l.label}
-                <span className="pointer-events-none absolute inset-x-3.5 -bottom-0.5 h-px scale-x-0 bg-gradient-to-r from-transparent via-emerald to-transparent opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-100" />
-              </a>
+              {l.internal ? (
+                <Link
+                  to={l.href}
+                  className="group relative inline-block rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {l.label}
+                  <span className="pointer-events-none absolute inset-x-3.5 -bottom-0.5 h-px scale-x-0 bg-gradient-to-r from-transparent via-emerald to-transparent opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-100" />
+                </Link>
+              ) : (
+                <a
+                  href={l.href}
+                  className="group relative inline-block rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {l.label}
+                  <span className="pointer-events-none absolute inset-x-3.5 -bottom-0.5 h-px scale-x-0 bg-gradient-to-r from-transparent via-emerald to-transparent opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-100" />
+                </a>
+              )}
             </li>
           ))}
         </ul>
 
-        <a
-          href="/dashboard"
+        <Link
+          to="/apply"
           className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-hairline bg-surface-elevated px-4 py-1.5 text-[13px] font-medium text-foreground transition-all hover:border-emerald/40"
         >
           <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-          <span className="relative">Open Dashboard</span>
+          <span className="relative">Apply</span>
           <span className="relative text-emerald transition-transform group-hover:translate-x-0.5">→</span>
-        </a>
+        </Link>
       </nav>
     </motion.header>
   );

@@ -35,12 +35,19 @@ export function Hero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="flex items-center gap-3"
+            className="flex flex-wrap items-center gap-3"
           >
             <span className="h-px w-8 bg-gradient-to-r from-transparent to-emerald/60" />
             <span className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-muted-foreground">
               Zero-Knowledge Confidential Payments
             </span>
+            <Link
+              to="/trust-model"
+              className="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/30 bg-yellow-500/[0.07] px-2.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.22em] text-yellow-200/90 transition hover:border-yellow-400/60 hover:text-yellow-100"
+            >
+              <span className="h-1 w-1 animate-pulse rounded-full bg-yellow-400" />
+              Devnet alpha · D1 · Early access
+            </Link>
           </motion.div>
 
           <motion.h1
@@ -90,11 +97,11 @@ export function Hero() {
             className="mt-10 flex flex-wrap items-center gap-3"
           >
             <Link
-              to="/dashboard"
+              to="/apply"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-3.5 text-sm font-medium text-background transition-all hover:shadow-[0_0_50px_-8px_rgba(255,255,255,0.45)]"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <span className="relative">Open Dashboard</span>
+              <span className="relative">Request Early Access</span>
               <span className="relative transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
             <a

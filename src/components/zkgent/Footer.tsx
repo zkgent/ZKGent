@@ -63,6 +63,8 @@ export function Footer() {
               { label: "Vision", href: "#vision" },
               { label: "Architecture", href: "#architecture" },
               { label: "Use Cases", href: "#use-cases" },
+              { label: "Trust Model", href: "/trust-model" },
+              { label: "Apply for Access", href: "/apply" },
             ]}
           />
           <FooterCol
