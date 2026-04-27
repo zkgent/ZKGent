@@ -119,11 +119,7 @@ const navItems: NavItem[] = [
 
 function ZKGentMark() {
   return (
-    <div className="relative h-6 w-6 shrink-0">
-      <div className="absolute inset-0 rotate-45 rounded-[4px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
-      <div className="absolute inset-[3px] rotate-45 rounded-[2px] bg-background" />
-      <div className="absolute inset-[6px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
-    </div>
+    <img src="/logo.png" alt="ZKGent" className="h-8 w-8 shrink-0 rounded-md" />
   );
 }
 

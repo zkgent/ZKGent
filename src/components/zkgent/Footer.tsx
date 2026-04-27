@@ -5,10 +5,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2">
             <div className="flex items-center gap-2.5">
-              <div className="relative h-5 w-5">
-                <div className="absolute inset-0 rotate-45 rounded-[3px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
-                <div className="absolute inset-[2px] rotate-45 rounded-[2px] bg-background" />
-              </div>
+              <img src="/logo.png" alt="ZKGent" className="h-8 w-8 rounded-md" />
               <span className="font-mono text-[12px] tracking-[0.2em] text-foreground">ZKGENT</span>
             </div>
             <p className="mt-5 max-w-xs text-[13px] leading-relaxed text-muted-foreground">

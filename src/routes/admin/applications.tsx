@@ -285,11 +285,7 @@ function AdminApplicationsPage() {
 
       <div className="border-b border-hairline bg-surface/40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="relative h-5 w-5 shrink-0">
-            <div className="absolute inset-0 rotate-45 rounded-[3px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
-            <div className="absolute inset-[2.5px] rotate-45 rounded-[2px] bg-background" />
-            <div className="absolute inset-[5px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
-          </div>
+          <img src="/logo.png" alt="ZKGent" className="h-7 w-7 shrink-0 rounded-md" />
           <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-foreground">ZKGENT</span>
           <span className="font-mono text-[10px] text-muted-foreground/60">/ Admin</span>
         </div>

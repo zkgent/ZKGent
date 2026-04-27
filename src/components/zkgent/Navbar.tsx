@@ -32,11 +32,7 @@ export function Navbar() {
         }`}
       >
         <a href="#top" className="group flex items-center gap-2.5">
-          <div className="relative h-6 w-6">
-            <div className="absolute inset-0 rotate-45 rounded-[4px] bg-gradient-to-br from-emerald via-cyan to-violet opacity-90" />
-            <div className="absolute inset-[3px] rotate-45 rounded-[2px] bg-background" />
-            <div className="absolute inset-[6px] rotate-45 rounded-[1px] bg-gradient-to-br from-emerald/80 to-cyan/40" />
-          </div>
+          <img src="/logo.png" alt="ZKGent" className="h-8 w-8 rounded-md" />
           <span className="font-mono text-[13px] font-medium tracking-[0.2em] text-foreground">
             ZKGENT
           </span>
