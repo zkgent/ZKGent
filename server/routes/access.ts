@@ -3,6 +3,21 @@ import { db, checkWalletAccess, ACCESS_GRANTING_STATUSES, type ApplicationRow } 
 
 export const accessRouter = Router();
 
+interface AccessResultLike {
+  hasAccess: boolean;
+  reason?: string | null;
+  application?: ApplicationRow | null;
+}
+
+interface WalletRequest extends Request {
+  walletAddress?: string;
+  application?: ApplicationRow | null;
+}
+
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 function publicView(app: ApplicationRow | null) {
   if (!app) return null;
   return {
@@ -103,15 +118,16 @@ accessRouter.post("/link-wallet", (req, res) => {
   let result: LinkResult;
   try {
     result = linkTx();
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = getErrorMessage(err);
     // UNIQUE constraint trip — most likely concurrent linkage.
-    if (String(err?.message || "").includes("UNIQUE")) {
+    if (message.includes("UNIQUE")) {
       return res.status(409).json({
         error: "wallet_already_linked_to_another_application",
         hint: "This wallet is already linked to a different application.",
       });
     }
-    return res.status(500).json({ error: "link_failed", detail: String(err?.message ?? err) });
+    return res.status(500).json({ error: "link_failed", detail: message });
   }
 
   if (!result.ok) return res.status(result.status).json(result.body);
@@ -120,7 +136,7 @@ accessRouter.post("/link-wallet", (req, res) => {
   return res.json({
     application: publicView(result.row),
     hasAccess: access.hasAccess,
-    reason: access.hasAccess ? null : (access as any).reason,
+    reason: access.hasAccess ? null : (access.reason ?? null),
   });
 });
 
@@ -141,7 +157,7 @@ accessRouter.post("/link-wallet", (req, res) => {
  * devnet alpha, not a cryptographic auth boundary. Wallet signature challenge
  * is planned for D2 alongside client-side proving.
  */
-export function requireApprovedWallet(req: Request, res: Response, next: NextFunction) {
+export function requireApprovedWallet(req: WalletRequest, res: Response, next: NextFunction) {
   const headerWallet = (req.headers["x-wallet-address"] as string | undefined)?.trim() || undefined;
   const bodyWallet =
     (
@@ -183,8 +199,8 @@ export function requireApprovedWallet(req: Request, res: Response, next: NextFun
   }
 
   // Attach for downstream handlers — they MUST use these instead of re-reading body.
-  (req as any).walletAddress = walletAddress;
-  (req as any).application = result.application;
+  req.walletAddress = walletAddress;
+  req.application = result.application;
   return next();
 }
 

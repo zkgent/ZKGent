@@ -2,7 +2,7 @@
  * ZKGENT ZK System API Routes
  */
 
-import { Router } from "express";
+import { Router, Request } from "express";
 import { requireApprovedWallet } from "./access.js";
 import { getNoteStats, getAllNotes } from "../domain/note.js";
 import { getCommitmentStats, getAllCommitments } from "../domain/commitment.js";
@@ -33,6 +33,30 @@ import { getProverPublicKey } from "../domain/proof.js";
 import { logActivity, generateId, db } from "../db.js";
 
 export const zkRouter = Router();
+
+interface WalletRequest extends Request {
+  walletAddress?: string;
+}
+
+interface Groth16TransferPayloadLike {
+  _type: string;
+  publicSignals?: unknown;
+}
+
+interface SettlementRowLike {
+  id: string;
+  commitment?: string | null;
+  nullifier?: string | null;
+  proof_id?: string | null;
+}
+
+interface SigningRequestRowLike {
+  settlement_id?: string | null;
+}
+
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 
 // ─── System metrics ───────────────────────────────────────────────────────────
 
@@ -103,8 +127,8 @@ zkRouter.get("/system", async (_req, res) => {
       },
       fetched_at: new Date().toISOString(),
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -113,32 +137,32 @@ zkRouter.get("/system", async (_req, res) => {
 zkRouter.get("/notes", (_req, res) => {
   try {
     res.json({ stats: getNoteStats(), notes: getAllNotes(50) });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 zkRouter.get("/commitments", (_req, res) => {
   try {
     res.json({ stats: getCommitmentStats(), commitments: getAllCommitments(50) });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 zkRouter.get("/nullifiers", (_req, res) => {
   try {
     res.json({ stats: getNullifierStats(), nullifiers: getAllNullifiers(50) });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 zkRouter.get("/merkle", (_req, res) => {
   try {
     res.json(getMerkleStats());
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -147,8 +171,8 @@ zkRouter.get("/merkle", (_req, res) => {
 zkRouter.get("/proofs", (_req, res) => {
   try {
     res.json({ stats: getProofStats(), proofs: getAllProofs(50), circuit: getCircuitStatus() });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -164,7 +188,7 @@ zkRouter.get("/proofs/:id/verify", async (req, res) => {
     if (!proof) return res.status(404).json({ error: "proof_not_found" });
     if (!proof.proof_data) return res.status(400).json({ error: "proof_has_no_data" });
 
-    let payload: any;
+    let payload: Groth16TransferPayloadLike;
     try {
       payload = JSON.parse(proof.proof_data);
     } catch {
@@ -185,7 +209,7 @@ zkRouter.get("/proofs/:id/verify", async (req, res) => {
     res.json({
       proof_id: proof.id,
       circuit_id: proof.circuit_id,
-      circuit_version: (proof as any).circuit_version,
+      circuit_version: "circuit_version" in proof ? proof.circuit_version : undefined,
       backend: proof.prover_backend,
       valid: result.valid,
       verify_ms: result.verify_ms,
@@ -194,16 +218,16 @@ zkRouter.get("/proofs/:id/verify", async (req, res) => {
       verifier_note:
         "Re-verified live via snarkjs.groth16.verify against the deployed verification key. No trust in this server's stored verification_result.",
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 zkRouter.get("/circuit", (_req, res) => {
   try {
     res.json(getCircuitStatus());
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -212,8 +236,8 @@ zkRouter.get("/circuit", (_req, res) => {
 zkRouter.get("/groth16/status", (_req, res) => {
   try {
     res.json(getGroth16Status());
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -254,8 +278,8 @@ zkRouter.get("/groth16/demo", async (req, res) => {
       });
     }
     res.json(result);
-  } catch (err: any) {
-    res.status(500).json({ ok: false, error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ ok: false, error: getErrorMessage(err) });
   }
 });
 
@@ -266,16 +290,16 @@ zkRouter.get("/settlement/queue", (_req, res) => {
     const queue = getSettlementQueue();
     const latestTxs = getLatestOnChainTxs();
     res.json({ stats: getSettlementStats(), queue, latest_on_chain_txs: latestTxs });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
-zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) => {
+zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req: WalletRequest, res) => {
   const { transfer_id, value, asset, recipient_fingerprint, memo } = req.body;
   // Use the wallet validated by requireApprovedWallet — never re-read from
   // body, otherwise a caller could authorize one wallet and act on another.
-  const initiated_by_wallet = (req as any).walletAddress as string;
+  const initiated_by_wallet = req.walletAddress;
   if (!transfer_id || value == null || !recipient_fingerprint) {
     return res.status(400).json({ error: "transfer_id, value, recipient_fingerprint required" });
   }
@@ -305,8 +329,8 @@ zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) =>
     }).catch((err) => console.error("[settlement]", err));
 
     res.json({ settlement_id: record.id, status: record.status });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -315,8 +339,8 @@ zkRouter.get("/settlement/:id", (req, res) => {
     const record = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(req.params.id);
     if (!record) return res.status(404).json({ error: "not_found" });
     res.json(record);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -325,8 +349,8 @@ zkRouter.get("/settlement/:id", (req, res) => {
 zkRouter.get("/transactions", (_req, res) => {
   try {
     res.json(getLatestTxs(20));
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -348,8 +372,8 @@ zkRouter.get("/solana", async (_req, res) => {
       config: { network: config.network, commitment: config.commitment },
       operator_address: getOperatorAddress(),
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -365,17 +389,17 @@ zkRouter.get("/solana", async (_req, res) => {
  *
  * Body: { settlement_id, wallet_address }
  */
-zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
+zkRouter.post("/tx/prepare", requireApprovedWallet, async (req: WalletRequest, res) => {
   const { settlement_id } = req.body;
   // Always use the middleware-validated wallet — body field is ignored.
-  const wallet_address = (req as any).walletAddress as string;
+  const wallet_address = req.walletAddress;
   if (!settlement_id || typeof settlement_id !== "string") {
     return res.status(400).json({ error: "settlement_id required" });
   }
 
-  const settlement = db
-    .prepare(`SELECT * FROM zk_settlements WHERE id = ?`)
-    .get(settlement_id) as any;
+  const settlement = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(settlement_id) as
+    | SettlementRowLike
+    | undefined;
   if (!settlement) return res.status(404).json({ error: "settlement_not_found" });
 
   try {
@@ -429,8 +453,8 @@ zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
       status: "ready_to_sign",
       note: "Deserialize with Transaction.from(Buffer.from(serialized_tx, 'base64')), then signTransaction + sendRawTransaction.",
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -456,11 +480,11 @@ zkRouter.post("/tx/confirm", async (req, res) => {
 
   const signing_request = db
     .prepare(`SELECT * FROM zk_signing_requests WHERE id = ?`)
-    .get(request_id) as any;
+    .get(request_id) as SigningRequestRowLike | undefined;
   if (!signing_request) return res.status(404).json({ error: "signing_request_not_found" });
 
   const { getTxExplorerUrl } = await import("../domain/solana.js");
-  const net = (network ?? "mainnet-beta") as any;
+  const net = typeof network === "string" ? network : "mainnet-beta";
   const explorerUrl = getTxExplorerUrl(tx_signature, net);
   const now = new Date().toISOString();
 
@@ -523,8 +547,8 @@ zkRouter.get("/tx/:requestId", (req, res) => {
       .get(req.params.requestId);
     if (!r) return res.status(404).json({ error: "not_found" });
     res.json(r);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -554,8 +578,8 @@ zkRouter.get("/signing/:id", (req, res) => {
       .get(req.params.id);
     if (!r) return res.status(404).json({ error: "not_found" });
     res.json(r);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -569,15 +593,15 @@ zkRouter.get("/keys", (_req, res) => {
       prover_pubkey: getProverPublicKey(),
       note: "Only key fingerprints and public keys are returned. No private key material is ever exposed.",
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 zkRouter.get("/disclosure", (_req, res) => {
   try {
     res.json(getDisclosureStatus());
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });

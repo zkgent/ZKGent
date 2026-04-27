@@ -15,6 +15,10 @@ import {
 
 export const identityRouter = Router();
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 /**
  * POST /api/identity/resolve
  * Called when a wallet connects. Creates or updates the identity record.
@@ -33,8 +37,8 @@ identityRouter.post("/resolve", (req, res) => {
       network_preference: network_preference ?? undefined,
     });
     res.json({ identity: user });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -53,8 +57,8 @@ identityRouter.get("/:address", (req, res) => {
     }
     const activity = getWalletActivity(address);
     res.json({ identity: user, activity });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -66,7 +70,7 @@ identityRouter.get("/", (_req, res) => {
   try {
     const users = getAllWalletUsers(100);
     res.json({ count: users.length, users });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
