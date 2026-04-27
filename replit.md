@@ -169,8 +169,21 @@ All product routes use `AppShell` which provides:
 - **signAndSubmitTx(settlementId):** Full signTransaction + sendRawTransaction + confirm flow in WalletContext
 - **Heavy adapter packages** (`@solana/wallet-adapter-*`): Not installed — using `window.solana` directly
 
+## Phase 7 — Dashboard UI Surfacing (Cryptographic Stack)
+The dashboard now exposes Phase A+B+C status to operators:
+- **Cryptographic Stack banner** at top of `/dashboard` shows:
+  - **Hash chain**: scheme + curve from `zk.hash_chain` (poseidon-bn254-v1, BN254)
+  - **Groth16 toolchain**: circuit_id + constraint count + READY badge from `zk.groth16` (preimage-knowledge-v1, 213 constraints, single-party setup disclosed)
+  - **Production transfer SNARK**: status from `zk.system.snark_ready` (currently `not built`, with disclosure that it needs membership + balance circuit + multi-party setup)
+- **"Run Groth16 Demo" button** (admin-gated): prompts for ADMIN_KEY, stored in `sessionStorage` (cleared on tab close — narrower XSS window than localStorage). Only persists key after successful verified call. On 401/unauthorized, clears stored key and reprompts. Calls `GET /api/zk/groth16/demo`. Displays prove_ms + verify_ms + verified result.
+- **Operator balance pill** in On-chain Transactions header: from `zk.solana.funded.balance`, color-coded green/red at 0.05 SOL threshold.
+- **Devnet Explorer link** for operator address: shown only when `zk.solana.network === "devnet"` (devnet-only per requirement).
+- New types in `src/lib/api.ts`: `ZkHashChainInfo`, `ZkGroth16Status`, `ZkGroth16DemoResult`, `ZkSolanaResponse`. Extended `ZkSystemInfo.system` with `snark_demo_ready`, `snark_demo_circuit`, `snark_circuit`. New `api.zk.groth16.{status, demo}` client methods.
+
 ## ZK API Routes (/api/zk/*)
-- `GET /api/zk/system` — Full system metrics (powers dashboard ZK observability panel)
+- `GET /api/zk/system` — Full system metrics (powers dashboard ZK observability panel + Cryptographic Stack banner)
+- `GET /api/zk/groth16/status` — Public: Groth16 toolchain availability + setup metadata
+- `GET /api/zk/groth16/demo` — Admin-gated (`x-admin-key` header): runs real Groth16 prove+verify on toy preimage circuit (~600ms CPU)
 - `GET /api/zk/notes` — Notes list + stats
 - `GET /api/zk/commitments` — Commitment registry + stats
 - `GET /api/zk/nullifiers` — Nullifier registry + stats

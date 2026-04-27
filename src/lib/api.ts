@@ -159,6 +159,25 @@ export interface ZkOnChainTx {
   memo_data: string; explorer_url: string | null;
   submitted_at: string; confirmed_at: string | null; error_message: string | null;
 }
+export interface ZkHashChainInfo {
+  scheme: string;          // "poseidon-bn254-v1"
+  curve:  string;          // "BN254 (alt_bn128)"
+  note:   string;
+}
+export interface ZkGroth16Status {
+  available: boolean;
+  scheme: string;          // "groth16"
+  curve:  string;          // "bn254"
+  circuit_id: string;      // "preimage-knowledge-v1"
+  artifacts: { wasm: boolean; zkey: boolean; vkey: boolean };
+  setup: {
+    powers_of_tau: string;
+    phase2: string;
+    curve: string;
+    circuit_constraints: number;
+  };
+  note: string;
+}
 export interface ZkSystemInfo {
   notes: ZkNoteStats;
   commitments: ZkCommitmentStats;
@@ -170,9 +189,43 @@ export interface ZkSystemInfo {
   disclosure: ZkDisclosureStatus;
   keys: ZkKeyStatus;
   circuit: ZkCircuitStatus;
+  groth16?: ZkGroth16Status;
+  hash_chain?: ZkHashChainInfo;
   on_chain: { operator_address: string; latest_txs: ZkOnChainTx[] };
-  system: { version: string; proof_real: boolean; proof_type: string; snark_ready: boolean; note: string };
+  system: {
+    version: string;
+    proof_real: boolean;
+    proof_type: string;
+    snark_ready: boolean;
+    snark_circuit: string | null;
+    snark_demo_ready?: boolean;
+    snark_demo_circuit?: string | null;
+    note: string;
+  };
   fetched_at: string;
+}
+
+export interface ZkGroth16DemoResult {
+  ok: boolean;
+  scheme?: string;
+  curve?: string;
+  circuit?: string;
+  preimage_used?: string;
+  expected_hash?: string;
+  proof?: unknown;
+  public_signals?: string[];
+  verified?: boolean;
+  prove_ms?: number;
+  verify_ms?: number;
+  error?: string;
+  hint?: string;
+}
+
+export interface ZkSolanaResponse {
+  status: ZkSolanaStatus & { is_mainnet: boolean };
+  funded?: { address: string; balance: number; airdropped: boolean; error?: string };
+  config: { network: string; commitment: string };
+  operator_address: string;
 }
 
 export interface ZkSettlementRecord {
@@ -289,9 +342,20 @@ export const api = {
           method: "POST", body: JSON.stringify(body),
         }),
     },
-    solana: () => fetchJson<{ status: ZkSolanaStatus & { is_mainnet: boolean }; config: { network: string; commitment: string }; operator_address: string }>("/api/zk/solana"),
+    solana: () => fetchJson<ZkSolanaResponse>("/api/zk/solana"),
     keys:   () => fetchJson<{ keys: unknown; note: string }>("/api/zk/keys"),
     disclosure: () => fetchJson<ZkDisclosureStatus>("/api/zk/disclosure"),
+    groth16: {
+      status: () => fetchJson<ZkGroth16Status>("/api/zk/groth16/status"),
+      demo: (opts: { adminKey: string; preimage?: string }) => {
+        const qs = new URLSearchParams();
+        if (opts.preimage) qs.set("preimage", opts.preimage);
+        const url = `/api/zk/groth16/demo${qs.toString() ? "?" + qs.toString() : ""}`;
+        return fetchJson<ZkGroth16DemoResult>(url, {
+          headers: { "Content-Type": "application/json", "x-admin-key": opts.adminKey },
+        });
+      },
+    },
   },
   identity: {
     resolve: (wallet_address: string, wallet_name?: string) =>

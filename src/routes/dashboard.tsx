@@ -2,9 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
-import { api, type ZkSystemInfo, type DashboardStats, type ZkOnChainTx, type WalletActivity } from "@/lib/api";
+import {
+  api,
+  type ZkSystemInfo,
+  type DashboardStats,
+  type ZkOnChainTx,
+  type WalletActivity,
+  type ZkSolanaResponse,
+  type ZkGroth16DemoResult,
+} from "@/lib/api";
 import { WalletStatusPanel } from "@/components/wallet/WalletButton";
 import { useWallet } from "@/context/WalletContext";
+
+const ADMIN_KEY_SS = "zkgent_admin_key";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardWrapper,
@@ -120,24 +130,69 @@ function StatusPill({ status }: { status: string }) {
 function DashboardPage() {
   const [zk, setZk] = useState<ZkSystemInfo | null>(null);
   const [legacy, setLegacy] = useState<DashboardStats | null>(null);
+  const [solana, setSolana] = useState<ZkSolanaResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [solanaPing, setSolanaPing] = useState<"checking" | "ok" | "error">("checking");
   const [userActivity, setUserActivity] = useState<WalletActivity | null>(null);
 
+  // Groth16 demo state
+  const [demoRunning, setDemoRunning] = useState(false);
+  const [demoResult, setDemoResult] = useState<ZkGroth16DemoResult | null>(null);
+  const [demoError, setDemoError] = useState<string | null>(null);
+
   const { wallet, identity } = useWallet();
 
   const load = useCallback(() => {
     setLoading(true);
-    Promise.all([api.zk.system(), api.dashboard.get(wallet?.address)])
-      .then(([zkData, legacyData]) => {
+    Promise.all([
+      api.zk.system(),
+      api.dashboard.get(wallet?.address),
+      api.zk.solana().catch(() => null),
+    ])
+      .then(([zkData, legacyData, solanaData]) => {
         setZk(zkData);
         setLegacy(legacyData);
+        setSolana(solanaData);
         setSolanaPing(zkData.solana.reachable ? "ok" : "error");
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [wallet?.address]);
+
+  const runGroth16Demo = useCallback(async () => {
+    setDemoError(null);
+    setDemoResult(null);
+    // Session-scoped (cleared on tab close) — narrower XSS window than localStorage.
+    let key = sessionStorage.getItem(ADMIN_KEY_SS) ?? "";
+    if (!key) {
+      const entered = window.prompt(
+        "Admin key required (proving is CPU-expensive, ~600ms).\nSee ADMIN_KEY env on the server."
+      );
+      if (!entered) return;
+      key = entered.trim();
+    }
+    setDemoRunning(true);
+    try {
+      const r = await api.zk.groth16.demo({ adminKey: key });
+      setDemoResult(r);
+      // Only persist after a successful authenticated call.
+      if (r.ok && r.verified) {
+        sessionStorage.setItem(ADMIN_KEY_SS, key);
+      }
+    } catch (e) {
+      const msg = (e as Error).message ?? "";
+      // fetchJson throws on non-2xx — treat 401 / "unauthorized" body as bad key.
+      if (/unauthorized|401|forbidden|403/i.test(msg)) {
+        sessionStorage.removeItem(ADMIN_KEY_SS);
+        setDemoError("Admin key rejected — clear and re-enter on next click.");
+      } else {
+        setDemoError(msg || "Demo failed");
+      }
+    } finally {
+      setDemoRunning(false);
+    }
+  }, []);
 
   // Load per-user activity when wallet connects
   useEffect(() => {
@@ -188,6 +243,99 @@ function DashboardPage() {
         {error && (
           <motion.div variants={item} className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-[13px] text-red-400">
             Failed to load: {error}
+          </motion.div>
+        )}
+
+        {/* ── ZK Cryptographic Stack Banner ──────────────────────────────── */}
+        {!loading && zk && (
+          <motion.div variants={item} className="rounded-2xl border border-cyan/15 bg-cyan/5 overflow-hidden">
+            <div className="px-5 py-3 border-b border-cyan/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
+                <p className="font-mono text-[10px] uppercase tracking-widest text-cyan">
+                  Cryptographic Stack
+                </p>
+              </div>
+              <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                v{zk.system.version}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-cyan/10">
+              {/* Hash chain */}
+              <div className="px-5 py-3.5 space-y-1">
+                <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Hash chain</p>
+                <p className="font-mono text-[12px] text-foreground">
+                  {zk.hash_chain?.scheme ?? "poseidon-bn254-v1"}
+                </p>
+                <p className="font-mono text-[10px] text-muted-foreground/60">
+                  {zk.hash_chain?.curve ?? "BN254"} · ZK-friendly
+                </p>
+              </div>
+              {/* Groth16 toolchain */}
+              <div className="px-5 py-3.5 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Groth16 toolchain</p>
+                  {zk.groth16?.available && (
+                    <span className="font-mono text-[8px] uppercase tracking-wider rounded px-1.5 py-0.5 border border-emerald/20 text-emerald">
+                      ready
+                    </span>
+                  )}
+                </div>
+                <p className="font-mono text-[12px] text-foreground">
+                  {zk.groth16?.circuit_id ?? "—"}
+                </p>
+                <p className="font-mono text-[10px] text-yellow-400/70">
+                  {zk.groth16?.setup.circuit_constraints ?? 0} constraints · single-party setup
+                </p>
+              </div>
+              {/* Production circuit */}
+              <div className="px-5 py-3.5 space-y-1">
+                <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Production transfer SNARK</p>
+                <p className="font-mono text-[12px] text-foreground">
+                  {zk.system.snark_ready ? (zk.system.snark_circuit ?? "—") : "not built"}
+                </p>
+                <p className="font-mono text-[10px] text-muted-foreground/60">
+                  {zk.system.snark_ready
+                    ? "real proofs active"
+                    : "needs membership + balance circuit + multi-party setup"}
+                </p>
+              </div>
+            </div>
+            {/* Groth16 demo */}
+            <div className="px-5 py-3 border-t border-cyan/10 flex items-center justify-between gap-3 flex-wrap">
+              <p className="font-mono text-[10px] text-muted-foreground/60">
+                Run a real Groth16 prove+verify cycle on the toy circuit (admin-gated):
+              </p>
+              <button
+                onClick={runGroth16Demo}
+                disabled={demoRunning || !zk.groth16?.available}
+                className="rounded-md border border-cyan/30 bg-cyan/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-cyan hover:bg-cyan/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {demoRunning ? "Proving…" : "Run Groth16 Demo"}
+              </button>
+            </div>
+            {(demoResult || demoError) && (
+              <div className="px-5 py-3 border-t border-cyan/10 bg-background/40">
+                {demoError && (
+                  <p className="font-mono text-[10px] text-red-400">{demoError}</p>
+                )}
+                {demoResult?.ok && demoResult.verified && (
+                  <div className="space-y-1">
+                    <p className="font-mono text-[10px] text-emerald">
+                      ✓ Proof verified · prove {demoResult.prove_ms}ms · verify {demoResult.verify_ms}ms
+                    </p>
+                    <p className="font-mono text-[9px] text-muted-foreground/60">
+                      circuit: {demoResult.circuit} · hash: {demoResult.expected_hash?.slice(0, 24)}…
+                    </p>
+                  </div>
+                )}
+                {demoResult && !demoResult.ok && demoResult.error !== "unauthorized" && (
+                  <p className="font-mono text-[10px] text-red-400">
+                    Failed: {demoResult.error ?? "unknown"}
+                  </p>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -392,15 +540,28 @@ function DashboardPage() {
 
           {/* On-chain transactions */}
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
-            <div className="border-b border-hairline px-5 py-3 flex items-center justify-between">
+            <div className="border-b border-hairline px-5 py-3 flex items-center justify-between gap-2 flex-wrap">
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">On-chain Transactions</p>
-              <span className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
-                zk?.solana.network === "mainnet-beta"
-                  ? "text-emerald border-emerald/20"
-                  : "text-yellow-400/70 border-yellow-400/20"
-              }`}>
-                {zk?.solana.network ?? "devnet"}
-              </span>
+              <div className="flex items-center gap-1.5">
+                {solana?.funded && (
+                  <span className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                    solana.funded.balance >= 0.05
+                      ? "text-emerald border-emerald/20"
+                      : "text-red-400 border-red-400/20"
+                  }`}
+                    title={`Operator balance — funded via ${solana.status.network} faucet`}
+                  >
+                    {solana.funded.balance.toFixed(4)} SOL
+                  </span>
+                )}
+                <span className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                  zk?.solana.network === "mainnet-beta"
+                    ? "text-emerald border-emerald/20"
+                    : "text-yellow-400/70 border-yellow-400/20"
+                }`}>
+                  {zk?.solana.network ?? "devnet"}
+                </span>
+              </div>
             </div>
             {loading ? (
               <div className="px-5 py-4 space-y-2">{[0,1,2].map(i=><div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse"/>)}</div>
@@ -433,10 +594,20 @@ function DashboardPage() {
                   </div>
                 ))}
                 {zk.on_chain.operator_address && (
-                  <div className="px-5 py-2.5 border-t border-hairline">
+                  <div className="px-5 py-2.5 border-t border-hairline flex items-center justify-between gap-2 flex-wrap">
                     <p className="font-mono text-[9px] text-muted-foreground/40">
                       Operator: <span className="text-foreground/40">{zk.on_chain.operator_address.slice(0, 16)}…</span>
                     </p>
+                    {zk.solana.network === "devnet" && (
+                      <a
+                        href={`https://explorer.solana.com/address/${zk.on_chain.operator_address}?cluster=devnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[9px] text-cyan/60 hover:text-cyan transition-colors"
+                      >
+                        View on Explorer →
+                      </a>
+                    )}
                   </div>
                 )}
               </div>
