@@ -31,3 +31,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Local SQLite / dev data
+zkgent.db
+zkgent.db-shm
+zkgent.db-wal
+*.db-shm
+*.db-wal
