@@ -192,10 +192,10 @@ function DashboardPage() {
                 <MetricCard label="Total Notes" value={zk.notes.total}
                   sub={`${(zk.notes.total_shielded_value ?? 0).toLocaleString()} USDC`} dot="bg-emerald/60" />
                 <MetricCard label="Proofs Verified" value={zk.proofs.verified}
-                  sub={`${zk.proofs.generated} generated`} dot="bg-cyan" badge="scaffold" />
+                  sub={`${zk.proofs.generated} generated`} dot="bg-cyan" />
                 <MetricCard label="Proofs Failed" value={zk.proofs.failed}
                   sub={`${zk.proofs.pending} pending`} dot="bg-red-400/60" />
-                <MetricCard label="Settlements" value={zk.settlements.settled}
+                <MetricCard label="Settlements" value={zk.settlements.finalized ?? zk.settlements.settled ?? 0}
                   sub={`${zk.settlements.queued} queued`} dot="bg-emerald" />
                 <MetricCard label="Merkle Leaves" value={zk.merkle.leaf_count}
                   sub={`depth ${zk.merkle.tree_depth}`} dot="bg-violet/60" />

@@ -28,18 +28,10 @@
  *   4. Drop artifacts in server/circuits/ and update CIRCUIT_CONFIG below
  */
 
-import * as ed from "@noble/ed25519";
+import { ed25519 } from "@noble/curves/ed25519.js";
 import { db } from "../db.js";
 import { domainHash, randomSalt, DOMAIN, Bytes32, shortHash } from "./crypto.js";
 import crypto from "crypto";
-
-// @noble/ed25519 v2 requires SHA-512 sync implementation.
-// We provide it via Node.js native crypto — no external hash import needed.
-ed.etc.sha512Sync = (...m: Uint8Array[]) => {
-  const h = crypto.createHash("sha512");
-  for (const msg of m) h.update(msg);
-  return new Uint8Array(h.digest());
-};
 
 export type ProofStatus =
   | "pending"
@@ -144,7 +136,7 @@ export function getProverPrivateKey(): Uint8Array {
  * IMPLEMENTED.
  */
 export function getProverPublicKey(): string {
-  return Buffer.from(ed.getPublicKey(getProverPrivateKey())).toString("hex");
+  return Buffer.from(ed25519.getPublicKey(getProverPrivateKey())).toString("hex");
 }
 
 // ─── Proof Input Builder ──────────────────────────────────────────────────────
@@ -257,7 +249,7 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
 
   try {
     const privKey = getProverPrivateKey();
-    const pubKey  = ed.getPublicKey(privKey);
+    const pubKey  = ed25519.getPublicKey(privKey);
 
     const circuitId = db.prepare(
       `SELECT circuit_id FROM zk_proofs WHERE id = ?`
@@ -265,7 +257,7 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
     const cid = circuitId?.circuit_id ?? CIRCUIT_CONFIG.transfer.id;
 
     const message   = buildWitnessMessage(input, cid);
-    const signature = await ed.signAsync(message, privKey);
+    const signature = ed25519.sign(message, privKey);
     const elapsed   = Date.now() - start;
 
     const proofData = JSON.stringify({
@@ -339,7 +331,7 @@ export async function runVerifier(proofId: string): Promise<{
     const message    = Buffer.from(parsed.message_hash, "hex");
 
     // Real Ed25519 verification — cryptographic, not structural
-    const isValid = await ed.verifyAsync(signature, message, publicKey);
+    const isValid = ed25519.verify(signature, message, publicKey);
 
     // Cross-check: the public key must match the operator's current public key
     const expectedPubKey = getProverPublicKey();

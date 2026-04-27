@@ -72,19 +72,42 @@ All product routes use `AppShell` which provides:
 - `zk_nullifiers` — Anti-double-spend nullifier registry (unique, enforces single-spend per note)
 - `zk_merkle_nodes` — Merkle accumulator leaf nodes (depth 20, supports 1M+ commitments)
 - `zk_proofs` — Proof artifacts (status lifecycle: pending→generating→generated→verified/failed)
-- `zk_settlements` — Settlement engine records (full state machine: queued→...→settled)
+- `zk_settlements` — Settlement engine records (12-state machine: queued→...→finalized)
+- `zk_onchain_txs` — Solana on-chain transaction records (signature, status, explorer_url)
+- `zk_signing_requests` — Browser wallet signing requests (tx_data, wallet_address, signature)
 
 ## ZK Domain Services (server/domain/)
-- `crypto.ts` — Hash primitives (SHA-256 now, Poseidon scaffold), domain separation, HKDF key derivation
+- `crypto.ts` — Hash primitives (SHA-256), domain separation, HKDF key derivation
 - `keys.ts` — Key management: operator/signing/encryption/viewing/nullifier keys from env seed
 - `note.ts` — Note model, AES-256-GCM encrypted payload, note lifecycle (create/spend)
 - `commitment.ts` — Commitment derivation H(domain||value_hash||owner||salt), persistence
 - `nullifier.ts` — Nullifier derivation, uniqueness enforcement, anti-double-spend check
 - `merkle.ts` — Binary Merkle accumulator (append-only, SHA-256 hash pairs, incremental root)
-- `proof.ts` — Proof pipeline: input builder, prover abstraction, verifier abstraction (Groth16 scaffold)
-- `settlement.ts` — Settlement state machine: note→commitment→proof→nullifier→on-chain(scaffold)
-- `solana.ts` — Solana RPC config, live devnet health check, tx builder scaffold
+- `proof.ts` — REAL Ed25519 proof pipeline (@noble/curves): sign/verify commitment+nullifier+merkle_root
+- `settlement.ts` — Full 12-state settlement engine: note→commitment→proof→nullifier→on-chain
+- `solana.ts` — Solana RPC config, live devnet health check
+- `solana_tx.ts` — REAL @solana/web3.js tx builder: SPL Memo instruction, devnet submission, tx sig
 - `disclosure.ts` — Compliance/disclosure model: view keys, selective disclosure, policy types
+
+## Proof System (Phase 2)
+- **Backend:** `ed25519-operator-proof-v1` using `@noble/curves/ed25519.js` — REAL
+- **Proof:** Signs `SHA-256(circuit_id:commitment:nullifier:merkle_root:...)` with operator Ed25519 key
+- **Verification:** Real `ed25519.verify()` — cryptographic, not structural
+- **zk-SNARK (Groth16):** PARTIAL — circuit interface ready, needs `.wasm + .zkey` from Circom compiler
+- **Activation:** Drop compiled artifacts in `server/circuits/` + set `available: true` in `CIRCUIT_CONFIG`
+
+## Solana On-chain (Phase 2)
+- **Library:** `@solana/web3.js` v1.x — REAL
+- **Strategy:** SPL Memo Program (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`) for on-chain anchoring
+- **Operator keypair:** Derived deterministically from `ZKGENT_OPERATOR_SEED` env var
+- **Airdrop:** Auto-requested on devnet if operator balance < 0.05 SOL (rate-limited by devnet)
+- **Custom program:** SCAFFOLD — not yet deployed
+
+## Wallet Integration (Phase 2)
+- **Frontend:** `WalletProvider` + `WalletButton` + `WalletStatusPanel` using `window.solana` API
+- **Compatible with:** Phantom, Backpack, Solflare (any injected Solana wallet)
+- **Sign flow:** `POST /api/zk/signing/request` → wallet signs → `POST /api/zk/signing/respond`
+- **Heavy adapter packages** (`@solana/wallet-adapter-*`): Not installed (too heavy for env)
 
 ## ZK API Routes (/api/zk/*)
 - `GET /api/zk/system` — Full system metrics (powers dashboard ZK observability panel)
@@ -92,11 +115,17 @@ All product routes use `AppShell` which provides:
 - `GET /api/zk/commitments` — Commitment registry + stats
 - `GET /api/zk/nullifiers` — Nullifier registry + stats
 - `GET /api/zk/merkle` — Merkle tree state (root, leaf count, depth)
-- `GET /api/zk/proofs` — Proof artifacts + stats
-- `GET /api/zk/settlement/queue` — Settlement queue + stats
-- `POST /api/zk/settlement/initiate` — Initiate a confidential settlement
-- `GET /api/zk/solana` — Live Solana devnet/mainnet status via RPC
-- `GET /api/zk/keys` — Key fingerprints (no secret material ever exposed)
+- `GET /api/zk/proofs` — Proof artifacts + stats + circuit status
+- `GET /api/zk/circuit` — Circuit availability status + prover pubkey
+- `GET /api/zk/settlement/queue` — Settlement queue + latest on-chain txs
+- `POST /api/zk/settlement/initiate` — Initiate a confidential settlement (async execution)
+- `GET /api/zk/settlement/:id` — Individual settlement state
+- `GET /api/zk/transactions` — Latest on-chain transactions
+- `GET /api/zk/solana` — Live devnet status + operator balance
+- `POST /api/zk/signing/request` — Create wallet signing request
+- `POST /api/zk/signing/respond` — Submit wallet signature response
+- `GET /api/zk/signing/:id` — Get signing request status
+- `GET /api/zk/keys` — Key fingerprints + prover pubkey (no secret material ever exposed)
 - `GET /api/zk/disclosure` — Compliance disclosure status
 
 ## Architecture Notes

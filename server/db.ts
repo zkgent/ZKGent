@@ -237,6 +237,22 @@ db.exec(`
   );
 `);
 
+// ─── Column migrations (safe: runs on every startup) ─────────────────────────
+// ALTER TABLE IF NOT SUPPORTED in sqlite — we use try/catch per column.
+{
+  const alterCols: Array<[string, string, string]> = [
+    ["zk_settlements", "submitted_on_chain_at", "TEXT"],
+    ["zk_settlements", "confirmed_at",           "TEXT"],
+    ["zk_settlements", "finalized_at",            "TEXT"],
+    ["zk_settlements", "on_chain_explorer_url",   "TEXT"],
+    ["zk_settlements", "signing_request_id",      "TEXT"],
+  ];
+  for (const [tbl, col, type] of alterCols) {
+    try { db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run(); }
+    catch {} // Column already exists — safe to ignore
+  }
+}
+
 export function generateId(prefix = "OBD"): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let result = `${prefix}-`;
