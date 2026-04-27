@@ -42,7 +42,19 @@ import {
   strToField,
 } from "./crypto.js";
 import { computeValueHash } from "./commitment.js";
+import {
+  proveSpend, verifySpend,
+  isTransferCircuitReady,
+  TRANSFER_CIRCUIT_ID,
+  TRANSFER_PROVER_BACKEND,
+  TRANSFER_CIRCUIT_INFO,
+  type Groth16ProofPayload,
+  type SpendWitness,
+} from "./transfer_circuit.js";
 import crypto from "crypto";
+
+/** Re-export for callers that need to introspect circuit health. */
+export { isTransferCircuitReady, TRANSFER_CIRCUIT_INFO };
 
 export type ProofStatus =
   | "pending"
@@ -112,12 +124,12 @@ export const CIRCUIT_CONFIG = {
     note:      "Toy circuit — proves knowledge of Poseidon preimage. Real Groth16 over BN254. Trusted setup is single-party (NOT FOR PRODUCTION).",
   },
   transfer: {
-    id:        "zkgent-transfer-v1",
-    available: false,   // set true when .wasm + .zkey are in place
-    wasm:      "server/circuits/transfer/circuit.wasm",
-    zkey:      "server/circuits/transfer/circuit.zkey",
-    vkey:      "server/circuits/transfer/vkey.json",
-    note:      "Production transfer circuit. Not yet compiled — requires multi-party trusted setup.",
+    id:        TRANSFER_CIRCUIT_ID,
+    available: isTransferCircuitReady(),
+    wasm:      "server/circuits/transfer/build/transfer_js/transfer.wasm",
+    zkey:      "server/circuits/transfer/build/transfer_final.zkey",
+    vkey:      "server/circuits/transfer/build/verification_key.json",
+    note:      "Production spend-proof circuit. ~5,914 R1CS constraints over BN254 with Poseidon. Phase-1 ptau = Hermez (multi-party). Phase-2 contribution = single-party (devnet trust model — DO NOT use for production funds).",
   },
   membership: {
     id:        "zkgent-membership-v1",
@@ -125,7 +137,7 @@ export const CIRCUIT_CONFIG = {
     wasm:      "server/circuits/membership/circuit.wasm",
     zkey:      "server/circuits/membership/circuit.zkey",
     vkey:      "server/circuits/membership/vkey.json",
-    note:      "Merkle membership proof. Not yet compiled.",
+    note:      "Merkle membership proof. Subsumed by zkgent-transfer-v1 which embeds membership.",
   },
 } as const;
 
@@ -230,22 +242,46 @@ export function createProofRecord(opts: {
   const now = new Date().toISOString();
   const circuitConf = CIRCUIT_CONFIG[opts.proofType as CircuitName] ?? CIRCUIT_CONFIG.transfer;
 
+  // Auto-pick the prover backend: real Groth16 if circuit artifacts are
+  // on disk, otherwise the legacy Ed25519 operator-authorization stub.
+  // The dispatcher in runProver/runVerifier reads these values back.
+  const useGroth16 = opts.proofType === "transfer" && isTransferCircuitReady();
+  const proverBackend  = useGroth16 ? TRANSFER_PROVER_BACKEND : "ed25519-operator-proof-v1";
+  const circuitVersion = useGroth16 ? "groth16-v1"             : "ed25519-operator-v1";
+
   db.prepare(`
     INSERT INTO zk_proofs
       (id, related_transfer_id, proof_type, status, input_hash,
-       prover_backend, circuit_id, created_at)
-    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)
+       prover_backend, circuit_id, circuit_version, created_at)
+    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)
   `).run(
     id,
     opts.relatedTransferId ?? null,
     opts.proofType,
     inputHash,
-    "ed25519-operator-proof-v1",
+    proverBackend,
     circuitConf.id,
+    circuitVersion,
     now
   );
 
   return db.prepare(`SELECT * FROM zk_proofs WHERE id = ?`).get(id) as ProofArtifact;
+}
+
+/**
+ * Per-proof witness storage for the Groth16 pipeline. The settlement engine
+ * stashes the spend witness here when it creates the proof record so that
+ * runProver can later pick it up. The witness is held in-memory ONLY (never
+ * persisted) because it contains the owner_secret for the spent note.
+ */
+const _pendingWitnesses = new Map<string, { asset: string; witness: SpendWitness }>();
+export function attachSpendWitness(proofId: string, asset: string, witness: SpendWitness): void {
+  _pendingWitnesses.set(proofId, { asset, witness });
+}
+function takeSpendWitness(proofId: string): { asset: string; witness: SpendWitness } | null {
+  const w = _pendingWitnesses.get(proofId) ?? null;
+  if (w) _pendingWitnesses.delete(proofId);
+  return w;
 }
 
 // ─── Real Prover (Ed25519) ────────────────────────────────────────────────────
@@ -273,14 +309,19 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
   const start = Date.now();
   db.prepare(`UPDATE zk_proofs SET status = 'generating' WHERE id = ?`).run(proofId);
 
+  // Dispatch on prover_backend (set at createProofRecord time).
+  const meta = db.prepare(
+    `SELECT circuit_id, prover_backend FROM zk_proofs WHERE id = ?`
+  ).get(proofId) as { circuit_id: string; prover_backend: string } | null;
+  if (meta?.prover_backend === TRANSFER_PROVER_BACKEND) {
+    return runGroth16Prover(proofId, input);
+  }
+
   try {
     const privKey = getProverPrivateKey();
     const pubKey  = ed25519.getPublicKey(privKey);
 
-    const circuitId = db.prepare(
-      `SELECT circuit_id FROM zk_proofs WHERE id = ?`
-    ).get(proofId) as { circuit_id: string } | null;
-    const cid = circuitId?.circuit_id ?? CIRCUIT_CONFIG.transfer.id;
+    const cid = meta?.circuit_id ?? CIRCUIT_CONFIG.transfer.id;
 
     const message   = buildWitnessMessage(input, cid);
     const signature = ed25519.sign(message, privKey);
@@ -310,15 +351,78 @@ export async function runProver(proofId: string, input: ProofInput): Promise<{
         status = 'generated',
         proof_data = ?,
         public_signals = ?,
-        generated_at = ?
+        generated_at = ?,
+        prove_ms = ?
       WHERE id = ?
-    `).run(proofData, publicSignals, now, proofId);
+    `).run(proofData, publicSignals, now, elapsed, proofId);
 
     return { success: true, proofData, publicSignals };
   } catch (err: any) {
     db.prepare(`
       UPDATE zk_proofs SET status = 'failed', error_message = ? WHERE id = ?
     `).run(err.message, proofId);
+    return { success: false, error: err.message };
+  }
+}
+
+// ─── Real Prover (Groth16 / Circom / snarkjs) ─────────────────────────────────
+
+/**
+ * Generate a real zk-SNARK Groth16 proof for the transfer (spend) circuit.
+ *
+ * Required: a SpendWitness must have been attached via attachSpendWitness()
+ * for this proofId. The witness contains the owner_secret of the note being
+ * spent — it stays in memory only and is consumed (deleted) on use.
+ *
+ * The full snarkjs proof + public signals are stored as JSON in proof_data
+ * so an independent verifier can re-check the proof against the published
+ * verification key alone (no DB lookups required).
+ */
+async function runGroth16Prover(proofId: string, _input: ProofInput): Promise<{
+  success: boolean;
+  proofData?: string;
+  publicSignals?: string;
+  error?: string;
+}> {
+  try {
+    const stash = takeSpendWitness(proofId);
+    if (!stash) {
+      throw new Error(
+        "groth16 prover: no spend witness attached (call attachSpendWitness before runProver)"
+      );
+    }
+
+    const t0 = Date.now();
+    const { proof: payload, publicSignals } = await proveSpend({
+      asset: stash.asset, witness: stash.witness,
+    });
+    const elapsed = Date.now() - t0;
+
+    const proofData = JSON.stringify(payload);
+    const signals = JSON.stringify({
+      merkle_root:      publicSignals.merkle_root,
+      nullifier:        publicSignals.nullifier,
+      value_commitment: publicSignals.value_commitment,
+      asset_hash:       publicSignals.asset_hash,
+      raw:              payload.publicSignals,
+    });
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE zk_proofs SET
+        status = 'generated',
+        proof_data = ?,
+        public_signals = ?,
+        generated_at = ?,
+        prove_ms = ?
+      WHERE id = ?
+    `).run(proofData, signals, now, elapsed, proofId);
+
+    return { success: true, proofData, publicSignals: signals };
+  } catch (err: any) {
+    db.prepare(
+      `UPDATE zk_proofs SET status = 'failed', error_message = ? WHERE id = ?`
+    ).run(err.message, proofId);
     return { success: false, error: err.message };
   }
 }
@@ -343,6 +447,11 @@ export async function runVerifier(proofId: string): Promise<{
   if (!proof.proof_data) return { valid: false, reason: "no_proof_data" };
 
   db.prepare(`UPDATE zk_proofs SET status = 'verifying' WHERE id = ?`).run(proofId);
+
+  // Dispatch by stored prover_backend.
+  if (proof.prover_backend === TRANSFER_PROVER_BACKEND) {
+    return runGroth16Verifier(proofId, proof.proof_data);
+  }
 
   try {
     const parsed = JSON.parse(proof.proof_data);
@@ -386,6 +495,41 @@ export async function runVerifier(proofId: string): Promise<{
     db.prepare(`
       UPDATE zk_proofs SET status = 'failed', error_message = ?, verification_result = 0 WHERE id = ?
     `).run(err.message, proofId);
+    return { valid: false, reason: err.message };
+  }
+}
+
+// ─── Real Verifier (Groth16) ──────────────────────────────────────────────────
+
+/**
+ * Verify a Groth16 spend proof using the deployed verification key.
+ * This is a pure cryptographic check — no DB state is consulted other than
+ * fetching the proof artifact itself. Anyone with the verification_key.json
+ * file can perform the same check independently.
+ */
+async function runGroth16Verifier(proofId: string, proofData: string): Promise<{
+  valid: boolean;
+  reason?: string;
+}> {
+  try {
+    const payload = JSON.parse(proofData) as Groth16ProofPayload;
+    const { valid, verify_ms, reason } = await verifySpend(payload);
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE zk_proofs SET
+        status = ?,
+        verification_result = ?,
+        verified_at = ?,
+        verify_ms = ?
+      WHERE id = ?
+    `).run(valid ? "verified" : "failed", valid ? 1 : 0, now, verify_ms, proofId);
+
+    return { valid, reason };
+  } catch (err: any) {
+    db.prepare(
+      `UPDATE zk_proofs SET status = 'failed', error_message = ?, verification_result = 0 WHERE id = ?`
+    ).run(err.message, proofId);
     return { valid: false, reason: err.message };
   }
 }

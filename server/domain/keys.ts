@@ -100,12 +100,31 @@ export function getKeySet(): OperatorKeySet {
 
 /**
  * Derive a per-note encryption key.
- * IMPLEMENTED: deterministic derivation from operator encryption key + note ID.
- * SCAFFOLD: Should use ECDH with recipient's public key for actual recipient encryption.
+ *
+ * v2 (current): bound to the OPERATOR SEED (a private secret loaded from
+ * `ZKGENT_OPERATOR_SEED`, never returned by any HTTP route). This means the
+ * note encryption key cannot be reproduced by any party that only has API
+ * access — including parties that see `keys.encryption.fingerprint` in
+ * /api/zk/system. Required so `encrypted_payload` (which holds per-note
+ * `owner_secret` for the Groth16 spend pipeline) is actually confidential
+ * against API consumers.
+ *
+ * v1 (legacy, fallback only): used `ks.encryption.fingerprint` as the key
+ * seed, which is exposed by /api/zk/system. Notes encrypted under v1
+ * remain decryptable via `deriveNoteEncryptionKeyLegacy` for backward
+ * compatibility — see decryptPayload's two-step trial in note.ts.
+ *
+ * SCAFFOLD: Production should use ECIES with recipient's X25519 pubkey.
  */
 export function deriveNoteEncryptionKey(noteId: string): string {
+  const seed = process.env.ZKGENT_OPERATOR_SEED
+    ?? "dev-only-seed-not-for-production-zkgent-v1";
+  return domainHash(DOMAIN.KEY_DERIVE, "note-enc-master-v2", seed, noteId);
+}
+
+/** Legacy v1 derivation, retained ONLY so older encrypted notes stay readable. */
+export function deriveNoteEncryptionKeyLegacy(noteId: string): string {
   const ks = getKeySet();
-  // We use fingerprint as a stable stand-in for the actual key material
   return domainHash(DOMAIN.KEY_DERIVE, ks.encryption.fingerprint, noteId);
 }
 

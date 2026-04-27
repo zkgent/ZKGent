@@ -7,7 +7,11 @@ import { getNoteStats, getAllNotes } from "../domain/note.js";
 import { getCommitmentStats, getAllCommitments } from "../domain/commitment.js";
 import { getNullifierStats, getAllNullifiers } from "../domain/nullifier.js";
 import { getMerkleStats } from "../domain/merkle.js";
-import { getProofStats, getAllProofs, getCircuitStatus } from "../domain/proof.js";
+import {
+  getProofStats, getAllProofs, getCircuitStatus, getProofById,
+  isTransferCircuitReady, TRANSFER_CIRCUIT_INFO,
+} from "../domain/proof.js";
+import { verifySpend } from "../domain/transfer_circuit.js";
 import { proveAndVerifyPreimage, getGroth16Status } from "../domain/groth16.js";
 import {
   getSettlementStats, getSettlementQueue,
@@ -66,22 +70,22 @@ zkRouter.get("/system", async (_req, res) => {
         latest_txs: latestTxs,
       },
       system: {
-        version:     "0.3.0-alpha",
+        version:     "0.4.0-alpha-D1",
         proof_real:  true,
-        proof_type:  "ed25519-operator-proof-v1",
-        // Production transfer/membership circuits are NOT available yet.
-        // snark_ready stays false until the real circuits exist + a multi-party
-        // trusted setup has been performed.
-        snark_ready: false,
-        snark_circuit: null,
-        // Separate flag indicates only that the toy demo pipeline is wired.
+        // Active proof type for new settlements: real Groth16 spend proof
+        // when artifacts are on disk; falls back to the legacy Ed25519
+        // operator-authorization proof otherwise.
+        proof_type:  isTransferCircuitReady()
+          ? "groth16-zkgent-transfer-v1"
+          : "ed25519-operator-proof-v1",
+        snark_ready:    isTransferCircuitReady(),
+        snark_circuit:  isTransferCircuitReady() ? TRANSFER_CIRCUIT_INFO : null,
+        // Toy demo pipeline (preimage circuit) — independent of production transfer.
         snark_demo_ready: groth16Status.available,
         snark_demo_circuit: groth16Status.circuit_id,
-        note:
-          "Ed25519 operator proofs verify settlements. " +
-          "Real Groth16 (BN254) is wired ONLY for a toy preimage circuit at " +
-          "/api/zk/groth16/demo (single-party trusted setup, NOT FOR PRODUCTION). " +
-          "Production transfer/membership circuits are not built. Hash chain uses Poseidon.",
+        note: isTransferCircuitReady()
+          ? "PRODUCTION ZK ACTIVE: Groth16 spend proofs (5,914 R1CS constraints over BN254 / Poseidon) generated server-side via snarkjs and verified before on-chain submit. Phase-1 ptau is the multi-party Hermez ceremony; phase-2 is single-party (devnet trust model — DO NOT use for production funds)."
+          : "Ed25519 operator proofs verify settlements. Production Groth16 transfer circuit artifacts not present.",
       },
       fetched_at: new Date().toISOString(),
     });
@@ -117,6 +121,49 @@ zkRouter.get("/merkle", (_req, res) => {
 zkRouter.get("/proofs", (_req, res) => {
   try { res.json({ stats: getProofStats(), proofs: getAllProofs(50), circuit: getCircuitStatus() }); }
   catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+/**
+ * Independent re-verification endpoint.
+ * Anyone with the proof_data + verification key can re-verify a Groth16
+ * spend proof from scratch — no DB state is consulted beyond fetching
+ * the proof artifact. Useful for auditors and the UI.
+ */
+zkRouter.get("/proofs/:id/verify", async (req, res) => {
+  try {
+    const proof = getProofById(req.params.id);
+    if (!proof)              return res.status(404).json({ error: "proof_not_found" });
+    if (!proof.proof_data)   return res.status(400).json({ error: "proof_has_no_data" });
+
+    let payload: any;
+    try { payload = JSON.parse(proof.proof_data); }
+    catch { return res.status(400).json({ error: "proof_data_not_json" }); }
+
+    if (payload?._type !== "groth16-zkgent-transfer-v1") {
+      return res.json({
+        proof_id: proof.id,
+        proof_type_in_db: proof.proof_type,
+        proof_backend: proof.prover_backend,
+        verifiable_here: false,
+        reason: "this_endpoint_only_verifies_groth16_transfer_proofs",
+      });
+    }
+
+    const result = await verifySpend(payload);
+    res.json({
+      proof_id:       proof.id,
+      circuit_id:     proof.circuit_id,
+      circuit_version: (proof as any).circuit_version,
+      backend:        proof.prover_backend,
+      valid:          result.valid,
+      verify_ms:      result.verify_ms,
+      reason:         result.reason,
+      public_signals: payload.publicSignals,
+      verifier_note:  "Re-verified live via snarkjs.groth16.verify against the deployed verification key. No trust in this server's stored verification_result.",
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 zkRouter.get("/circuit", (_req, res) => {

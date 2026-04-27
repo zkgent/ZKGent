@@ -14,10 +14,13 @@
 
 import { db } from "../db.js";
 import {
-  hash, domainHash, randomSalt, DOMAIN, shortHash, Bytes32
+  hash, domainHash, randomSalt, randomFieldSalt, DOMAIN, shortHash, Bytes32
 } from "./crypto.js";
 import { computeCommitment } from "./commitment.js";
-import { deriveNoteEncryptionKey } from "./keys.js";
+import {
+  computeZkCommitment, deriveOwnerPk, generateOwnerSecret,
+} from "./transfer_circuit.js";
+import { deriveNoteEncryptionKey, deriveNoteEncryptionKeyLegacy } from "./keys.js";
 import crypto from "crypto";
 
 export type NoteStatus = "unspent" | "spent" | "pending_spend";
@@ -44,6 +47,15 @@ export interface NotePayload {
   memo: string;
   sender_fingerprint: string;
   created_at: string;
+  /**
+   * Per-note owner_secret (BN254 field element, 64-char hex). Present only
+   * for notes created via the Groth16 pipeline (createZkNote). Required for
+   * the prover to construct the spend witness — must never leak to a party
+   * that should not be able to spend the note. In D1 the operator derives
+   * this server-side; D2 will move derivation to the wallet.
+   */
+  owner_secret?: Bytes32;
+  circuit_version?: "groth16-v1";
 }
 
 /**
@@ -67,26 +79,34 @@ function encryptPayload(payload: NotePayload, noteId: string): string {
 
 /**
  * Decrypt note payload.
- * IMPLEMENTED: AES-256-GCM decryption.
+ *
+ * Tries the v2 (operator-seed-bound) key first. Falls back to the v1
+ * (encryption.fingerprint-bound) key so notes created under the older
+ * derivation remain readable. Returns null if both fail (corrupt blob
+ * or tampered ciphertext).
  */
 export function decryptPayload(encrypted: string, noteId: string): NotePayload | null {
-  try {
-    const { iv, ct, tag } = JSON.parse(encrypted);
-    const key = Buffer.from(deriveNoteEncryptionKey(noteId), "hex").slice(0, 32);
-    const decipher = crypto.createDecipheriv(
-      "aes-256-gcm",
-      key,
-      Buffer.from(iv, "hex")
-    );
-    decipher.setAuthTag(Buffer.from(tag, "hex"));
-    const dec = Buffer.concat([
-      decipher.update(Buffer.from(ct, "hex")),
-      decipher.final(),
-    ]);
-    return JSON.parse(dec.toString("utf8"));
-  } catch {
-    return null;
-  }
+  const tryDecrypt = (rawKeyHex: string): NotePayload | null => {
+    try {
+      const { iv, ct, tag } = JSON.parse(encrypted);
+      const key = Buffer.from(rawKeyHex, "hex").slice(0, 32);
+      const decipher = crypto.createDecipheriv(
+        "aes-256-gcm",
+        key,
+        Buffer.from(iv, "hex")
+      );
+      decipher.setAuthTag(Buffer.from(tag, "hex"));
+      const dec = Buffer.concat([
+        decipher.update(Buffer.from(ct, "hex")),
+        decipher.final(),
+      ]);
+      return JSON.parse(dec.toString("utf8"));
+    } catch {
+      return null;
+    }
+  };
+  return tryDecrypt(deriveNoteEncryptionKey(noteId))
+      ?? tryDecrypt(deriveNoteEncryptionKeyLegacy(noteId));
 }
 
 /**
@@ -162,6 +182,82 @@ export function markNoteSpent(noteId: string, nullifier: Bytes32): void {
 
 export function getNoteById(id: string): Note | null {
   return db.prepare(`SELECT * FROM zk_notes WHERE id = ?`).get(id) as Note | null;
+}
+
+/**
+ * Create a note bound to the production Groth16 transfer circuit.
+ *
+ * Differences from createNote:
+ *   - Generates a per-note owner_secret (random BN254 field element) and
+ *     stores it inside the encrypted_payload. The operator can decrypt it
+ *     with the per-note key (deriveNoteEncryptionKey); no other party can.
+ *   - Salt is a field-safe random value (randomFieldSalt) so it can be fed
+ *     directly to Poseidon without modular bias.
+ *   - The commitment is computed via the ZK formula
+ *       Poseidon4(value, asset_hash, Poseidon(owner_secret), salt)
+ *     so a Groth16 proof can later attest to it without re-hashing under a
+ *     different scheme.
+ *
+ * Returns the created Note plus the freshly-generated owner_secret so the
+ * caller (settlement engine) can use it as part of the proving witness.
+ */
+export function createZkNote(opts: {
+  value: number;
+  asset: string;
+  memo?: string;
+  senderFingerprint?: string;
+  relatedTransferId?: string;
+  /** Override owner secret (e.g. to recreate a deterministic test note). */
+  ownerSecret?: Bytes32;
+}): { note: Note; ownerSecret: Bytes32; ownerPk: Bytes32 } {
+  const ownerSecret = opts.ownerSecret ?? generateOwnerSecret();
+  const ownerPk = deriveOwnerPk(ownerSecret);
+  const salt = randomFieldSalt();
+  const commitment = computeZkCommitment({
+    value: opts.value,
+    asset: opts.asset,
+    ownerSecret,
+    salt,
+  });
+  const id = `NOTE-${shortHash(commitment, 12).toUpperCase()}`;
+  const now = new Date().toISOString();
+
+  const payload: NotePayload = {
+    value: opts.value,
+    asset: opts.asset,
+    memo: opts.memo ?? "",
+    sender_fingerprint: opts.senderFingerprint ?? "operator",
+    created_at: now,
+    owner_secret: ownerSecret,
+    circuit_version: "groth16-v1",
+  };
+  const encrypted_payload = encryptPayload(payload, id);
+
+  const note: Note = {
+    id,
+    commitment,
+    owner_fingerprint: ownerPk, // store the ZK owner_pk in the indexed column
+    value: opts.value,
+    asset: opts.asset,
+    salt,
+    status: "unspent",
+    encrypted_payload,
+    related_transfer_id: opts.relatedTransferId,
+    created_at: now,
+  };
+
+  db.prepare(`
+    INSERT INTO zk_notes
+      (id, commitment, owner_fingerprint, value, asset, salt, status,
+       encrypted_payload, related_transfer_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    note.id, note.commitment, note.owner_fingerprint, note.value,
+    note.asset, note.salt, note.status, note.encrypted_payload,
+    note.related_transfer_id ?? null, note.created_at
+  );
+
+  return { note, ownerSecret, ownerPk };
 }
 
 export function getUnspentNotes(ownerFingerprint?: string): Note[] {

@@ -290,15 +290,35 @@ function DashboardPage() {
               </div>
               {/* Production circuit */}
               <div className="px-5 py-3.5 space-y-1">
-                <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Production transfer SNARK</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">Production transfer SNARK</p>
+                  {zk.system.snark_ready && (
+                    <span className="font-mono text-[8px] uppercase tracking-wider rounded px-1.5 py-0.5 border border-emerald/30 bg-emerald/10 text-emerald">
+                      active
+                    </span>
+                  )}
+                </div>
                 <p className="font-mono text-[12px] text-foreground">
-                  {zk.system.snark_ready ? (zk.system.snark_circuit ?? "—") : "not built"}
-                </p>
-                <p className="font-mono text-[10px] text-muted-foreground/60">
                   {zk.system.snark_ready
-                    ? "real proofs active"
-                    : "needs membership + balance circuit + multi-party setup"}
+                    ? (typeof zk.system.snark_circuit === "object"
+                        ? (zk.system.snark_circuit as any).id
+                        : (zk.system.snark_circuit ?? "—"))
+                    : "not built"}
                 </p>
+                {zk.system.snark_ready && typeof zk.system.snark_circuit === "object" ? (
+                  <>
+                    <p className="font-mono text-[10px] text-emerald/80">
+                      {(zk.system.snark_circuit as any).constraints?.toLocaleString()} R1CS · {(zk.system.snark_circuit as any).proving_system} · {(zk.system.snark_circuit as any).hash} / {(zk.system.snark_circuit as any).curve}
+                    </p>
+                    <p className="font-mono text-[9px] text-yellow-400/60">
+                      ptau: Hermez (multi-party) · phase-2: single-party (devnet)
+                    </p>
+                  </>
+                ) : (
+                  <p className="font-mono text-[10px] text-muted-foreground/60">
+                    needs membership + balance circuit + multi-party setup
+                  </p>
+                )}
               </div>
             </div>
             {/* Groth16 demo */}

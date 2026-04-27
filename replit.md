@@ -89,13 +89,16 @@ All product routes use `AppShell` which provides:
 - `solana_tx.ts` — REAL @solana/web3.js tx builder: SPL Memo instruction, devnet submission, tx sig
 - `disclosure.ts` — Compliance/disclosure model: view keys, selective disclosure, policy types
 
-## Proof System (Phase 3)
-- **Active:** `Operator Authorization Proof` (Ed25519) using `@noble/curves/ed25519.js` — REAL
-- **Honest label:** Ed25519 cryptographic signature, NOT a zk-SNARK. Dashboard clearly states this.
-- **Proof:** Signs `SHA-256(circuit_id:commitment:nullifier:merkle_root:...)` with operator Ed25519 key
-- **Verification:** Real `ed25519.verify()` — cryptographic, not structural
-- **Future zk-SNARK (Groth16):** NOT active — needs `.wasm + .zkey` from Circom; acknowledged in UI
-- **Activation:** Drop compiled artifacts in `server/circuits/` + set `available: true` in `CIRCUIT_CONFIG`
+## Proof System (Phase D1 — REAL Groth16 zk-SNARK)
+- **Active backend:** `groth16-snarkjs` for `transfer` proofs. Auto-selected by `createProofRecord` when `isTransferCircuitReady()` (artifacts exist on disk). Falls back to legacy Ed25519 backend otherwise.
+- **Circuit:** `server/circuits/transfer/transfer.circom` (~5,914 R1CS over BN254). Statement: "I know `(value, salt, owner_secret, leaf_index, merkle_path)` such that `Poseidon4(value, asset_hash, Poseidon(owner_secret), salt)` is at `leaf_index` of a Merkle tree with root `merkle_root`, and `nullifier == Poseidon(owner_secret, leaf_index)`, with `value < 2^64`." Public signals: `[merkle_root, nullifier, value_commitment=Poseidon(value,salt), asset_hash]`.
+- **Trusted setup:** Phase-1 = `powersOfTau28_hez_final_14.ptau` (Hermez/iden3, multi-party, 140+ contributors). Phase-2 = single-party "zkgent-dev" contribution. **Devnet trust model only — DO NOT use for production funds.**
+- **Performance:** prove ~1.2s, verify ~25ms (server-side, in-process snarkjs).
+- **Settlement integration:** `executeSettlement` (server/domain/settlement.ts) for the Groth16 path: `createZkNote` (per-note `owner_secret`, encrypted into payload) → `appendLeaf` → snapshot leaves → `computeZkMerkleRoot(snapshot)` → `attachSpendWitness` (in-memory only) → `runProver` (Groth16) → `runVerifier` → invariant check (proof's public `merkle_root` and `nullifier` must equal settlement's stored values) → `publishNullifier` → on-chain submit. **The leaves snapshot is captured immediately after our `appendLeaf` and passed all the way through to the prover, so concurrent settlements cannot drift each other's witness/root.**
+- **Independent re-verification:** `GET /api/zk/proofs/:id/verify` runs `snarkjs.groth16.verify(vkey, publicSignals, proof)` from scratch — no DB state trusted beyond fetching the proof artifact. Auditors with `verification_key.json` can repeat the check.
+- **Note encryption (security fix):** `encrypted_payload` (which contains `owner_secret` for ZK notes) is encrypted with a key derived from `ZKGENT_OPERATOR_SEED` (a non-public env secret) — NOT from `keys.encryption.fingerprint` which is exposed by `/api/zk/system`. Old notes remain readable via a v1 fallback in `decryptPayload`.
+- **What is NOT done yet:** D2 (client-side proving — operator still sees plaintext), D3 (on-chain Solana verifier program — devnet still uses Memo anchoring), multi-party phase-2 ceremony.
+- **Legacy Ed25519 backend:** still wired, used for `proofType !== "transfer"` and as a fallback if circuit artifacts are missing.
 
 ## Solana On-chain (Phase 3)
 - **Library:** `@solana/web3.js` v1.x — REAL (server + browser via vite-plugin-node-polyfills)
