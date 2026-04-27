@@ -114,7 +114,7 @@ db.exec(`
     hide_amounts INTEGER DEFAULT 1,
     shielded_address INTEGER DEFAULT 0,
     disclosure_policy TEXT DEFAULT 'audit',
-    compliance_key_fingerprint TEXT DEFAULT 'OBD:KEY:A4F2...9E1C',
+    compliance_key_fingerprint TEXT DEFAULT '',
     notifications_transfer_settled INTEGER DEFAULT 1,
     notifications_payroll_approved INTEGER DEFAULT 1,
     notifications_counterparty_kyc INTEGER DEFAULT 0,
