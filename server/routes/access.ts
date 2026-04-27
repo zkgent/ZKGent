@@ -1,10 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db, checkWalletAccess, ACCESS_GRANTING_STATUSES, type ApplicationRow } from "../db.js";
+import { getWalletSession, normalizeWalletAddress } from "../domain/wallet_auth.js";
 import { rateLimit } from "../security.js";
 
 export const accessRouter = Router();
-
-const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 interface WalletRequest extends Request {
   walletAddress?: string;
@@ -27,13 +26,6 @@ function publicView(app: ApplicationRow | null) {
     approvedAt: app.approved_at,
     createdAt: app.created_at,
   };
-}
-
-function normalizeWalletAddress(input: unknown): string | null {
-  if (typeof input !== "string") return null;
-  const wallet = input.trim();
-  if (!wallet || !SOLANA_ADDRESS_RE.test(wallet)) return null;
-  return wallet;
 }
 
 /**
@@ -160,18 +152,50 @@ accessRouter.post(
  * challenge flow. D2 should replace this with wallet-signed auth.
  */
 export function requireApprovedWallet(req: WalletRequest, res: Response, next: NextFunction) {
+  const sessionTokenHeader =
+    typeof req.headers["x-wallet-session"] === "string" ? req.headers["x-wallet-session"] : null;
+  const authHeader =
+    typeof req.headers.authorization === "string" ? req.headers.authorization : null;
+  const sessionToken =
+    sessionTokenHeader?.trim() ||
+    (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null) ||
+    null;
+
   const headerWallet = normalizeWalletAddress(req.headers["x-wallet-address"]);
   const bodyWallet = normalizeWalletAddress(
     (req.body?.wallet_address as string | undefined) ||
       (req.body?.initiated_by_wallet as string | undefined),
   );
 
-  const walletAddress = headerWallet ?? bodyWallet;
+  const session = sessionToken ? getWalletSession(sessionToken) : null;
+  const sessionWallet = session?.wallet_address ?? null;
+  const walletAddress = sessionWallet ?? headerWallet ?? bodyWallet;
 
   if (!walletAddress) {
     return res.status(401).json({
       error: "wallet_required",
-      hint: "This endpoint requires a connected Solana wallet. Pass a valid address via x-wallet-address header.",
+      hint: "Authenticate with a wallet session or pass a valid address via x-wallet-address header.",
+    });
+  }
+
+  if (sessionToken && !session) {
+    return res.status(401).json({
+      error: "wallet_session_invalid",
+      hint: "Refresh wallet authentication and sign a new challenge.",
+    });
+  }
+
+  if (sessionWallet && headerWallet && sessionWallet !== headerWallet) {
+    return res.status(400).json({
+      error: "wallet_session_mismatch",
+      hint: "Authenticated wallet session does not match x-wallet-address header.",
+    });
+  }
+
+  if (sessionWallet && bodyWallet && sessionWallet !== bodyWallet) {
+    return res.status(400).json({
+      error: "wallet_session_mismatch",
+      hint: "Authenticated wallet session does not match request body wallet.",
     });
   }
 

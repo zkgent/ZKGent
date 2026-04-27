@@ -14,6 +14,7 @@ import { dashboardRouter } from "./routes/dashboard.js";
 import { zkRouter } from "./routes/zk.js";
 import { identityRouter } from "./routes/identity.js";
 import { accessRouter } from "./routes/access.js";
+import { walletAuthRouter } from "./routes/wallet_auth.js";
 import { rateLimit } from "./security.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +38,7 @@ app.use("/api/settings", settingsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/zk", zkRouter);
 app.use("/api/identity", identityRouter);
+app.use("/api/wallet-auth", walletAuthRouter);
 app.use("/api/access", accessRouter);
 
 app.get("/api/health", (_req, res) => {

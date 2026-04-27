@@ -5,13 +5,15 @@
  *
  * Signing capabilities:
  *   - signMessage()          — debug/authorization signature
- *   - signAndSubmitTx()      — real signTransaction + sendRawTransaction flow
+ *   - authenticate()        — signed challenge session bootstrap
+ *   - signAndSubmitTx()     — real signTransaction + sendRawTransaction flow
  *
  * Identity:
  *   - On connect, resolves/creates wallet identity via POST /api/identity/resolve
  */
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import bs58 from "bs58";
 
 interface WalletProviderLike {
   isPhantom?: boolean;
@@ -74,14 +76,17 @@ export interface WalletContextValue {
   identity: WalletIdentity | null;
   error: string | null;
   isInstalled: boolean;
+  walletSessionToken: string | null;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   signMessage: (message: string) => Promise<{ signature: string; publicKey: string } | null>;
+  authenticate: () => Promise<boolean>;
   signAndSubmitTx: (settlementId: string) => Promise<TxSignResult | null>;
   refresh: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextValue | null>(null);
+const WALLET_SESSION_STORAGE_KEY = "zkgent_wallet_session";
 
 export function useWallet(): WalletContextValue {
   const ctx = useContext(WalletContext);
@@ -120,12 +125,39 @@ async function resolveIdentity(
   }
 }
 
+function readStoredWalletSession(): string | null {
+  try {
+    return localStorage.getItem(WALLET_SESSION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredWalletSession() {
+  try {
+    localStorage.removeItem(WALLET_SESSION_STORAGE_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function writeStoredWalletSession(token: string) {
+  try {
+    localStorage.setItem(WALLET_SESSION_STORAGE_KEY, token);
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<WalletStatus>("disconnected");
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [identity, setIdentity] = useState<WalletIdentity | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [walletSessionToken, setWalletSessionToken] = useState<string | null>(() =>
+    readStoredWalletSession(),
+  );
 
   useEffect(() => {
     const check = () => setIsInstalled(!!detectWallet());
@@ -155,7 +187,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       };
       setWallet(info);
       setStatus("connected");
-      // Resolve/create wallet identity
+      setWalletSessionToken(null);
+      clearStoredWalletSession();
       resolveIdentity(address, detected.name).then((id) => setIdentity(id));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Connection rejected");
@@ -165,18 +198,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(async () => {
     const detected = detectWallet();
+    if (walletSessionToken) {
+      try {
+        await fetch("/api/wallet-auth/logout", {
+          method: "POST",
+          headers: { "x-wallet-session": walletSessionToken },
+        });
+      } catch {
+        // ignore logout network errors
+      }
+    }
     if (detected?.provider?.disconnect) {
       try {
         await detected.provider.disconnect();
-      } catch (_err) {
+      } catch {
         // ignore wallet disconnect errors
       }
     }
     setWallet(null);
     setIdentity(null);
+    setWalletSessionToken(null);
+    clearStoredWalletSession();
     setStatus("disconnected");
     setError(null);
-  }, []);
+  }, [walletSessionToken]);
 
   const signMessage = useCallback(
     async (message: string): Promise<{ signature: string; publicKey: string } | null> => {
@@ -185,7 +230,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setStatus("signing");
       try {
         const encoded = new TextEncoder().encode(message);
-        const res = await detected.provider.signMessage(encoded, "utf8");
+        const res = await detected.provider.signMessage?.(encoded, "utf8");
+        if (!res) throw new Error("Wallet does not support signMessage");
         const sig = Buffer.from(res.signature).toString("hex");
         setStatus("connected");
         return { signature: sig, publicKey: wallet.address };
@@ -197,6 +243,58 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     },
     [wallet],
   );
+
+  const authenticate = useCallback(async (): Promise<boolean> => {
+    const detected = detectWallet();
+    if (!detected || !wallet || !detected.provider.signMessage) {
+      setError("Wallet signing is not available");
+      return false;
+    }
+
+    setStatus("signing");
+    try {
+      const challengeRes = await fetch("/api/wallet-auth/challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_address: wallet.address }),
+      });
+      if (!challengeRes.ok) {
+        const err = (await challengeRes.json()) as ApiErrorPayload;
+        throw new Error(err.error ?? "challenge_failed");
+      }
+
+      const challenge = await challengeRes.json();
+      const encoded = new TextEncoder().encode(String(challenge.message ?? ""));
+      const signed = await detected.provider.signMessage(encoded, "utf8");
+      const signatureBase58 = bs58.encode(signed.signature);
+
+      const verifyRes = await fetch("/api/wallet-auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallet_address: wallet.address,
+          challenge_id: challenge.id,
+          signature_base58: signatureBase58,
+        }),
+      });
+      if (!verifyRes.ok) {
+        const err = (await verifyRes.json()) as ApiErrorPayload;
+        throw new Error(err.error ?? "wallet_auth_failed");
+      }
+
+      const data = await verifyRes.json();
+      const token = data.session?.token as string | undefined;
+      if (!token) throw new Error("wallet_session_missing");
+      setWalletSessionToken(token);
+      writeStoredWalletSession(token);
+      setStatus("connected");
+      return true;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Wallet authentication failed");
+      setStatus("connected");
+      return false;
+    }
+  }, [wallet]);
 
   /**
    * Real signTransaction flow:
@@ -215,12 +313,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
       setStatus("signing");
       try {
-        // Step 1: backend prepares real serialized transaction
+        let sessionToken = walletSessionToken;
+        if (!sessionToken) {
+          const ok = await authenticate();
+          if (!ok) throw new Error("wallet_auth_required");
+          sessionToken = readStoredWalletSession();
+        }
+
         const prepRes = await fetch("/api/zk/tx/prepare", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "x-wallet-address": wallet.address,
+            ...(sessionToken ? { "x-wallet-session": sessionToken } : {}),
           },
           body: JSON.stringify({ settlement_id: settlementId, wallet_address: wallet.address }),
         });
@@ -230,15 +335,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
         const { request_id, serialized_tx, network } = await prepRes.json();
 
-        // Step 2: deserialize via @solana/web3.js (lazy import to avoid bundle bloat)
         const { Transaction, Connection } = await import("@solana/web3.js");
         const txBytes = Buffer.from(serialized_tx, "base64");
         const tx = Transaction.from(txBytes);
 
-        // Step 3: wallet signs the transaction
-        const signedTx = await detected.provider.signTransaction(tx);
+        const signedTx = await detected.provider.signTransaction?.(tx);
+        if (!signedTx) throw new Error("Wallet does not support signTransaction");
 
-        // Step 4: submit signed tx to Solana
         const cluster = network === "mainnet-beta" ? "mainnet-beta" : network;
         const rpcUrl =
           cluster === "mainnet-beta"
@@ -251,10 +354,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           maxRetries: 3,
         });
 
-        // Step 5: report back to backend
         const confirmRes = await fetch("/api/zk/tx/confirm", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(sessionToken ? { "x-wallet-session": sessionToken } : {}),
+          },
           body: JSON.stringify({
             request_id,
             tx_signature: txSignature,
@@ -276,7 +381,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         return null;
       }
     },
-    [wallet],
+    [authenticate, wallet, walletSessionToken],
   );
 
   const refresh = useCallback(async () => {
@@ -297,9 +402,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         identity,
         error,
         isInstalled,
+        walletSessionToken,
         connect,
         disconnect,
         signMessage,
+        authenticate,
         signAndSubmitTx,
         refresh,
       }}

@@ -12,6 +12,8 @@ import {
   getWalletActivity,
   getAllWalletUsers,
 } from "../domain/identity.js";
+import { normalizeWalletAddress } from "../domain/wallet_auth.js";
+import { rateLimit } from "../security.js";
 
 export const identityRouter = Router();
 
@@ -24,30 +26,41 @@ function getErrorMessage(err: unknown): string {
  * Called when a wallet connects. Creates or updates the identity record.
  * Body: { wallet_address, wallet_name?, network_preference? }
  */
-identityRouter.post("/resolve", (req, res) => {
-  const { wallet_address, wallet_name, network_preference } = req.body;
-  if (!wallet_address || typeof wallet_address !== "string" || wallet_address.length < 32) {
-    return res.status(400).json({ error: "wallet_address required (valid base58 Solana address)" });
-  }
+identityRouter.post(
+  "/resolve",
+  rateLimit({ scope: "identity-resolve", max: 60, windowMs: 60_000 }),
+  (req, res) => {
+    const { wallet_name, network_preference } = req.body;
+    const wallet_address = normalizeWalletAddress(req.body?.wallet_address);
+    if (!wallet_address) {
+      return res.status(400).json({
+        error: "wallet_address required (valid base58 Solana address)",
+      });
+    }
 
-  try {
-    const user = upsertWalletUser({
-      wallet_address,
-      wallet_name: wallet_name ?? undefined,
-      network_preference: network_preference ?? undefined,
-    });
-    res.json({ identity: user });
-  } catch (err: unknown) {
-    res.status(500).json({ error: getErrorMessage(err) });
-  }
-});
+    try {
+      const user = upsertWalletUser({
+        wallet_address,
+        wallet_name: wallet_name ?? undefined,
+        network_preference: network_preference ?? undefined,
+      });
+      res.json({ identity: user });
+    } catch (err: unknown) {
+      res.status(500).json({ error: getErrorMessage(err) });
+    }
+  },
+);
 
 /**
  * GET /api/identity/:address
  * Fetch identity + activity for a wallet address.
  */
 identityRouter.get("/:address", (req, res) => {
-  const { address } = req.params;
+  const address = normalizeWalletAddress(req.params.address);
+  if (!address) {
+    return res.status(400).json({ error: "valid_wallet_address_required" });
+  }
+
   try {
     const user = getWalletUser(address);
     if (!user) {
@@ -66,11 +79,15 @@ identityRouter.get("/:address", (req, res) => {
  * GET /api/identity
  * List all known wallet identities. Admin use.
  */
-identityRouter.get("/", (_req, res) => {
-  try {
-    const users = getAllWalletUsers(100);
-    res.json({ count: users.length, users });
-  } catch (err: unknown) {
-    res.status(500).json({ error: getErrorMessage(err) });
-  }
-});
+identityRouter.get(
+  "/",
+  rateLimit({ scope: "identity-list", max: 20, windowMs: 60_000 }),
+  (_req, res) => {
+    try {
+      const users = getAllWalletUsers(100);
+      res.json({ count: users.length, users });
+    } catch (err: unknown) {
+      res.status(500).json({ error: getErrorMessage(err) });
+    }
+  },
+);
