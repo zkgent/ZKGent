@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
-import { api, type ZkSystemInfo, type DashboardStats, type ZkOnChainTx } from "@/lib/api";
+import { api, type ZkSystemInfo, type DashboardStats, type ZkOnChainTx, type WalletActivity } from "@/lib/api";
 import { WalletStatusPanel } from "@/components/wallet/WalletButton";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardWrapper,
@@ -122,6 +123,9 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [solanaPing, setSolanaPing] = useState<"checking" | "ok" | "error">("checking");
+  const [userActivity, setUserActivity] = useState<WalletActivity | null>(null);
+
+  const { wallet, identity } = useWallet();
 
   const load = useCallback(() => {
     setLoading(true);
@@ -134,6 +138,14 @@ function DashboardPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  // Load per-user activity when wallet connects
+  useEffect(() => {
+    if (!wallet?.address) { setUserActivity(null); return; }
+    api.identity.get(wallet.address)
+      .then(d => setUserActivity(d.activity))
+      .catch(() => setUserActivity(null));
+  }, [wallet?.address]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -159,8 +171,14 @@ function DashboardPage() {
                   : "border-hairline bg-surface text-muted-foreground"
             }`}>
               <span className={`h-1.5 w-1.5 rounded-full ${solanaPing === "ok" ? "bg-emerald" : solanaPing === "error" ? "bg-red-400" : "bg-muted-foreground/40 animate-pulse"}`} />
-              Solana {loading ? "…" : zk?.solana.network ?? "Devnet"}
+              {loading ? "…" : (zk?.solana.network ?? "devnet").toUpperCase()}
             </span>
+            {!loading && zk?.solana.network !== "mainnet-beta" && (
+              <span className="flex items-center gap-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-yellow-400/70">
+                <span className="h-1.5 w-1.5 rounded-full bg-yellow-400/60" />
+                Not Mainnet
+              </span>
+            )}
             <button onClick={load} className="flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors">
               ↻ Refresh
             </button>
@@ -173,9 +191,73 @@ function DashboardPage() {
           </motion.div>
         )}
 
+        {/* ── Wallet Identity ──────────────────────────────────────────────── */}
+        <motion.div variants={item}>
+          {wallet && identity ? (
+            <div className="rounded-2xl border border-emerald/15 bg-emerald/5 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-emerald/10">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald animate-pulse" />
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-emerald/70">Your Wallet Identity</p>
+                </div>
+                <span className="font-mono text-[10px] text-emerald/60 font-medium">{identity.identity_fingerprint}</span>
+              </div>
+              <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Provider</p>
+                  <p className="font-mono text-[11px] text-foreground">{wallet.walletName}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Address</p>
+                  <p className="font-mono text-[11px] text-foreground">{wallet.shortAddress}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Sessions</p>
+                  <p className="font-mono text-[11px] text-foreground">{identity.session_count}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Network Pref</p>
+                  <p className={`font-mono text-[11px] ${identity.network_preference === "mainnet-beta" ? "text-emerald" : "text-yellow-400/70"}`}>
+                    {identity.network_preference}
+                  </p>
+                </div>
+              </div>
+              {userActivity && (
+                <div className="border-t border-emerald/10 px-5 py-3 grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">Your Settlements</p>
+                    <p className="font-mono text-[15px] font-semibold text-foreground">{userActivity.settlements.length}</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">Signing Requests</p>
+                    <p className="font-mono text-[15px] font-semibold text-foreground">{userActivity.signing_requests.length}</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-0.5">On-chain Txs</p>
+                    <p className="font-mono text-[15px] font-semibold text-foreground">{userActivity.onchain_txs.length}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-hairline bg-surface px-5 py-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50 mb-1">Wallet Identity</p>
+                <p className="text-[13px] text-foreground">Connect your Solana wallet to get a personal identity</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+                  Your settlements, signing requests, and on-chain transactions will be linked to your wallet address.
+                </p>
+              </div>
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider border border-hairline rounded px-2 py-1 text-muted-foreground/40">
+                No wallet
+              </span>
+            </div>
+          )}
+        </motion.div>
+
         {/* ── ZK System State ─────────────────────────────────────────────── */}
         <motion.div variants={item}>
-          <SectionLabel>ZK System State</SectionLabel>
+          <SectionLabel>System State</SectionLabel>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {loading ? (
               Array(8).fill(0).map((_, i) => (
@@ -204,9 +286,9 @@ function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* ── Proof Pipeline ──────────────────────────────────────────────── */}
+        {/* ── Authorization Proof Pipeline ────────────────────────────────── */}
         <motion.div variants={item}>
-          <SectionLabel>Proof Pipeline</SectionLabel>
+          <SectionLabel>Authorization Proof Pipeline</SectionLabel>
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             {loading ? (
               <div className="px-5 py-8 text-center">
@@ -234,23 +316,23 @@ function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald shrink-0" />
                     <p className="font-mono text-[10px] text-emerald">
-                      Backend: <strong>{zk.circuit?.prover_backend ?? "ed25519-operator-proof-v1"}</strong>
-                      {" "}· Ed25519 signing (real cryptographic verification)
+                      Active: <strong>Operator Authorization Proof</strong>
+                      {" "}· Ed25519 cryptographic signature (real, not ZK-SNARK)
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
                     <p className="font-mono text-[10px] text-muted-foreground/50">
-                      Prover pubkey: <span className="text-foreground/60">{zk.circuit?.prover_pubkey?.slice(0, 24) ?? "…"}…</span>
+                      Operator pubkey: <span className="text-foreground/60">{zk.circuit?.prover_pubkey?.slice(0, 24) ?? "…"}…</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${zk.circuit?.transfer?.available ? "bg-emerald" : "bg-yellow-400/60"}`} />
-                    <p className="font-mono text-[10px] text-yellow-400/70">
-                      zk-SNARK circuit ({zk.circuit?.transfer?.id ?? "zkgent-transfer-v1"}):
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${zk.circuit?.transfer?.available ? "bg-emerald" : "bg-muted-foreground/20"}`} />
+                    <p className="font-mono text-[10px] text-muted-foreground/40">
+                      Future zk-SNARK circuit ({zk.circuit?.transfer?.id ?? "zkgent-transfer-v1"}):
                       {zk.circuit?.transfer?.available
                         ? " ✓ Available"
-                        : " Pending — run: npm run circuits:build to compile .wasm + .zkey"}
+                        : " Not active — requires Circom .wasm + .zkey compilation"}
                     </p>
                   </div>
                 </div>
@@ -312,7 +394,13 @@ function DashboardPage() {
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             <div className="border-b border-hairline px-5 py-3 flex items-center justify-between">
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">On-chain Transactions</p>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-emerald border border-emerald/20 rounded px-1.5 py-0.5">devnet</span>
+              <span className={`font-mono text-[9px] uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                zk?.solana.network === "mainnet-beta"
+                  ? "text-emerald border-emerald/20"
+                  : "text-yellow-400/70 border-yellow-400/20"
+              }`}>
+                {zk?.solana.network ?? "devnet"}
+              </span>
             </div>
             {loading ? (
               <div className="px-5 py-4 space-y-2">{[0,1,2].map(i=><div key={i} className="h-3 w-full rounded bg-surface-elevated animate-pulse"/>)}</div>
@@ -363,7 +451,15 @@ function DashboardPage() {
           <div className="rounded-2xl border border-hairline bg-surface overflow-hidden">
             <div className="border-b border-hairline px-5 py-3 flex items-center justify-between">
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Solana Network</p>
-              <ScaffoldTag label="live rpc" />
+              {zk && !loading && (
+                <span className={`font-mono text-[9px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
+                  zk.solana.network === "mainnet-beta"
+                    ? "border-emerald/20 text-emerald"
+                    : "border-yellow-400/30 text-yellow-400/70"
+                }`}>
+                  {zk.solana.network === "mainnet-beta" ? "Mainnet" : "Non-mainnet"}
+                </span>
+              )}
             </div>
             {loading ? (
               <div className="px-5 py-4 space-y-2">
@@ -371,21 +467,28 @@ function DashboardPage() {
               </div>
             ) : zk ? (
               <div className="px-5 py-4 space-y-3">
+                {zk.solana.network !== "mainnet-beta" && (
+                  <div className="rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-3 py-2">
+                    <p className="font-mono text-[9px] text-yellow-400/70">
+                      Running on <strong>{zk.solana.network}</strong> — not production mainnet.
+                      Set <code>SOLANA_NETWORK=mainnet-beta</code> for production.
+                    </p>
+                  </div>
+                )}
                 {[
-                  { label: "Network",    value: zk.solana.network },
+                  { label: "Cluster",    value: zk.solana.network },
                   { label: "Status",     value: zk.solana.reachable ? "Reachable" : `Unreachable · ${zk.solana.error ?? ""}`,
                     dot: zk.solana.reachable ? "bg-emerald" : "bg-red-400" },
                   { label: "Slot",       value: fmtNum(zk.solana.slot) },
                   { label: "Epoch",      value: fmtNum(zk.solana.epoch) },
                   { label: "Commitment", value: "confirmed" },
-                  { label: "Program",    value: "Not deployed", badge: "scaffold" },
+                  { label: "Custom Program", value: "Not deployed yet" },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
                     <span className="font-mono text-[10px] text-muted-foreground/50">{row.label}</span>
                     <span className="flex items-center gap-1.5 font-mono text-[11px] text-foreground">
                       {row.dot && <span className={`h-1.5 w-1.5 rounded-full ${row.dot}`} />}
                       {row.value}
-                      {row.badge && <ScaffoldTag label={row.badge} />}
                     </span>
                   </div>
                 ))}

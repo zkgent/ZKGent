@@ -1,10 +1,10 @@
 /**
- * ZKGENT Wallet Connect Button
+ * ZKGENT Wallet Connect Button + Identity Panel
  *
- * Compact wallet connect/disconnect UI.
- * Works with Phantom, Backpack, Solflare (window.solana API).
+ * Shows connected wallet, identity fingerprint, and signTransaction status.
  */
 
+import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 
 interface WalletButtonProps {
@@ -13,7 +13,7 @@ interface WalletButtonProps {
 }
 
 export function WalletButton({ className = "", compact = false }: WalletButtonProps) {
-  const { status, wallet, error, connect, disconnect, isInstalled } = useWallet();
+  const { status, wallet, connect, disconnect, isInstalled } = useWallet();
 
   const isConnecting = status === "connecting" || status === "signing";
   const isConnected  = status === "connected" && wallet;
@@ -59,17 +59,20 @@ export function WalletButton({ className = "", compact = false }: WalletButtonPr
 }
 
 /**
- * Full wallet status panel — used on the dashboard.
+ * Full wallet identity panel.
+ * Shows identity fingerprint, session info, and signTransaction status.
  */
 export function WalletStatusPanel() {
-  const { status, wallet, error, connect, disconnect, isInstalled, signMessage } = useWallet();
+  const { status, wallet, identity, error, connect, disconnect, isInstalled, signMessage } = useWallet();
+  const [testSigResult, setTestSigResult] = useState<string | null>(null);
   const isConnected = status === "connected" && wallet;
 
   const handleSignTest = async () => {
     if (!isConnected) return;
-    const result = await signMessage(`zkgent:test-sign:${Date.now()}`);
+    setTestSigResult(null);
+    const result = await signMessage(`zkgent:auth-test:${Date.now()}`);
     if (result) {
-      console.log("[zkgent] Test signature:", result.signature.slice(0, 16), "…");
+      setTestSigResult(result.signature.slice(0, 16) + "…");
     }
   };
 
@@ -78,21 +81,27 @@ export function WalletStatusPanel() {
       <div className="flex items-center justify-between px-5 py-3 border-b border-hairline">
         <div className="flex items-center gap-2">
           <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-emerald animate-pulse" : "bg-muted-foreground/40"}`} />
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Wallet</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Wallet Identity</p>
         </div>
-        {isConnected ? (
+        {isConnected && (
           <button
             onClick={disconnect}
             className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/40 hover:text-red-400 transition-colors"
           >
             Disconnect
           </button>
-        ) : null}
+        )}
       </div>
 
       <div className="px-5 py-4">
         {isConnected ? (
           <div className="space-y-2.5">
+            {identity && (
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-mono text-[10px] text-muted-foreground/50">ID</span>
+                <span className="font-mono text-[11px] text-cyan font-medium">{identity.identity_fingerprint}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] text-muted-foreground/50">Provider</span>
               <span className="font-mono text-[11px] text-emerald">{wallet.walletName}</span>
@@ -101,10 +110,20 @@ export function WalletStatusPanel() {
               <span className="font-mono text-[10px] text-muted-foreground/50">Address</span>
               <span className="font-mono text-[10px] text-foreground">{wallet.shortAddress}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-muted-foreground/50">Network</span>
-              <span className="font-mono text-[10px] text-cyan">Devnet</span>
-            </div>
+            {identity && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-muted-foreground/50">Sessions</span>
+                  <span className="font-mono text-[10px] text-foreground">{identity.session_count}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-muted-foreground/50">Network Pref</span>
+                  <span className={`font-mono text-[10px] ${identity.network_preference === "mainnet-beta" ? "text-emerald" : "text-yellow-400/70"}`}>
+                    {identity.network_preference}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] text-muted-foreground/50">Status</span>
               <span className={`font-mono text-[9px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
@@ -115,13 +134,21 @@ export function WalletStatusPanel() {
                 {status === "signing" ? "Signing…" : "Connected"}
               </span>
             </div>
-            <button
-              onClick={handleSignTest}
-              disabled={status === "signing"}
-              className="mt-1 w-full font-mono text-[9px] uppercase tracking-wider border border-hairline rounded py-1.5 text-muted-foreground/50 hover:text-foreground hover:border-foreground/20 transition-colors disabled:opacity-50"
-            >
-              {status === "signing" ? "Signing…" : "Test Sign Message"}
-            </button>
+            <div className="pt-1 border-t border-hairline">
+              <p className="font-mono text-[9px] text-muted-foreground/40 mb-2">
+                signTransaction ready · Ed25519 wallet signing
+              </p>
+              <button
+                onClick={handleSignTest}
+                disabled={status === "signing"}
+                className="w-full font-mono text-[9px] uppercase tracking-wider border border-hairline rounded py-1.5 text-muted-foreground/50 hover:text-foreground hover:border-foreground/20 transition-colors disabled:opacity-50"
+              >
+                {status === "signing" ? "Signing…" : "Test Auth Signature"}
+              </button>
+              {testSigResult && (
+                <p className="mt-1.5 font-mono text-[9px] text-emerald/70 truncate">sig: {testSigResult}</p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-2">
@@ -135,8 +162,16 @@ export function WalletStatusPanel() {
                   className="text-cyan/70 hover:text-cyan underline">
                   Install Phantom
                 </a>
+                {" "}or{" "}
+                <a href="https://backpack.app" target="_blank" rel="noopener noreferrer"
+                  className="text-cyan/70 hover:text-cyan underline">
+                  Backpack
+                </a>
               </p>
             )}
+            <p className="text-[10px] text-muted-foreground/40 text-center">
+              Connect your wallet to get a personal identity and link settlements to your account.
+            </p>
             <button
               onClick={connect}
               disabled={status === "connecting"}

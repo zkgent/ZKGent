@@ -180,10 +180,36 @@ export interface ZkSettlementRecord {
   note_id: string | null; commitment: string | null; nullifier: string | null;
   proof_id: string | null; merkle_root_at_settlement: string | null;
   on_chain_tx_sig: string | null; on_chain_explorer_url: string | null;
+  initiated_by_wallet: string | null;
   error_message: string | null;
   queued_at: string; submitted_on_chain_at: string | null;
   confirmed_at: string | null; finalized_at: string | null;
   settled_at: string | null; updated_at: string;
+}
+
+export interface WalletIdentity {
+  id: string;
+  wallet_address: string;
+  identity_fingerprint: string;
+  wallet_name: string | null;
+  network_preference: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  session_count: number;
+}
+
+export interface WalletActivity {
+  settlements: Array<{
+    id: string; status: string; commitment: string | null;
+    on_chain_tx_sig: string | null; on_chain_explorer_url: string | null;
+    queued_at: string; finalized_at: string | null;
+  }>;
+  signing_requests: Array<{
+    id: string; status: string; requested_at: string; responded_at: string | null;
+  }>;
+  onchain_txs: Array<{
+    signature: string; status: string; explorer_url: string | null; submitted_at: string;
+  }>;
 }
 
 
@@ -239,13 +265,31 @@ export const api = {
     proofs:   () => fetchJson<{ stats: ZkProofStats; proofs: unknown[] }>("/api/zk/proofs"),
     settlement: {
       queue: () => fetchJson<{ stats: ZkSettlementStats; queue: ZkSettlementRecord[] }>("/api/zk/settlement/queue"),
-      initiate: (body: { transfer_id: string; value: number; asset?: string; recipient_fingerprint: string; memo?: string }) =>
+      initiate: (body: { transfer_id: string; value: number; asset?: string; recipient_fingerprint: string; memo?: string; initiated_by_wallet?: string }) =>
         fetchJson<{ settlement_id: string; status: string }>("/api/zk/settlement/initiate", {
           method: "POST", body: JSON.stringify(body),
         }),
     },
-    solana: () => fetchJson<{ status: ZkSolanaStatus; config: { network: string; commitment: string } }>("/api/zk/solana"),
+    tx: {
+      prepare: (body: { settlement_id: string; wallet_address: string }) =>
+        fetchJson<{ request_id: string; serialized_tx: string; network: string; is_mainnet: boolean; memo_text: string; expires_at: string; status: string }>("/api/zk/tx/prepare", {
+          method: "POST", body: JSON.stringify(body),
+        }),
+      confirm: (body: { request_id: string; tx_signature: string; wallet_address: string; network: string }) =>
+        fetchJson<{ success: boolean; tx_signature: string; explorer_url: string; status: string }>("/api/zk/tx/confirm", {
+          method: "POST", body: JSON.stringify(body),
+        }),
+    },
+    solana: () => fetchJson<{ status: ZkSolanaStatus & { is_mainnet: boolean }; config: { network: string; commitment: string }; operator_address: string }>("/api/zk/solana"),
     keys:   () => fetchJson<{ keys: unknown; note: string }>("/api/zk/keys"),
     disclosure: () => fetchJson<ZkDisclosureStatus>("/api/zk/disclosure"),
+  },
+  identity: {
+    resolve: (wallet_address: string, wallet_name?: string) =>
+      fetchJson<{ identity: WalletIdentity }>("/api/identity/resolve", {
+        method: "POST", body: JSON.stringify({ wallet_address, wallet_name }),
+      }),
+    get: (address: string) =>
+      fetchJson<{ identity: WalletIdentity; activity: WalletActivity }>(`/api/identity/${address}`),
   },
 };

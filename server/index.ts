@@ -12,6 +12,7 @@ import { activityRouter } from "./routes/activity.js";
 import { settingsRouter } from "./routes/settings.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { zkRouter } from "./routes/zk.js";
+import { identityRouter } from "./routes/identity.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === "production";
@@ -32,6 +33,7 @@ app.use("/api/activity", activityRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/zk", zkRouter);
+app.use("/api/identity", identityRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });

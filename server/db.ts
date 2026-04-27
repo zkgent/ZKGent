@@ -235,17 +235,32 @@ db.exec(`
     expires_at TEXT NOT NULL,
     responded_at TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS wallet_users (
+    id TEXT PRIMARY KEY,
+    wallet_address TEXT NOT NULL UNIQUE,
+    identity_fingerprint TEXT NOT NULL,
+    wallet_name TEXT,
+    network_preference TEXT NOT NULL DEFAULT 'devnet',
+    first_seen_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
+    session_count INTEGER NOT NULL DEFAULT 1
+  );
 `);
 
 // ─── Column migrations (safe: runs on every startup) ─────────────────────────
 // ALTER TABLE IF NOT SUPPORTED in sqlite — we use try/catch per column.
 {
   const alterCols: Array<[string, string, string]> = [
-    ["zk_settlements", "submitted_on_chain_at", "TEXT"],
-    ["zk_settlements", "confirmed_at",           "TEXT"],
-    ["zk_settlements", "finalized_at",            "TEXT"],
-    ["zk_settlements", "on_chain_explorer_url",   "TEXT"],
-    ["zk_settlements", "signing_request_id",      "TEXT"],
+    ["zk_settlements", "submitted_on_chain_at",  "TEXT"],
+    ["zk_settlements", "confirmed_at",            "TEXT"],
+    ["zk_settlements", "finalized_at",             "TEXT"],
+    ["zk_settlements", "on_chain_explorer_url",    "TEXT"],
+    ["zk_settlements", "signing_request_id",       "TEXT"],
+    ["zk_settlements", "initiated_by_wallet",      "TEXT"],
+    ["zk_settlements", "note_created_at",          "TEXT"],
+    ["zk_settlements", "proof_generated_at",       "TEXT"],
+    ["zk_settlements", "proof_verified_at",        "TEXT"],
   ];
   for (const [tbl, col, type] of alterCols) {
     try { db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run(); }

@@ -116,7 +116,7 @@ zkRouter.get("/settlement/queue", (_req, res) => {
 });
 
 zkRouter.post("/settlement/initiate", async (req, res) => {
-  const { transfer_id, value, asset, recipient_fingerprint, memo } = req.body;
+  const { transfer_id, value, asset, recipient_fingerprint, memo, initiated_by_wallet } = req.body;
   if (!transfer_id || value == null || !recipient_fingerprint) {
     return res.status(400).json({ error: "transfer_id, value, recipient_fingerprint required" });
   }
@@ -125,6 +125,12 @@ zkRouter.post("/settlement/initiate", async (req, res) => {
       transferId: transfer_id, value, asset: asset ?? "USDC",
       recipientFingerprint: recipient_fingerprint, memo,
     });
+
+    // Link settlement to wallet if provided
+    if (initiated_by_wallet) {
+      db.prepare(`UPDATE zk_settlements SET initiated_by_wallet = ? WHERE id = ?`)
+        .run(initiated_by_wallet, record.id);
+    }
 
     // Execute asynchronously in background
     executeSettlement(record.id, {
@@ -166,84 +172,185 @@ zkRouter.get("/solana", async (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Wallet signing flow ──────────────────────────────────────────────────────
+// ─── Transaction preparation (real signTransaction flow) ──────────────────────
 
 /**
- * POST /api/zk/signing/request
- * Create a signing request for a browser wallet.
- * The frontend reads this, connects wallet, signs the tx, and calls /respond.
+ * POST /api/zk/tx/prepare
+ *
+ * Build a real, serialized Solana Transaction for wallet signing.
+ * Frontend receives base64-encoded serialized bytes, passes to
+ * wallet.signTransaction(Transaction.from(Buffer.from(base64, 'base64'))),
+ * submits to chain, then calls POST /api/zk/tx/confirm with the tx signature.
+ *
+ * Body: { settlement_id, wallet_address }
  */
-zkRouter.post("/signing/request", async (req, res) => {
-  const { settlement_id } = req.body;
-  if (!settlement_id) return res.status(400).json({ error: "settlement_id required" });
+zkRouter.post("/tx/prepare", async (req, res) => {
+  const { settlement_id, wallet_address } = req.body;
+  if (!settlement_id || typeof settlement_id !== "string") {
+    return res.status(400).json({ error: "settlement_id required" });
+  }
+  if (!wallet_address || typeof wallet_address !== "string") {
+    return res.status(400).json({ error: "wallet_address required" });
+  }
 
   const settlement = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(settlement_id) as any;
   if (!settlement) return res.status(404).json({ error: "settlement_not_found" });
 
-  const id = generateId("SGN");
-  const now = new Date().toISOString();
-  const expires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  try {
+    const { buildSettlementMemoTx } = await import("../domain/solana_tx.js");
+    const { getSolanaConfig, getTxExplorerUrl } = await import("../domain/solana.js");
 
-  // Build a simple tx data payload for the wallet to sign
-  // (real serialized tx would come from solana_tx.ts buildSettlementMemoTx)
-  const txData = Buffer.from(JSON.stringify({
-    settlement_id,
-    commitment:  settlement.commitment?.slice(0, 16) ?? "pending",
-    nullifier:   settlement.nullifier?.slice(0, 16) ?? "pending",
-    action:      "confidential_settlement",
-    version:     "v1",
-    timestamp:   now,
-  })).toString("base64");
+    const config = getSolanaConfig();
+    const memo = {
+      settlement_id:    settlement.id,
+      commitment_short: (settlement.commitment ?? "pending").slice(0, 12),
+      nullifier_short:  (settlement.nullifier  ?? "pending").slice(0, 12),
+      proof_id:         settlement.proof_id    ?? "pending",
+      version:          "v1",
+    };
+
+    const tx = await buildSettlementMemoTx(memo);
+    // Serialize without requiring all signatures (wallet will add their sig)
+    const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+    const serializedBase64 = Buffer.from(serialized).toString("base64");
+
+    const requestId = generateId("TXR");
+    const now     = new Date().toISOString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    db.prepare(`
+      INSERT INTO zk_signing_requests
+        (id, settlement_id, tx_data, status, wallet_address, requested_at, expires_at)
+      VALUES (?, ?, ?, 'pending', ?, ?, ?)
+    `).run(requestId, settlement_id, serializedBase64, wallet_address, now, expires);
+
+    db.prepare(`UPDATE zk_settlements SET status = 'signing_requested', signing_request_id = ?, initiated_by_wallet = COALESCE(initiated_by_wallet, ?) WHERE id = ?`)
+      .run(requestId, wallet_address, settlement_id);
+
+    logActivity({
+      category: "settlement", event: "tx_prepared",
+      detail: `Tx prepared for wallet ${wallet_address.slice(0, 8)}… settlement ${settlement_id}`,
+      status: "info",
+    });
+
+    res.json({
+      request_id:         requestId,
+      serialized_tx:      serializedBase64,
+      network:            config.network,
+      is_mainnet:         config.is_mainnet,
+      memo_text:          `zkgent:v1:${settlement_id}:${memo.commitment_short}:${memo.nullifier_short}`,
+      expires_at:         expires,
+      status:             "ready_to_sign",
+      note:               "Deserialize with Transaction.from(Buffer.from(serialized_tx, 'base64')), then signTransaction + sendRawTransaction.",
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/zk/tx/confirm
+ *
+ * Called by frontend after wallet signed and submitted the transaction to Solana.
+ * Records the on-chain signature and updates settlement state.
+ *
+ * Body: { request_id, tx_signature, wallet_address, network }
+ */
+zkRouter.post("/tx/confirm", async (req, res) => {
+  const { request_id, tx_signature, wallet_address, network } = req.body;
+  if (!request_id || typeof request_id !== "string") {
+    return res.status(400).json({ error: "request_id required" });
+  }
+  if (!tx_signature || typeof tx_signature !== "string") {
+    return res.status(400).json({ error: "tx_signature required (Solana base58 signature)" });
+  }
+  if (!wallet_address || typeof wallet_address !== "string") {
+    return res.status(400).json({ error: "wallet_address required" });
+  }
+
+  const signing_request = db.prepare(
+    `SELECT * FROM zk_signing_requests WHERE id = ?`
+  ).get(request_id) as any;
+  if (!signing_request) return res.status(404).json({ error: "signing_request_not_found" });
+
+  const { getTxExplorerUrl } = await import("../domain/solana.js");
+  const net = (network ?? "devnet") as any;
+  const explorerUrl = getTxExplorerUrl(tx_signature, net);
+  const now = new Date().toISOString();
 
   db.prepare(`
-    INSERT INTO zk_signing_requests
-      (id, settlement_id, tx_data, status, requested_at, expires_at)
-    VALUES (?, ?, ?, 'pending', ?, ?)
-  `).run(id, settlement_id, txData, now, expires);
+    UPDATE zk_signing_requests
+    SET status = 'signed', wallet_address = ?, signature = ?, responded_at = ?
+    WHERE id = ?
+  `).run(wallet_address, tx_signature, now, request_id);
+
+  if (signing_request.settlement_id) {
+    db.prepare(`
+      UPDATE zk_settlements SET
+        status = 'submitted_on_chain',
+        on_chain_tx_sig = ?,
+        on_chain_explorer_url = ?,
+        submitted_on_chain_at = ?,
+        initiated_by_wallet = COALESCE(initiated_by_wallet, ?)
+      WHERE id = ?
+    `).run(tx_signature, explorerUrl, now, wallet_address, signing_request.settlement_id);
+
+    const { recordOnChainTx } = await import("../domain/solana_tx.js");
+    recordOnChainTx({
+      settlementId: signing_request.settlement_id,
+      signature:    tx_signature,
+      status:       "submitted",
+      memoData:     signing_request.settlement_id,
+      explorerUrl,
+    });
+  }
+
+  logActivity({
+    category: "settlement", event: "wallet_signed_and_submitted",
+    detail:   `Wallet ${wallet_address.slice(0, 8)}… submitted tx ${tx_signature.slice(0, 16)}… on ${net}`,
+    status:   "success",
+  });
 
   res.json({
-    signing_request_id: id,
-    tx_data: txData,
-    expires_at: expires,
-    status: "pending",
+    success:      true,
+    tx_signature,
+    explorer_url: explorerUrl,
+    status:       "submitted_on_chain",
   });
 });
 
 /**
- * POST /api/zk/signing/respond
- * Wallet responds with signature.
+ * GET /api/zk/tx/:requestId
+ * Get status of a tx prepare request.
  */
-zkRouter.post("/signing/respond", async (req, res) => {
-  const { signing_request_id, wallet_address, signature } = req.body;
-  if (!signing_request_id || !wallet_address || !signature) {
-    return res.status(400).json({ error: "signing_request_id, wallet_address, signature required" });
-  }
+zkRouter.get("/tx/:requestId", (req, res) => {
+  try {
+    const r = db.prepare(`SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`).get(req.params.requestId);
+    if (!r) return res.status(404).json({ error: "not_found" });
+    res.json(r);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
 
-  const now = new Date().toISOString();
-  db.prepare(`
-    UPDATE zk_signing_requests
-      SET status = 'signed', wallet_address = ?, signature = ?, responded_at = ?
-    WHERE id = ?
-  `).run(wallet_address, signature, now, signing_request_id);
+// ─── Legacy signing (debug/message authorization) ────────────────────────────
+// signMessage flow kept for debugging. Not the primary settlement path.
 
-  const req2 = db.prepare(`SELECT * FROM zk_signing_requests WHERE id = ?`).get(signing_request_id) as any;
-  if (req2?.settlement_id) {
-    db.prepare(`UPDATE zk_settlements SET status = 'signed', signing_request_id = ? WHERE id = ?`)
-      .run(signing_request_id, req2.settlement_id);
-  }
-
-  logActivity({
-    category: "settlement", event: "wallet_signed",
-    detail: `Wallet ${wallet_address.slice(0, 8)}… signed settlement ${req2?.settlement_id}`,
-    status: "success",
+zkRouter.post("/signing/request", async (req, res) => {
+  return res.status(410).json({
+    error: "deprecated",
+    note:  "Use POST /api/zk/tx/prepare for real signTransaction flow.",
   });
+});
 
-  res.json({ success: true, status: "signed" });
+zkRouter.post("/signing/respond", async (req, res) => {
+  return res.status(410).json({
+    error: "deprecated",
+    note:  "Use POST /api/zk/tx/confirm after wallet signs and submits.",
+  });
 });
 
 zkRouter.get("/signing/:id", (req, res) => {
   try {
-    const r = db.prepare(`SELECT * FROM zk_signing_requests WHERE id = ?`).get(req.params.id);
+    const r = db.prepare(`SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`).get(req.params.id);
     if (!r) return res.status(404).json({ error: "not_found" });
     res.json(r);
   } catch (err: any) { res.status(500).json({ error: err.message }); }

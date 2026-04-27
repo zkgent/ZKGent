@@ -89,25 +89,44 @@ All product routes use `AppShell` which provides:
 - `solana_tx.ts` — REAL @solana/web3.js tx builder: SPL Memo instruction, devnet submission, tx sig
 - `disclosure.ts` — Compliance/disclosure model: view keys, selective disclosure, policy types
 
-## Proof System (Phase 2)
-- **Backend:** `ed25519-operator-proof-v1` using `@noble/curves/ed25519.js` — REAL
+## Proof System (Phase 3)
+- **Active:** `Operator Authorization Proof` (Ed25519) using `@noble/curves/ed25519.js` — REAL
+- **Honest label:** Ed25519 cryptographic signature, NOT a zk-SNARK. Dashboard clearly states this.
 - **Proof:** Signs `SHA-256(circuit_id:commitment:nullifier:merkle_root:...)` with operator Ed25519 key
 - **Verification:** Real `ed25519.verify()` — cryptographic, not structural
-- **zk-SNARK (Groth16):** PARTIAL — circuit interface ready, needs `.wasm + .zkey` from Circom compiler
+- **Future zk-SNARK (Groth16):** NOT active — needs `.wasm + .zkey` from Circom; acknowledged in UI
 - **Activation:** Drop compiled artifacts in `server/circuits/` + set `available: true` in `CIRCUIT_CONFIG`
 
-## Solana On-chain (Phase 2)
-- **Library:** `@solana/web3.js` v1.x — REAL
+## Solana On-chain (Phase 3)
+- **Library:** `@solana/web3.js` v1.x — REAL (server + browser via vite-plugin-node-polyfills)
+- **Node polyfills:** `vite-plugin-node-polyfills` enables @solana/web3.js in browser bundle
 - **Strategy:** SPL Memo Program (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`) for on-chain anchoring
 - **Operator keypair:** Derived deterministically from `ZKGENT_OPERATOR_SEED` env var
-- **Airdrop:** Auto-requested on devnet if operator balance < 0.05 SOL (rate-limited by devnet)
-- **Custom program:** SCAFFOLD — not yet deployed
+- **Airdrop:** Strictly devnet/testnet only — mainnet requires pre-funded operator account
+- **Custom program:** NOT deployed — clearly acknowledged in UI (not hidden or scaffold-labeled)
+- **Mainnet-first:** `SOLANA_NETWORK=mainnet-beta` for production; `is_mainnet` flag exposed on API
 
-## Wallet Integration (Phase 2)
+## Wallet Identity (Phase 3)
+- **Model:** Wallet-address-based identity — no web2 auth, no email/password
+- **Storage:** `wallet_users` table — wallet_address (PK), identity_fingerprint (ZKG:XXXX:YYYY), session_count
+- **On connect:** `POST /api/identity/resolve` creates or upserts identity automatically
+- **Per-user data:** settlements, signing requests, on-chain txs linked via `initiated_by_wallet` column
+- **Dashboard:** Wallet Identity panel shows fingerprint, session count, per-user activity totals
+- **API routes:** `POST /api/identity/resolve`, `GET /api/identity/:address`, `GET /api/identity`
+
+## signTransaction Flow (Phase 3)
+- **Real flow:** Backend builds serialized Solana Transaction → wallet.signTransaction() → submit → confirm
+- **Prepare:** `POST /api/zk/tx/prepare` → `{ request_id, serialized_tx (base64), network, explorer_url }`
+- **Frontend:** Lazy-imports @solana/web3.js; uses `Transaction.from(Buffer.from(base64,'base64'))`, `wallet.signTransaction(tx)`, `connection.sendRawTransaction(rawTx)`
+- **Confirm:** `POST /api/zk/tx/confirm` → records real tx signature + explorer URL in DB
+- **Legacy endpoints:** `POST /api/zk/signing/*` → 410 Gone (deprecated)
+
+## Wallet Integration (Phase 3)
 - **Frontend:** `WalletProvider` + `WalletButton` + `WalletStatusPanel` using `window.solana` API
 - **Compatible with:** Phantom, Backpack, Solflare (any injected Solana wallet)
-- **Sign flow:** `POST /api/zk/signing/request` → wallet signs → `POST /api/zk/signing/respond`
-- **Heavy adapter packages** (`@solana/wallet-adapter-*`): Not installed (too heavy for env)
+- **Identity resolve:** Automatic on connect via `POST /api/identity/resolve`
+- **signAndSubmitTx(settlementId):** Full signTransaction + sendRawTransaction + confirm flow in WalletContext
+- **Heavy adapter packages** (`@solana/wallet-adapter-*`): Not installed — using `window.solana` directly
 
 ## ZK API Routes (/api/zk/*)
 - `GET /api/zk/system` — Full system metrics (powers dashboard ZK observability panel)
