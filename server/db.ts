@@ -270,11 +270,18 @@ db.exec(`
     ["zk_settlements", "note_created_at",          "TEXT"],
     ["zk_settlements", "proof_generated_at",       "TEXT"],
     ["zk_settlements", "proof_verified_at",        "TEXT"],
+    ["transfers",      "initiated_by_wallet",      "TEXT"],
   ];
   for (const [tbl, col, type] of alterCols) {
     try { db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run(); }
     catch {} // Column already exists — safe to ignore
   }
+
+  // One-time data migration: rename legacy OBD-* references to ZKG-*
+  try {
+    db.prepare(`UPDATE transfers SET reference = REPLACE(reference, 'OBD-T-', 'ZKG-T-') WHERE reference LIKE 'OBD-T-%'`).run();
+    db.prepare(`UPDATE transfers SET reference = REPLACE(reference, 'OBD-', 'ZKG-') WHERE reference LIKE 'OBD-%'`).run();
+  } catch {}
 }
 
 export function generateId(prefix = "OBD"): string {

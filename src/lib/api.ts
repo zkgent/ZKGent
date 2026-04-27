@@ -215,9 +215,10 @@ export interface WalletActivity {
 
 export const api = {
   transfers: {
-    list: () => fetchJson<Transfer[]>("/api/transfers"),
+    list: (wallet?: string) => fetchJson<Transfer[]>(wallet ? `/api/transfers?wallet=${encodeURIComponent(wallet)}` : "/api/transfers"),
     get: (id: string) => fetchJson<Transfer>(`/api/transfers/${id}`),
-    create: (body: Partial<Transfer> & { asset: string }) => fetchJson<Transfer>("/api/transfers", { method: "POST", body: JSON.stringify(body) }),
+    create: (body: Partial<Transfer> & { asset: string; walletAddress?: string }) =>
+      fetchJson<Transfer>("/api/transfers", { method: "POST", body: JSON.stringify(body) }),
     updateStatus: (id: string, body: { status?: string; proofState?: string }) =>
       fetchJson<Transfer>(`/api/transfers/${id}/status`, { method: "PATCH", body: JSON.stringify(body) }),
   },

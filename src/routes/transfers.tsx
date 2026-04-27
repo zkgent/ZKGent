@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { cn } from "@/lib/utils";
 import { api, type Transfer } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 
 export const Route = createFileRoute("/transfers")({
   component: TransfersWrapper,
@@ -30,7 +31,7 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function NewTransferModal({ onClose, onCreated }: { onClose: () => void; onCreated: (t: Transfer) => void }) {
+function NewTransferModal({ onClose, onCreated, walletAddress }: { onClose: () => void; onCreated: (t: Transfer) => void; walletAddress: string }) {
   const [form, setForm] = useState({ recipientAddress: "", amount: "", asset: "USDC", notes: "", region: "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -48,6 +49,7 @@ function NewTransferModal({ onClose, onCreated }: { onClose: () => void; onCreat
         asset: form.asset,
         notes: form.notes,
         region: form.region,
+        walletAddress,
       } as Parameters<typeof api.transfers.create>[0]);
       onCreated(t);
     } catch (e: unknown) {
@@ -103,6 +105,7 @@ function NewTransferModal({ onClose, onCreated }: { onClose: () => void; onCreat
 }
 
 function TransfersPage() {
+  const { wallet } = useWallet();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,14 +114,19 @@ function TransfersPage() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const load = () => {
+    if (!wallet) {
+      setTransfers([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    api.transfers.list()
+    api.transfers.list(wallet.address)
       .then(setTransfers)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(load, [wallet?.address]);
 
   const visible = filter === "all" ? transfers : transfers.filter((t) => t.status === filter);
   const counts = FILTERS.map((f) => ({
@@ -135,8 +143,11 @@ function TransfersPage() {
             <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground/50">Operations</p>
             <h1 className="font-display text-2xl font-semibold text-foreground">Transfers</h1>
           </div>
-          <button onClick={() => setShowNew(true)}
-            className="group relative shrink-0 inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background transition hover:opacity-90">
+          <button
+            onClick={() => setShowNew(true)}
+            disabled={!wallet}
+            title={!wallet ? "Connect a wallet to create transfers" : ""}
+            className="group relative shrink-0 inline-flex items-center gap-2 overflow-hidden rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
             <span className="relative">+ New Transfer</span>
           </button>
@@ -174,6 +185,11 @@ function TransfersPage() {
                   <div className="h-3 w-20 rounded bg-surface-elevated" />
                 </div>
               ))
+            ) : !wallet ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-2">
+                <p className="text-[13px] text-muted-foreground">Connect a wallet to view transfers</p>
+                <p className="text-[11px] text-muted-foreground/50">Transfers are scoped per wallet — each wallet sees only its own history</p>
+              </div>
             ) : visible.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-2">
                 <p className="text-[13px] text-muted-foreground">{filter === "all" ? "No transfers yet" : `No ${filter} transfers`}</p>
@@ -249,8 +265,9 @@ function TransfersPage() {
         </div>
       </div>
 
-      {showNew && (
+      {showNew && wallet && (
         <NewTransferModal
+          walletAddress={wallet.address}
           onClose={() => setShowNew(false)}
           onCreated={(t) => {
             setTransfers((prev) => [t, ...prev]);

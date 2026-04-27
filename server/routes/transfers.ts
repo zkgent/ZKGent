@@ -15,15 +15,19 @@ function toPublic(row: Record<string, unknown>) {
     notes: row.notes,
     region: row.region,
     createdBy: row.created_by,
+    initiatedByWallet: row.initiated_by_wallet ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     settledAt: row.settled_at,
   };
 }
 
-transfersRouter.get("/", (_req, res) => {
+transfersRouter.get("/", (req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM transfers ORDER BY created_at DESC").all();
+    const wallet = typeof req.query.wallet === "string" ? req.query.wallet : null;
+    const rows = wallet
+      ? db.prepare("SELECT * FROM transfers WHERE initiated_by_wallet = ? ORDER BY created_at DESC").all(wallet)
+      : db.prepare("SELECT * FROM transfers ORDER BY created_at DESC").all();
     return res.json(rows.map(toPublic));
   } catch (err) {
     console.error("GET /api/transfers error:", err);
@@ -48,13 +52,14 @@ transfersRouter.post("/", (req, res) => {
     if (!body.asset) return res.status(400).json({ error: "asset is required" });
 
     const id = generateId("TXF");
-    const reference = generateRef("OBD-T");
+    const reference = generateRef("ZKG-T");
     const now = new Date().toISOString();
+    const walletAddress = (body.walletAddress as string | undefined) ?? null;
 
     db.prepare(`
       INSERT INTO transfers
-        (id, reference, recipient_address, amount, asset, status, proof_state, notes, region, created_by, created_at, updated_at, settled_at)
-      VALUES (?, ?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, NULL)
+        (id, reference, recipient_address, amount, asset, status, proof_state, notes, region, created_by, initiated_by_wallet, created_at, updated_at, settled_at)
+      VALUES (?, ?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, NULL)
     `).run(
       id,
       reference,
@@ -63,7 +68,8 @@ transfersRouter.post("/", (req, res) => {
       body.asset,
       body.notes ?? "",
       body.region ?? "",
-      body.createdBy ?? "operator",
+      walletAddress ? `wallet:${walletAddress.slice(0, 8)}` : (body.createdBy ?? "operator"),
+      walletAddress,
       now,
       now
     );
