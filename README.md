@@ -396,8 +396,8 @@ We welcome serious review. We do not reward careless disclosure.
 
 ## License
 
-Currently **source-available** during D1 and D2.
-A long-term formal licensing posture will be finalized as the architecture hardens.
+This project is licensed under the **MIT License**.
+See [LICENSE](./LICENSE) for details.
 
 ---
 
