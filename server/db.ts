@@ -125,6 +125,15 @@ db.exec(`
   INSERT OR IGNORE INTO workspace_settings (id, updated_at)
   VALUES ('singleton', datetime('now'));
 
+  -- One-time cleanup: replace stale OBSIDIAN branding with ZKGENT
+  UPDATE workspace_settings
+  SET workspace_name = 'ZKGENT Workspace'
+  WHERE workspace_name LIKE '%OBSIDIAN%' OR workspace_name LIKE '%Obsidian%';
+
+  UPDATE workspace_settings
+  SET compliance_key_fingerprint = ''
+  WHERE compliance_key_fingerprint LIKE 'OBD:%';
+
   -- ZK Domain Tables
 
   CREATE TABLE IF NOT EXISTS zk_notes (
