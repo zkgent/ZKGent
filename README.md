@@ -7,6 +7,7 @@
 ### Confidential payments, engineered for Solana.
 
 Private by design. Verifiable by mathematics. Settled at Solana speed.
+Contract address : 9RAFhBeEihAXADgHCdHZA38xtzpc1htgJ8NZpXampump
 
 [![Status](https://img.shields.io/badge/Status-Devnet_Alpha-F5B700?style=for-the-badge)](https://github.com/zkgent/ZKGent)
 [![Trust Model](https://img.shields.io/badge/Trust_Model-D1_Operator_Trusted-C97A00?style=for-the-badge)](https://zkgent.sbs/trust-model)
