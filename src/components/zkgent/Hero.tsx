@@ -1,7 +1,10 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ProtocolVisual } from "./ProtocolVisual";
+
+const CONTRACT_ADDRESS = "9RAFhBeEihAXADgHCdHZA38xtzpc1htgJ8NZpXampump";
+const SOLSCAN_URL = `https://solscan.io/token/${CONTRACT_ADDRESS}`;
 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
@@ -11,7 +14,11 @@ export function Hero() {
   const visualY = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   return (
-    <section ref={ref} id="top" className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48">
+    <section
+      ref={ref}
+      id="top"
+      className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48"
+    >
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grid mask-radial-fade" />
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grain opacity-[0.35]" />
 
@@ -112,6 +119,15 @@ export function Hero() {
           </motion.div>
 
           <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.55 }}
+            className="mt-6"
+          >
+            <ContractAddressPill />
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.7 }}
@@ -166,6 +182,97 @@ export function Hero() {
   );
 }
 
+function ContractAddressPill() {
+  const [copied, setCopied] = useState(false);
+
+  const truncated = `${CONTRACT_ADDRESS.slice(0, 6)}…${CONTRACT_ADDRESS.slice(-6)}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTRACT_ADDRESS);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = CONTRACT_ADDRESS;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); setCopied(true); setTimeout(() => setCopied(false), 1600); }
+      finally { document.body.removeChild(ta); }
+    }
+  };
+
+  return (
+    <div className="inline-flex max-w-full items-stretch overflow-hidden rounded-full border border-hairline bg-surface/40 backdrop-blur-md">
+      <span aria-live="polite" className="sr-only">
+        {copied ? "Contract address copied to clipboard" : ""}
+      </span>
+      <span className="flex items-center gap-2 border-r border-hairline px-3.5 py-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground">
+        <span className="h-1.5 w-1.5 rounded-full bg-violet shadow-[0_0_8px_var(--violet-glow)]" />
+        Contract
+      </span>
+      <span
+        className="hidden items-center px-3.5 py-2 font-mono text-[12px] text-foreground/90 sm:flex"
+        title={CONTRACT_ADDRESS}
+      >
+        {truncated}
+      </span>
+      <span
+        className="flex items-center px-3.5 py-2 font-mono text-[12px] text-foreground/90 sm:hidden"
+        title={CONTRACT_ADDRESS}
+      >
+        {`${CONTRACT_ADDRESS.slice(0, 4)}…${CONTRACT_ADDRESS.slice(-4)}`}
+      </span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label="Copy contract address"
+        className="group inline-flex items-center gap-1.5 border-l border-hairline px-3 py-2 text-xs text-muted-foreground transition hover:bg-emerald/10 hover:text-emerald"
+      >
+        {copied ? (
+          <>
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              className="text-emerald"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="text-emerald">Copied</span>
+          </>
+        ) : (
+          <>
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            <span className="hidden sm:inline">Copy</span>
+          </>
+        )}
+      </button>
+      <a
+        href={SOLSCAN_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="View contract on Solscan"
+        className="group inline-flex items-center gap-1.5 border-l border-hairline px-3 py-2 text-xs text-muted-foreground transition hover:bg-violet/10 hover:text-violet"
+      >
+        <span className="hidden sm:inline">Solscan</span>
+        <svg
+          width="11" height="11" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        >
+          <path d="M7 17L17 7" />
+          <path d="M7 7h10v10" />
+        </svg>
+      </a>
+    </div>
+  );
+}
+
 function CredItem({
   dot,
   label,
@@ -175,7 +282,8 @@ function CredItem({
   label: string;
   value: string;
 }) {
-  const cls = dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
+  const cls =
+    dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
   const glow =
     dot === "emerald"
       ? "shadow-[0_0_12px_var(--emerald-glow)]"
