@@ -382,7 +382,11 @@ function AdminApplicationsPage() {
         const data = await res.json();
         setApplications(data.applications);
         setMeta(data.meta);
-      } catch {}
+      } catch (err: unknown) {
+        console.error("Failed to fetch admin applications", err);
+        setApplications([]);
+        setMeta(null);
+      }
       setLoading(false);
     },
     [statusFilter, search],

@@ -294,7 +294,9 @@ db.exec(`
   for (const [tbl, col, type] of alterCols) {
     try {
       db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${col} ${type}`).run();
-    } catch {} // Column already exists — safe to ignore
+    } catch {
+      // Column already exists, safe to ignore during idempotent boot.
+    }
   }
 
   // Enforce one-application-per-wallet at the DB level.
@@ -305,7 +307,9 @@ db.exec(`
       `CREATE UNIQUE INDEX IF NOT EXISTS idx_applications_wallet_address
                 ON applications(wallet_address) WHERE wallet_address IS NOT NULL`,
     ).run();
-  } catch {}
+  } catch {
+    // Index may already exist on older local databases.
+  }
 
   // One-time data migration: rename legacy OBD-* references to ZKG-*
   try {
@@ -315,7 +319,9 @@ db.exec(`
     db.prepare(
       `UPDATE transfers SET reference = REPLACE(reference, 'OBD-', 'ZKG-') WHERE reference LIKE 'OBD-%'`,
     ).run();
-  } catch {}
+  } catch {
+    // Legacy rename can be skipped if the table shape does not match yet.
+  }
 
   // ─── ZK Hash Scheme Migration ────────────────────────────────────────────────
   // The ZK hash chain (commitments, nullifiers, Merkle nodes) was migrated from

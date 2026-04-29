@@ -32,6 +32,14 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 adminRouter.use(rateLimit({ scope: "admin", max: 30, windowMs: 60_000 }));
 adminRouter.use(requireAdmin);
 
+function isValidStatus(value: string): value is (typeof VALID_STATUSES)[number] {
+  return (VALID_STATUSES as readonly string[]).includes(value);
+}
+
+function isValidPriority(value: string): value is (typeof VALID_PRIORITIES)[number] {
+  return (VALID_PRIORITIES as readonly string[]).includes(value);
+}
+
 function toAdmin(row: ApplicationRow) {
   return {
     id: row.id,
@@ -65,12 +73,12 @@ adminRouter.get("/applications", (req, res) => {
     let query = "SELECT * FROM applications WHERE 1=1";
     const params: string[] = [];
 
-    if (status && VALID_STATUSES.includes(status as any)) {
+    if (status && isValidStatus(status)) {
       query += " AND status = ?";
       params.push(status);
     }
 
-    if (priority && VALID_PRIORITIES.includes(priority as any)) {
+    if (priority && isValidPriority(priority)) {
       query += " AND review_priority = ?";
       params.push(priority);
     }
@@ -126,7 +134,7 @@ adminRouter.patch("/applications/:id", (req, res) => {
     const params: (string | null)[] = [];
 
     if (body.status !== undefined) {
-      if (!VALID_STATUSES.includes(body.status as any)) {
+      if (!isValidStatus(body.status)) {
         return res.status(400).json({ error: "Invalid status" });
       }
       updates.push("status = ?");
@@ -154,7 +162,7 @@ adminRouter.patch("/applications/:id", (req, res) => {
     }
 
     if (body.reviewPriority !== undefined) {
-      if (!VALID_PRIORITIES.includes(body.reviewPriority as any)) {
+      if (!isValidPriority(body.reviewPriority)) {
         return res.status(400).json({ error: "Invalid priority" });
       }
       updates.push("review_priority = ?");

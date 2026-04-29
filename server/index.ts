@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { applicationsRouter } from "./routes/applications.js";
 import { adminRouter } from "./routes/admin.js";
 import { transfersRouter } from "./routes/transfers.js";
@@ -19,40 +19,55 @@ import { rateLimit } from "./security.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === "production";
-
-const app = express();
 const PORT = parseInt(process.env.PORT || (isProd ? "5000" : "3001"), 10);
 
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: "256kb" }));
-app.use(rateLimit({ scope: "api-global", max: 300, windowMs: 60_000 }));
+export function createApp() {
+  const app = express();
 
-app.use("/api/applications", applicationsRouter);
-app.use("/api/admin", adminRouter);
-app.use("/api/transfers", transfersRouter);
-app.use("/api/payroll", payrollRouter);
-app.use("/api/treasury", treasuryRouter);
-app.use("/api/counterparties", counterpartiesRouter);
-app.use("/api/activity", activityRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/dashboard", dashboardRouter);
-app.use("/api/zk", zkRouter);
-app.use("/api/identity", identityRouter);
-app.use("/api/wallet-auth", walletAuthRouter);
-app.use("/api/access", accessRouter);
+  app.use(cors({ origin: true, credentials: true }));
+  app.use(express.json({ limit: "256kb" }));
+  app.use(rateLimit({ scope: "api-global", max: 300, windowMs: 60_000 }));
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, ts: new Date().toISOString() });
-});
+  app.use("/api/applications", applicationsRouter);
+  app.use("/api/admin", adminRouter);
+  app.use("/api/transfers", transfersRouter);
+  app.use("/api/payroll", payrollRouter);
+  app.use("/api/treasury", treasuryRouter);
+  app.use("/api/counterparties", counterpartiesRouter);
+  app.use("/api/activity", activityRouter);
+  app.use("/api/settings", settingsRouter);
+  app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/zk", zkRouter);
+  app.use("/api/identity", identityRouter);
+  app.use("/api/wallet-auth", walletAuthRouter);
+  app.use("/api/access", accessRouter);
 
-if (isProd) {
-  const distPath = path.join(__dirname, "../dist");
-  app.use(express.static(distPath));
-  app.get("/{*splat}", (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true, ts: new Date().toISOString() });
+  });
+
+  if (isProd) {
+    const distPath = path.join(__dirname, "../dist");
+    app.use(express.static(distPath));
+    app.get("/{*splat}", (_req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  return app;
+}
+
+export function startServer(port = PORT, host = "0.0.0.0") {
+  const app = createApp();
+  return app.listen(port, host, () => {
+    console.log(`ZKGENT server running on port ${port} (${isProd ? "production" : "development"})`);
   });
 }
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`ZKGENT server running on port ${PORT} (${isProd ? "production" : "development"})`);
-});
+const isEntrypoint = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
+  : false;
+
+if (isEntrypoint) {
+  startServer();
+}

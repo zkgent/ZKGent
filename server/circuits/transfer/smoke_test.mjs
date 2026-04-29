@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { groth16 } from "snarkjs";
 import { buildPoseidon } from "circomlibjs";
 import { randomBytes } from "crypto";

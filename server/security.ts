@@ -5,6 +5,10 @@ const DEFAULT_WINDOW_MS = 60_000;
 const DEFAULT_MAX = 60;
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
+export function resetRateLimitState() {
+  buckets.clear();
+}
+
 function now() {
   return Date.now();
 }
