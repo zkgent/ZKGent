@@ -1,0 +1,15 @@
+{
+  "index": 1,
+  "name": "ZKGent Core Team",
+  "handle": "zkgent-core",
+  "slug": "zkgent-core",
+  "note": "Bootstrap contribution from project maintainer (single party). Future contributions welcome via GitHub issue.",
+  "contributed_at": "2026-04-28T17:44:57.507Z",
+  "prev_zkey_hash": "37e4f96a90b272e9f9b7a92a7d7f7aff88e0262c3a52a1bd7ad275904fc908ee",
+  "new_zkey_hash": "cd86a3c7fc59088156b13b5a6f889d7a82a9b9849b1af9816c708e816200427e",
+  "entropy_bits": 1024,
+  "entropy_commitment_sha256": "6684523a5c9a8bb0afa300a1025bb21b5df0fa41b51cd9ddee02065c9b2eb1b7",
+  "contribute_ms": 2306,
+  "snarkjs_verify_passed": true,
+  "artifact": "contribution_0001.zkey"
+}
