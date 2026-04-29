@@ -5,9 +5,6 @@ export type AccessReason = null | "no_application" | "pending_review" | "rejecte
 
 export type AccessApplication = {
   id: string;
-  fullName: string;
-  workEmail: string;
-  company: string;
   status: string;
   walletAddress: string | null;
   approvedAt: string | null;

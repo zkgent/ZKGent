@@ -43,7 +43,7 @@ export const CEREMONY_DIR = path.resolve(
   "server",
   "circuits",
   "transfer",
-  "ceremony"
+  "ceremony",
 );
 export const CIRCUIT_BUILD_DIR = path.resolve(
   __dirname,
@@ -52,7 +52,7 @@ export const CIRCUIT_BUILD_DIR = path.resolve(
   "server",
   "circuits",
   "transfer",
-  "build"
+  "build",
 );
 
 export const MANIFEST_PATH = path.join(CEREMONY_DIR, "manifest.json");
@@ -60,18 +60,9 @@ export const CONTRIBUTIONS_DIR = path.join(CEREMONY_DIR, "contributions");
 export const ATTESTATIONS_DIR = path.join(CEREMONY_DIR, "contributions");
 
 export const CIRCUIT_ID = "zkgent-transfer-v1";
-export const CIRCUIT_INITIAL_ZKEY = path.join(
-  CIRCUIT_BUILD_DIR,
-  "transfer_0000.zkey"
-);
-export const CIRCUIT_FINAL_ZKEY = path.join(
-  CIRCUIT_BUILD_DIR,
-  "transfer_final.zkey"
-);
-export const CIRCUIT_VKEY = path.join(
-  CIRCUIT_BUILD_DIR,
-  "verification_key.json"
-);
+export const CIRCUIT_INITIAL_ZKEY = path.join(CIRCUIT_BUILD_DIR, "transfer_0000.zkey");
+export const CIRCUIT_FINAL_ZKEY = path.join(CIRCUIT_BUILD_DIR, "transfer_final.zkey");
+export const CIRCUIT_VKEY = path.join(CIRCUIT_BUILD_DIR, "verification_key.json");
 export const CIRCUIT_R1CS = path.join(CIRCUIT_BUILD_DIR, "transfer.r1cs");
 export const CIRCUIT_PTAU = path.resolve(
   __dirname,
@@ -80,7 +71,7 @@ export const CIRCUIT_PTAU = path.resolve(
   "server",
   "circuits",
   "transfer",
-  "pot14_hermez.ptau"
+  "pot14_hermez.ptau",
 );
 
 export const MANIFEST_SCHEMA_VERSION = 1;
@@ -141,7 +132,7 @@ export function appendContribution(manifest, entry) {
   }
   const attestPath = path.join(
     ATTESTATIONS_DIR,
-    `${String(entry.index).padStart(4, "0")}-${slugify(entry.handle)}.json`
+    `${String(entry.index).padStart(4, "0")}-${slugify(entry.handle)}.json`,
   );
   fs.writeFileSync(attestPath, JSON.stringify(entry, null, 2) + "\n");
   return entry;
@@ -160,11 +151,13 @@ export function setBeacon(manifest, beacon) {
 
 /** Make a filesystem-safe slug from a handle. */
 export function slugify(s) {
-  return (s || "anonymous")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 32) || "anonymous";
+  return (
+    (s || "anonymous")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 32) || "anonymous"
+  );
 }
 
 /**

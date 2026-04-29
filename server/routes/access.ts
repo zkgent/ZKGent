@@ -18,9 +18,6 @@ function publicView(app: ApplicationRow | null) {
   if (!app) return null;
   return {
     id: app.id,
-    fullName: app.full_name,
-    workEmail: app.work_email,
-    company: app.company,
     status: app.status,
     walletAddress: app.wallet_address,
     approvedAt: app.approved_at,

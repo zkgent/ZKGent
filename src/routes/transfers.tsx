@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
 import { cn } from "@/lib/utils";
@@ -187,21 +187,25 @@ function TransfersPage() {
   const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
 
-  const load = () => {
-    if (!wallet) {
+  const walletAddress = wallet?.address ?? null;
+
+  const load = useCallback(() => {
+    if (!walletAddress) {
       setTransfers([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     api.transfers
-      .list(wallet.address)
+      .list(walletAddress)
       .then(setTransfers)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  };
+  }, [walletAddress]);
 
-  useEffect(load, [wallet?.address]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const visible = filter === "all" ? transfers : transfers.filter((t) => t.status === filter);
   const counts = FILTERS.map((f) => ({

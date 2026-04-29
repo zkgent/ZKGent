@@ -76,7 +76,9 @@ const firstPrev = manifest.contributions[0].prev_zkey_hash;
 log(
   `first contribution prev_zkey_hash matches initial zkey`,
   firstPrev === initialHash,
-  firstPrev === initialHash ? "" : `expected ${shortHash(initialHash)}, got ${shortHash(firstPrev)}`
+  firstPrev === initialHash
+    ? ""
+    : `expected ${shortHash(initialHash)}, got ${shortHash(firstPrev)}`,
 );
 
 console.log("");
@@ -94,15 +96,8 @@ for (const c of manifest.contributions) {
 
   const verify = spawnSync(
     "node",
-    [
-      "node_modules/snarkjs/build/cli.cjs",
-      "zkey",
-      "verify",
-      CIRCUIT_R1CS,
-      CIRCUIT_PTAU,
-      zkeyPath,
-    ],
-    { stdio: "ignore", cwd: process.cwd() }
+    ["node_modules/snarkjs/build/cli.cjs", "zkey", "verify", CIRCUIT_R1CS, CIRCUIT_PTAU, zkeyPath],
+    { stdio: "ignore", cwd: process.cwd() },
   );
   log(`    snarkjs zkey verify`, verify.status === 0);
 
@@ -110,7 +105,9 @@ for (const c of manifest.contributions) {
   log(
     `    new_zkey_hash matches manifest`,
     actualHash === c.new_zkey_hash,
-    actualHash === c.new_zkey_hash ? "" : `expected ${shortHash(c.new_zkey_hash)}, got ${shortHash(actualHash)}`
+    actualHash === c.new_zkey_hash
+      ? ""
+      : `expected ${shortHash(c.new_zkey_hash)}, got ${shortHash(actualHash)}`,
   );
 
   if (c.index > 1) {
@@ -118,7 +115,7 @@ for (const c of manifest.contributions) {
     if (prev) {
       log(
         `    prev_zkey_hash chains from contribution ${c.index - 1}`,
-        c.prev_zkey_hash === prev.new_zkey_hash
+        c.prev_zkey_hash === prev.new_zkey_hash,
       );
     }
   }
@@ -143,15 +140,12 @@ if (manifest.beacon) {
         CIRCUIT_PTAU,
         beaconZkey,
       ],
-      { stdio: "ignore", cwd: process.cwd() }
+      { stdio: "ignore", cwd: process.cwd() },
     );
     log("snarkjs zkey verify beacon", verify.status === 0);
 
     const actualBeaconHash = await hashFile(beaconZkey);
-    log(
-      "beacon_zkey_hash matches manifest",
-      actualBeaconHash === manifest.beacon.beacon_zkey_hash
-    );
+    log("beacon_zkey_hash matches manifest", actualBeaconHash === manifest.beacon.beacon_zkey_hash);
 
     // Re-derive beacon from slot + blockhash (independent of any RPC call).
     const expected = createHash("sha256")
@@ -159,16 +153,13 @@ if (manifest.beacon) {
       .update(String(manifest.beacon.slot))
       .update(manifest.beacon.blockhash)
       .digest("hex");
-    log(
-      `beacon_hex re-derives from slot+blockhash`,
-      expected === manifest.beacon.beacon_hex
-    );
+    log(`beacon_hex re-derives from slot+blockhash`, expected === manifest.beacon.beacon_hex);
 
     // Last contribution → beacon prev hash chain.
     const last = manifest.contributions[manifest.contributions.length - 1];
     log(
       "beacon prev_zkey_hash chains from last contribution",
-      manifest.beacon.prev_zkey_hash === last.new_zkey_hash
+      manifest.beacon.prev_zkey_hash === last.new_zkey_hash,
     );
 
     // Production zkey hash check.
@@ -176,7 +167,7 @@ if (manifest.beacon) {
       const finalHash = await hashFile(CIRCUIT_FINAL_ZKEY);
       log(
         "transfer_final.zkey hash matches manifest.final_zkey_hash",
-        finalHash === manifest.final_zkey_hash
+        finalHash === manifest.final_zkey_hash,
       );
 
       // Manifest internal consistency: production-final must equal beacon-final.
@@ -185,7 +176,7 @@ if (manifest.beacon) {
         manifest.final_zkey_hash === manifest.beacon.beacon_zkey_hash,
         manifest.final_zkey_hash === manifest.beacon.beacon_zkey_hash
           ? ""
-          : `final=${shortHash(manifest.final_zkey_hash)} beacon=${shortHash(manifest.beacon.beacon_zkey_hash)}`
+          : `final=${shortHash(manifest.final_zkey_hash)} beacon=${shortHash(manifest.beacon.beacon_zkey_hash)}`,
       );
 
       // Cross-file equality: the production artifact must be byte-identical
@@ -197,7 +188,7 @@ if (manifest.beacon) {
         finalHash === beaconActualHash,
         finalHash === beaconActualHash
           ? ""
-          : `final=${shortHash(finalHash)} beacon=${shortHash(beaconActualHash)}`
+          : `final=${shortHash(finalHash)} beacon=${shortHash(beaconActualHash)}`,
       );
     } else {
       log("transfer_final.zkey present", false);
@@ -208,7 +199,7 @@ if (manifest.beacon) {
       const vkeyHash = await hashFile(CIRCUIT_VKEY);
       log(
         "verification_key.json hash matches manifest.verification_key_hash",
-        vkeyHash === manifest.verification_key_hash
+        vkeyHash === manifest.verification_key_hash,
       );
     } else {
       log("verification_key.json present", false);
@@ -243,7 +234,9 @@ if (manifest.beacon) {
           // Older slots may have been pruned by public RPC. Treat as warning,
           // not a failure — chain math is still valid; user can re-check
           // against an archive node.
-          console.log(`  ⚠ RPC could not return slot ${manifest.beacon.slot}: ${json.error.message}`);
+          console.log(
+            `  ⚠ RPC could not return slot ${manifest.beacon.slot}: ${json.error.message}`,
+          );
           console.log(`     (Verify manually against an archive RPC; not a chain failure.)`);
         } else if (json.result && json.result.blockhash) {
           log(
@@ -251,7 +244,7 @@ if (manifest.beacon) {
             json.result.blockhash === manifest.beacon.blockhash,
             json.result.blockhash === manifest.beacon.blockhash
               ? ""
-              : `recorded=${manifest.beacon.blockhash} rpc=${json.result.blockhash}`
+              : `recorded=${manifest.beacon.blockhash} rpc=${json.result.blockhash}`,
           );
         } else {
           console.log(`  ⚠ Unexpected RPC response shape; skipping anchor check.`);
@@ -279,12 +272,9 @@ if (!fs.existsSync(CIRCUIT_INITIAL_ZKEY) || !fs.existsSync(CIRCUIT_FINAL_ZKEY)) 
       CIRCUIT_INITIAL_ZKEY,
       CIRCUIT_PTAU,
       CIRCUIT_FINAL_ZKEY,
-      undefined
+      undefined,
     );
-    log(
-      "transfer_final.zkey is a valid phase-2 extension of transfer_0000.zkey",
-      ok === true
-    );
+    log("transfer_final.zkey is a valid phase-2 extension of transfer_0000.zkey", ok === true);
   } catch (err) {
     log(`verifyFromInit threw: ${err.message}`, false);
   }

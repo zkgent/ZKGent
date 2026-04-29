@@ -51,7 +51,7 @@ import {
 
 const args = parseArgs(process.argv.slice(2));
 if (!args.name || !args.handle) {
-  console.error("Usage: contribute.mjs --name \"Your Name\" --handle \"handle\" [--note \"...\"]");
+  console.error('Usage: contribute.mjs --name "Your Name" --handle "handle" [--note "..."]');
   process.exit(2);
 }
 
@@ -82,20 +82,14 @@ if (manifest.beacon) {
 const prevZkey =
   nextIndex === 1
     ? CIRCUIT_INITIAL_ZKEY
-    : path.join(
-        CEREMONY_DIR,
-        `contribution_${String(nextIndex - 1).padStart(4, "0")}.zkey`
-      );
+    : path.join(CEREMONY_DIR, `contribution_${String(nextIndex - 1).padStart(4, "0")}.zkey`);
 
 if (!fs.existsSync(prevZkey)) {
   console.error(`Previous zkey not found: ${prevZkey}`);
   process.exit(2);
 }
 
-const newZkey = path.join(
-  CEREMONY_DIR,
-  `contribution_${String(nextIndex).padStart(4, "0")}.zkey`
-);
+const newZkey = path.join(CEREMONY_DIR, `contribution_${String(nextIndex).padStart(4, "0")}.zkey`);
 
 console.log("─".repeat(72));
 console.log(`ZKGent Ceremony — Contribution #${nextIndex}`);
@@ -128,7 +122,7 @@ const res = spawnSync(
     `--name=${args.name}`,
     `-e=${entropyHex}`,
   ],
-  { stdio: "inherit", cwd: process.cwd() }
+  { stdio: "inherit", cwd: process.cwd() },
 );
 
 // Best-effort: scrub local entropy buffers ASAP.
@@ -143,25 +137,20 @@ const contributeMs = Date.now() - t0;
 console.log("\nVerifying new zkey against r1cs + ptau…");
 const verify = spawnSync(
   "node",
-  [
-    "node_modules/snarkjs/build/cli.cjs",
-    "zkey",
-    "verify",
-    CIRCUIT_R1CS,
-    CIRCUIT_PTAU,
-    newZkey,
-  ],
-  { stdio: "inherit", cwd: process.cwd() }
+  ["node_modules/snarkjs/build/cli.cjs", "zkey", "verify", CIRCUIT_R1CS, CIRCUIT_PTAU, newZkey],
+  { stdio: "inherit", cwd: process.cwd() },
 );
 if (verify.status !== 0) {
   console.error("zkey verify FAILED — refusing to record this contribution.");
   // Remove the bad zkey to avoid confusing future runs.
-  try { fs.unlinkSync(newZkey); } catch {}
+  try {
+    fs.unlinkSync(newZkey);
+  } catch {}
   process.exit(1);
 }
 
 const prevHash = await hashFile(prevZkey);
-const newHash  = await hashFile(newZkey);
+const newHash = await hashFile(newZkey);
 
 const entry = {
   index: nextIndex,
@@ -186,7 +175,9 @@ console.log(`✓ Contribution #${nextIndex} recorded`);
 console.log(`  prev zkey hash : ${shortHash(prevHash)}`);
 console.log(`  new  zkey hash : ${shortHash(newHash)}`);
 console.log(`  artifact       : ${entry.artifact}`);
-console.log(`  attestation    : contributions/${String(nextIndex).padStart(4,"0")}-${entry.slug}.json`);
+console.log(
+  `  attestation    : contributions/${String(nextIndex).padStart(4, "0")}-${entry.slug}.json`,
+);
 console.log("─".repeat(72));
 console.log("");
 console.log("Next steps:");
