@@ -1,0 +1,17 @@
+{
+  "source": "solana-mainnet-beta",
+  "rpc": "https://api.mainnet-beta.solana.com",
+  "slot": 416266933,
+  "blockhash": "55Ug69eXaZefCVDKkkWq1Cr4ZisB241xFunhZbq5Dyfn",
+  "block_time": 1777398296,
+  "beacon_hex": "4be8ffad6b6417ecaf13ab6025a7de3aed888450436812cc93f05a0e980ecca0",
+  "note": "Re-derive: SHA256(\"zkgent-ceremony-beacon-v1\" || 416266933 || \"55Ug69eXaZefCVDKkkWq1Cr4ZisB241xFunhZbq5Dyfn\")",
+  "iterations": 10,
+  "applied_at": "2026-04-28T17:45:30.203Z",
+  "beacon_ms": 2194,
+  "prev_zkey_hash": "cd86a3c7fc59088156b13b5a6f889d7a82a9b9849b1af9816c708e816200427e",
+  "beacon_zkey_hash": "1fa343d8cbdda22f2baeac46ee01d7c4de5fcfabac19c8482b94e75ec2fb2ca4",
+  "final_zkey_hash": "1fa343d8cbdda22f2baeac46ee01d7c4de5fcfabac19c8482b94e75ec2fb2ca4",
+  "verification_key_hash": "908c4e90ca5adbc9ad7c28c8cd275d0d9b2589ea3aecb02ec4e2a8db01a34c18",
+  "snarkjs_verify_passed": true
+}
