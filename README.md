@@ -74,7 +74,7 @@ That means the cryptography is real, while some state and operational assumption
 | BN254 + Poseidon + snarkjs verification              | Operator-held note encryption keys                          |
 | Solana devnet anchoring via SPL Memo                 | Off-chain Merkle and nullifier state                        |
 | Public proof re-verification endpoint                | Single-party phase-2 ceremony                               |
-| Invitation-only wallet-gated console                 | Unsigned wallet header for cohort gating                    |
+| Signed wallet challenge-response sessions            | Server still trusts off-chain settlement orchestration      |
 
 > **No mainnet support by default. Production use requires explicit mainnet configuration and should not use real funds until the trust model is upgraded.**
 
@@ -208,7 +208,7 @@ sequenceDiagram
 ### Settlement path
 
 - **Solana devnet anchoring** through SPL Memo
-- **Prepared transaction flow** for real wallet signing
+- **Prepared transaction flow** for real wallet signing, with wallet-scoped request ownership
 - **Proof-aware lifecycle** from witness creation to anchored settlement
 
 ---

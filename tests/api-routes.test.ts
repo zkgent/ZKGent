@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import type { Server } from "node:http";
+import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test, { after, before, beforeEach } from "node:test";
 
 import { hashes, sign } from "@noble/ed25519";
 import { sha512 } from "@noble/hashes/sha2.js";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, Transaction } from "@solana/web3.js";
 import bs58 from "bs58";
 
 import { db, generateId } from "../server/db.js";
@@ -17,6 +17,9 @@ hashes.sha512 = sha512;
 
 let baseUrl = "";
 let server: Server | null = null;
+let rpcServer: Server | null = null;
+
+const MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
 
 type JsonResponse<T> = {
   status: number;
@@ -30,6 +33,44 @@ type TestWallet = {
 };
 
 before(async () => {
+  rpcServer = createServer(async (req, res) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+
+    const payload = chunks.length
+      ? (JSON.parse(Buffer.concat(chunks).toString("utf8")) as { method?: string; id?: number })
+      : { method: "unknown", id: 1 };
+
+    let result: unknown;
+    switch (payload.method) {
+      case "getLatestBlockhash":
+        result = {
+          context: { slot: 123 },
+          value: {
+            blockhash: "11111111111111111111111111111111",
+            lastValidBlockHeight: 456,
+          },
+        };
+        break;
+      case "getEpochInfo":
+        result = { absoluteSlot: 123, epoch: 9 };
+        break;
+      default:
+        result = {};
+    }
+
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ jsonrpc: "2.0", id: payload.id ?? 1, result }));
+  });
+
+  rpcServer.listen(0, "127.0.0.1");
+  await once(rpcServer, "listening");
+  const rpcAddress = rpcServer.address() as AddressInfo;
+  process.env.SOLANA_RPC_ENDPOINT = `http://127.0.0.1:${rpcAddress.port}`;
+  process.env.SOLANA_NETWORK = "devnet";
+
   const app = createApp();
   server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -45,8 +86,19 @@ after(async () => {
         if (err) reject(err);
         else resolve();
       });
+      server?.closeAllConnections?.();
     });
   }
+  if (rpcServer) {
+    await new Promise<void>((resolve, reject) => {
+      rpcServer?.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+      rpcServer?.closeAllConnections?.();
+    });
+  }
+  db.close();
 });
 
 beforeEach(() => {
@@ -176,8 +228,8 @@ function insertSigningRequestFixture(walletAddress: string) {
     `
       INSERT INTO zk_settlements (
         id, transfer_id, status, commitment, nullifier, proof_id,
-        signing_request_id, queued_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        signing_request_id, initiated_by_wallet, queued_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
   ).run(
     settlementId,
@@ -187,6 +239,7 @@ function insertSigningRequestFixture(walletAddress: string) {
     "nullifier-fedcba0987654321",
     "PRF-TEST1234",
     requestId,
+    walletAddress,
     now,
     now,
   );
@@ -209,6 +262,84 @@ function insertSigningRequestFixture(walletAddress: string) {
   );
 
   return { requestId, settlementId, transferId };
+}
+
+function insertPrepareReadySettlement(walletAddress: string, status: string = "signing_requested") {
+  const now = new Date().toISOString();
+  const transferId = generateId("TRN");
+  const settlementId = generateId("STL");
+
+  db.prepare(
+    `
+      INSERT INTO transfers (
+        id, reference, recipient_address, amount, asset, status,
+        proof_state, notes, region, created_by, initiated_by_wallet, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+  ).run(
+    transferId,
+    generateId("ZKG"),
+    "recipient-wallet",
+    42,
+    "USDC",
+    "pending",
+    "generated",
+    "phase3-test",
+    "APAC",
+    "operator",
+    walletAddress,
+    now,
+    now,
+  );
+
+  db.prepare(
+    `
+      INSERT INTO zk_settlements (
+        id, transfer_id, status, initiated_by_wallet, commitment, nullifier, proof_id, queued_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+  ).run(
+    settlementId,
+    transferId,
+    status,
+    walletAddress,
+    "commitment-abcdef1234567890",
+    "nullifier-fedcba0987654321",
+    "PRF-TEST1234",
+    now,
+    now,
+  );
+
+  return { settlementId, transferId };
+}
+
+async function waitForSettlementStatus(
+  settlementId: string,
+  sessionToken: string,
+  expectedStatus: string,
+  timeoutMs = 15_000,
+) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const res = await requestJson<Record<string, unknown>>(`/api/zk/settlement/${settlementId}`, {
+      headers: { "x-wallet-session": sessionToken },
+    });
+
+    assert.equal(res.status, 200);
+
+    if (res.body.status === expectedStatus) {
+      return res.body;
+    }
+
+    if (res.body.status === "failed") {
+      throw new Error(`settlement failed: ${String(res.body.error_message ?? "unknown")}`);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  throw new Error(`timed out waiting for settlement ${settlementId} to reach ${expectedStatus}`);
 }
 
 async function issueWalletSession(wallet: TestWallet): Promise<string> {
@@ -386,4 +517,163 @@ test("tx confirm accepts the authenticated wallet and records on-chain metadata"
   assert.equal(onChainTx.signature, txSignature);
   assert.equal(onChainTx.status, "submitted");
   assert.match(onChainTx.memo_data, /^zkgent:v1:/);
+});
+
+test("settlement initiate now stops at wallet signing instead of auto-finalizing", async () => {
+  const wallet = makeWallet();
+  insertApplication(wallet.walletAddress, "qualified");
+  const token = await issueWalletSession(wallet);
+
+  const transferId = generateId("TRN");
+  const now = new Date().toISOString();
+  db.prepare(
+    `
+      INSERT INTO transfers (
+        id, reference, recipient_address, amount, asset, status,
+        proof_state, notes, region, created_by, initiated_by_wallet, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+  ).run(
+    transferId,
+    generateId("ZKG"),
+    "recipient-wallet",
+    75,
+    "USDC",
+    "pending",
+    "generated",
+    "phase3-initiate",
+    "APAC",
+    "operator",
+    wallet.walletAddress,
+    now,
+    now,
+  );
+
+  const initiated = await requestJson<{ settlement_id: string; status: string }>(
+    "/api/zk/settlement/initiate",
+    {
+      method: "POST",
+      headers: { "x-wallet-session": token },
+      body: JSON.stringify({
+        transfer_id: transferId,
+        value: 75,
+        asset: "USDC",
+        recipient_fingerprint: "FP-RECIPIENT-TEST",
+        memo: "phase3-wallet-flow",
+      }),
+    },
+  );
+
+  assert.equal(initiated.status, 200);
+
+  const settlement = await waitForSettlementStatus(
+    initiated.body.settlement_id,
+    token,
+    "signing_requested",
+  );
+  assert.equal(settlement.initiated_by_wallet, wallet.walletAddress);
+  assert.equal(settlement.on_chain_tx_sig, null);
+  assert.equal(settlement.finalized_at, null);
+});
+
+test("tx prepare returns an unsigned transaction and reuses the active signing request", async () => {
+  const wallet = makeWallet();
+  insertApplication(wallet.walletAddress, "qualified");
+  const token = await issueWalletSession(wallet);
+  const fixture = insertPrepareReadySettlement(wallet.walletAddress);
+
+  const prepared = await requestJson<{
+    request_id: string;
+    serialized_tx: string;
+    memo_text: string;
+    status: string;
+    expires_at: string;
+  }>("/api/zk/tx/prepare", {
+    method: "POST",
+    headers: { "x-wallet-session": token },
+    body: JSON.stringify({ settlement_id: fixture.settlementId }),
+  });
+
+  assert.equal(prepared.status, 200);
+  assert.equal(prepared.body.status, "ready_to_sign");
+  const tx = Transaction.from(Buffer.from(prepared.body.serialized_tx, "base64"));
+  assert.equal(tx.feePayer?.toBase58(), wallet.walletAddress);
+  assert.equal(tx.instructions[0]?.programId.toBase58(), MEMO_PROGRAM_ID);
+  assert.equal(tx.instructions[0]?.data.toString("utf8"), prepared.body.memo_text);
+
+  const signingRequest = db
+    .prepare(
+      "SELECT id, status, wallet_address, tx_data FROM zk_signing_requests WHERE id = ? LIMIT 1",
+    )
+    .get(prepared.body.request_id) as {
+    id: string;
+    status: string;
+    wallet_address: string;
+    tx_data: string;
+  };
+  assert.equal(signingRequest.status, "pending");
+  assert.equal(signingRequest.wallet_address, wallet.walletAddress);
+  assert.equal(signingRequest.tx_data, prepared.body.serialized_tx);
+
+  const reused = await requestJson<{ request_id: string; serialized_tx: string }>(
+    "/api/zk/tx/prepare",
+    {
+      method: "POST",
+      headers: { "x-wallet-session": token },
+      body: JSON.stringify({ settlement_id: fixture.settlementId }),
+    },
+  );
+
+  assert.equal(reused.status, 200);
+  assert.equal(reused.body.request_id, prepared.body.request_id);
+  assert.equal(reused.body.serialized_tx, prepared.body.serialized_tx);
+});
+
+test("tx status and settlement status are only visible to the owning wallet", async () => {
+  const owner = makeWallet();
+  const attacker = makeWallet();
+  insertApplication(owner.walletAddress, "qualified");
+  insertApplication(attacker.walletAddress, "qualified");
+  const ownerToken = await issueWalletSession(owner);
+  const attackerToken = await issueWalletSession(attacker);
+  const fixture = insertPrepareReadySettlement(owner.walletAddress);
+
+  const prepared = await requestJson<{ request_id: string }>("/api/zk/tx/prepare", {
+    method: "POST",
+    headers: { "x-wallet-session": ownerToken },
+    body: JSON.stringify({ settlement_id: fixture.settlementId }),
+  });
+  assert.equal(prepared.status, 200);
+
+  const settlementVisibleToOwner = await requestJson<Record<string, unknown>>(
+    `/api/zk/settlement/${fixture.settlementId}`,
+    {
+      headers: { "x-wallet-session": ownerToken },
+    },
+  );
+  assert.equal(settlementVisibleToOwner.status, 200);
+
+  const settlementBlocked = await requestJson<{ error: string }>(
+    `/api/zk/settlement/${fixture.settlementId}`,
+    {
+      headers: { "x-wallet-session": attackerToken },
+    },
+  );
+  assert.equal(settlementBlocked.status, 403);
+  assert.equal(settlementBlocked.body.error, "wallet_session_mismatch");
+
+  const txBlocked = await requestJson<{ error: string }>(`/api/zk/tx/${prepared.body.request_id}`, {
+    headers: { "x-wallet-session": attackerToken },
+  });
+  assert.equal(txBlocked.status, 403);
+  assert.equal(txBlocked.body.error, "wallet_session_mismatch");
+
+  const txVisibleToOwner = await requestJson<{ id: string }>(
+    `/api/zk/tx/${prepared.body.request_id}`,
+    {
+      headers: { "x-wallet-session": ownerToken },
+    },
+  );
+  assert.equal(txVisibleToOwner.status, 200);
+  assert.equal(txVisibleToOwner.body.id, prepared.body.request_id);
 });

@@ -148,7 +148,7 @@ export async function buildSettlementMemoTx(
   const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
 
   const tx = new Transaction({
-    recentBlockhash: blockhash,
+    blockhash,
     lastValidBlockHeight,
     feePayer: feePayerKey,
   });
