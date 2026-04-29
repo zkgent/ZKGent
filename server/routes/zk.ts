@@ -2,7 +2,7 @@
  * ZKGENT ZK System API Routes
  */
 
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { requireApprovedWallet } from "./access.js";
 import { getNoteStats, getAllNotes } from "../domain/note.js";
 import { getCommitmentStats, getAllCommitments } from "../domain/commitment.js";
@@ -43,6 +43,66 @@ import {
 } from "../domain/signing_request.js";
 
 export const zkRouter = Router();
+
+interface WalletBoundRequest extends Request {
+  walletAddress?: string;
+}
+
+type SettlementAccessRow = {
+  id: string;
+  status: string;
+  initiated_by_wallet: string | null;
+  signing_request_id: string | null;
+  commitment: string | null;
+  nullifier: string | null;
+  proof_id: string | null;
+  on_chain_tx_sig: string | null;
+  on_chain_explorer_url: string | null;
+  error_message: string | null;
+};
+
+function getAuthenticatedWallet(req: WalletBoundRequest): string {
+  return req.walletAddress ?? "";
+}
+
+function getSettlementWalletError(
+  settlement: Pick<SettlementAccessRow, "initiated_by_wallet">,
+  walletAddress: string,
+): "wallet_session_mismatch" | null {
+  if (settlement.initiated_by_wallet && settlement.initiated_by_wallet !== walletAddress) {
+    return "wallet_session_mismatch";
+  }
+
+  return null;
+}
+
+function getLatestSigningRequestForSettlement(settlementId: string): SigningRequestRow | null {
+  return (
+    (db
+      .prepare(
+        `SELECT id, settlement_id, tx_data, status, wallet_address, signature, requested_at, expires_at, responded_at
+         FROM zk_signing_requests
+         WHERE settlement_id = ?
+         ORDER BY requested_at DESC
+         LIMIT 1`,
+      )
+      .get(settlementId) as SigningRequestRow | undefined) ?? null
+  );
+}
+
+function getActivePendingSigningRequest(
+  settlementId: string,
+  walletAddress: string,
+  now = new Date(),
+): SigningRequestRow | "wallet_session_mismatch" | null {
+  const request = getLatestSigningRequestForSettlement(settlementId);
+  if (!request) return null;
+  if (request.wallet_address && request.wallet_address !== walletAddress) {
+    return "wallet_session_mismatch";
+  }
+
+  return getSigningRequestConfirmError(request, walletAddress, now) === null ? request : null;
+}
 
 // ─── System metrics ───────────────────────────────────────────────────────────
 
@@ -301,7 +361,7 @@ zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) =>
   const { transfer_id, value, asset, recipient_fingerprint, memo } = req.body;
   // Use the wallet validated by requireApprovedWallet — never re-read from
   // body, otherwise a caller could authorize one wallet and act on another.
-  const initiated_by_wallet = (req as any).walletAddress as string;
+  const initiated_by_wallet = getAuthenticatedWallet(req as WalletBoundRequest);
   if (!transfer_id || value == null || !recipient_fingerprint) {
     return res.status(400).json({ error: "transfer_id, value, recipient_fingerprint required" });
   }
@@ -323,12 +383,16 @@ zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) =>
     }
 
     // Execute asynchronously in background
-    executeSettlement(record.id, {
-      value,
-      asset: asset ?? "USDC",
-      recipientFingerprint: recipient_fingerprint,
-      memo,
-    }).catch((err) => console.error("[settlement]", err));
+    executeSettlement(
+      record.id,
+      {
+        value,
+        asset: asset ?? "USDC",
+        recipientFingerprint: recipient_fingerprint,
+        memo,
+      },
+      "wallet",
+    ).catch((err) => console.error("[settlement]", err));
 
     res.json({ settlement_id: record.id, status: record.status });
   } catch (err: any) {
@@ -336,10 +400,17 @@ zkRouter.post("/settlement/initiate", requireApprovedWallet, async (req, res) =>
   }
 });
 
-zkRouter.get("/settlement/:id", (req, res) => {
+zkRouter.get("/settlement/:id", requireApprovedWallet, (req, res) => {
   try {
-    const record = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(req.params.id);
+    const wallet_address = getAuthenticatedWallet(req as WalletBoundRequest);
+    const record = db.prepare(`SELECT * FROM zk_settlements WHERE id = ?`).get(req.params.id) as
+      | (SettlementAccessRow & Record<string, unknown>)
+      | undefined;
     if (!record) return res.status(404).json({ error: "not_found" });
+    const settlementWalletError = getSettlementWalletError(record, wallet_address);
+    if (settlementWalletError) {
+      return res.status(403).json({ error: settlementWalletError });
+    }
     res.json(record);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -394,19 +465,69 @@ zkRouter.get("/solana", async (_req, res) => {
 zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
   const { settlement_id } = req.body;
   // Always use the middleware-validated wallet — body field is ignored.
-  const wallet_address = (req as any).walletAddress as string;
+  const wallet_address = getAuthenticatedWallet(req as WalletBoundRequest);
   if (!settlement_id || typeof settlement_id !== "string") {
     return res.status(400).json({ error: "settlement_id required" });
   }
 
   const settlement = db
-    .prepare(`SELECT * FROM zk_settlements WHERE id = ?`)
-    .get(settlement_id) as any;
+    .prepare(
+      `SELECT id, status, initiated_by_wallet, signing_request_id, commitment, nullifier, proof_id, on_chain_tx_sig, on_chain_explorer_url, error_message
+       FROM zk_settlements WHERE id = ?`,
+    )
+    .get(settlement_id) as SettlementAccessRow | undefined;
   if (!settlement) return res.status(404).json({ error: "settlement_not_found" });
+
+  const settlementWalletError = getSettlementWalletError(settlement, wallet_address);
+  if (settlementWalletError) {
+    return res.status(403).json({ error: settlementWalletError });
+  }
+
+  if (settlement.status === "submitted_on_chain" || settlement.status === "confirmed") {
+    return res.status(409).json({ error: "settlement_already_submitted" });
+  }
+
+  if (settlement.status === "finalized") {
+    return res.status(409).json({ error: "settlement_already_finalized" });
+  }
+
+  if (settlement.status === "failed" || settlement.status === "rolled_back") {
+    return res.status(409).json({ error: "settlement_not_signable" });
+  }
+
+  if (settlement.status !== "signing_requested") {
+    return res.status(409).json({ error: "settlement_not_ready_for_signing" });
+  }
+
+  const existingRequest = getActivePendingSigningRequest(settlement_id, wallet_address);
+  if (existingRequest === "wallet_session_mismatch") {
+    return res.status(403).json({ error: existingRequest });
+  }
+
+  if (existingRequest) {
+    const config = getSolanaConfig();
+    const memo = {
+      settlement_id: settlement.id,
+      commitment_short: (settlement.commitment ?? "pending").slice(0, 12),
+      nullifier_short: (settlement.nullifier ?? "pending").slice(0, 12),
+      proof_id: settlement.proof_id ?? "pending",
+      version: "v1",
+    };
+
+    return res.json({
+      request_id: existingRequest.id,
+      serialized_tx: existingRequest.tx_data,
+      network: config.network,
+      is_mainnet: config.is_mainnet,
+      memo_text: createSettlementMemoText(memo),
+      expires_at: existingRequest.expires_at,
+      status: "ready_to_sign",
+      note: "Reusing the latest pending signing request for this wallet and settlement.",
+    });
+  }
 
   try {
     const { buildSettlementMemoTx } = await import("../domain/solana_tx.js");
-    const { getSolanaConfig } = await import("../domain/solana.js");
 
     const config = getSolanaConfig();
     const memo = {
@@ -471,7 +592,7 @@ zkRouter.post("/tx/prepare", requireApprovedWallet, async (req, res) => {
  */
 zkRouter.post("/tx/confirm", requireApprovedWallet, async (req, res) => {
   const { request_id, tx_signature, network } = req.body;
-  const wallet_address = (req as any).walletAddress as string;
+  const wallet_address = getAuthenticatedWallet(req as WalletBoundRequest);
   if (!request_id || typeof request_id !== "string") {
     return res.status(400).json({ error: "request_id required" });
   }
@@ -566,14 +687,28 @@ zkRouter.post("/tx/confirm", requireApprovedWallet, async (req, res) => {
  * GET /api/zk/tx/:requestId
  * Get status of a tx prepare request.
  */
-zkRouter.get("/tx/:requestId", (req, res) => {
+zkRouter.get("/tx/:requestId", requireApprovedWallet, (req, res) => {
   try {
+    const wallet_address = getAuthenticatedWallet(req as WalletBoundRequest);
     const r = db
       .prepare(
         `SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`,
       )
-      .get(req.params.requestId);
+      .get(req.params.requestId) as
+      | {
+          id: string;
+          settlement_id: string;
+          status: string;
+          wallet_address: string | null;
+          requested_at: string;
+          expires_at: string;
+          responded_at: string | null;
+        }
+      | undefined;
     if (!r) return res.status(404).json({ error: "not_found" });
+    if (r.wallet_address && r.wallet_address !== wallet_address) {
+      return res.status(403).json({ error: "wallet_session_mismatch" });
+    }
     res.json(r);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -597,14 +732,28 @@ zkRouter.post("/signing/respond", async (req, res) => {
   });
 });
 
-zkRouter.get("/signing/:id", (req, res) => {
+zkRouter.get("/signing/:id", requireApprovedWallet, (req, res) => {
   try {
+    const wallet_address = getAuthenticatedWallet(req as WalletBoundRequest);
     const r = db
       .prepare(
         `SELECT id, settlement_id, status, wallet_address, requested_at, expires_at, responded_at FROM zk_signing_requests WHERE id = ?`,
       )
-      .get(req.params.id);
+      .get(req.params.id) as
+      | {
+          id: string;
+          settlement_id: string;
+          status: string;
+          wallet_address: string | null;
+          requested_at: string;
+          expires_at: string;
+          responded_at: string | null;
+        }
+      | undefined;
     if (!r) return res.status(404).json({ error: "not_found" });
+    if (r.wallet_address && r.wallet_address !== wallet_address) {
+      return res.status(403).json({ error: "wallet_session_mismatch" });
+    }
     res.json(r);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

@@ -60,6 +60,7 @@ export interface SettlementRecord {
   id: string;
   transfer_id: string;
   status: SettlementStatus;
+  initiated_by_wallet: string | null;
   note_id: string | null;
   commitment: Bytes32 | null;
   nullifier: Bytes32 | null;
@@ -76,6 +77,8 @@ export interface SettlementRecord {
   settled_at: string | null;
   updated_at: string;
 }
+
+export type SettlementSubmitMode = "operator" | "wallet";
 
 function updateSettlement(id: string, patch: Record<string, unknown>): void {
   const now = new Date().toISOString();
@@ -141,6 +144,7 @@ export async function executeSettlement(
     recipientFingerprint: string;
     memo?: string;
   },
+  submitMode: SettlementSubmitMode = "operator",
 ): Promise<{ success: boolean; error?: string; record?: SettlementRecord }> {
   const record = getSettlement(settlementId);
   if (!record) return { success: false, error: "settlement_not_found" };
@@ -312,6 +316,19 @@ export async function executeSettlement(
       status: "signing_requested",
       merkle_root_at_settlement: merkleRoot,
     });
+
+    if (submitMode === "wallet") {
+      logActivity({
+        category: "settlement",
+        event: "settlement_ready_for_wallet_signature",
+        detail: `Settlement ${settlementId} proved and is waiting for wallet signature`,
+        status: "info",
+        relatedEntityType: "settlement",
+        relatedEntityId: settlementId,
+      });
+
+      return { success: true, record: getSettlement(settlementId)! };
+    }
 
     // ── Step 7: Mark as signed (operator key signs automatically here) ─────────
     // In browser-wallet flow: frontend connects wallet, user manually signs.

@@ -18,13 +18,15 @@ function ApiDocs() {
 
       <H2>Authentication</H2>
       <P>
-        Most endpoints are public reads. Wallet-gated write endpoints (transfers initiation,
-        transaction prepare) require an approved early-access wallet, supplied via the{" "}
-        <Code>x-wallet-address</Code> header.
+        Most endpoints are public reads. Protected settlement endpoints require an approved
+        early-access wallet session, established via signed challenge-response and sent as{" "}
+        <Code>x-wallet-session</Code> (or <Code>Authorization: Bearer ...</Code>). The optional{" "}
+        <Code>x-wallet-address</Code> header is treated as a cross-check, not as the source of
+        truth.
       </P>
       <Callout variant="warn" title="D1 limitation">
-        The wallet header is unsigned. This is a soft cohort gate consistent with the D1 trust model
-        — full signature challenge-response ships with D2 (client-side proving).
+        Wallet authentication is now signed challenge-response, but the proving pipeline and
+        settlement orchestration still run server-side in D1. Client-side proving remains a D2 goal.
       </Callout>
 
       <H2>Applications</H2>
@@ -74,13 +76,13 @@ function ApiDocs() {
 
       <H3>POST /api/zk/settlement/initiate</H3>
       <P>
-        Queue a confidential settlement. Requires <Code>x-wallet-address</Code> header pointing to
-        an approved wallet. The wallet you pass <em>is</em> the one the settlement is attributed to
-        — body wallet fields are ignored.
+        Queue a confidential settlement. Requires an approved wallet session. The server proves the
+        transfer and advances it to <Code>signing_requested</Code>, then waits for the authenticated
+        wallet to call <Code>/api/zk/tx/prepare</Code>.
       </P>
       <Pre lang="bash">{`curl -X POST https://YOUR_HOST/api/zk/settlement/initiate \\
   -H "Content-Type: application/json" \\
-  -H "x-wallet-address: APPROVED_WALLET" \\
+  -H "x-wallet-session: WALLET_SESSION_TOKEN" \\
   -d '{
     "transfer_id": "TR_123",
     "value": 1000,
@@ -91,12 +93,13 @@ function ApiDocs() {
 
       <H3>POST /api/zk/tx/prepare</H3>
       <P>
-        Build the unsigned Solana transaction for a queued settlement, ready for the wallet to sign.
-        Gated.
+        Build the unsigned Solana transaction for a settlement that has already reached{" "}
+        <Code>signing_requested</Code>. The request is wallet-scoped and only reusable by the same
+        authenticated wallet.
       </P>
       <Pre lang="bash">{`curl -X POST https://YOUR_HOST/api/zk/tx/prepare \\
   -H "Content-Type: application/json" \\
-  -H "x-wallet-address: APPROVED_WALLET" \\
+  -H "x-wallet-session: WALLET_SESSION_TOKEN" \\
   -d '{ "settlement_id": "SET_123" }'`}</Pre>
 
       <H3>POST /api/zk/tx/confirm</H3>
@@ -126,11 +129,12 @@ function ApiDocs() {
       <H2>Errors</H2>
       <List>
         <Li>
-          <Code>401 wallet_required</Code> — gated endpoint called without a wallet header or body
-          field.
+          <Code>401 wallet_required</Code> — gated endpoint called without a valid wallet session or
+          wallet identity.
         </Li>
         <Li>
-          <Code>400 wallet_mismatch</Code> — header wallet differs from body wallet.
+          <Code>wallet_mismatch</Code> / <Code>wallet_session_mismatch</Code> — supplied wallet
+          metadata conflicts with the authenticated session or the settlement owner.
         </Li>
         <Li>
           <Code>403 access_denied</Code> — wallet has no approved application.

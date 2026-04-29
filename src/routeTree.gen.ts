@@ -17,6 +17,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PayrollRouteImport } from './routes/payroll'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CounterpartiesRouteImport } from './routes/counterparties'
+import { Route as CeremonyRouteImport } from './routes/ceremony'
 import { Route as ArchitectureRouteImport } from './routes/architecture'
 import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as ActivityRouteImport } from './routes/activity'
@@ -68,6 +69,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const CounterpartiesRoute = CounterpartiesRouteImport.update({
   id: '/counterparties',
   path: '/counterparties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CeremonyRoute = CeremonyRouteImport.update({
+  id: '/ceremony',
+  path: '/ceremony',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArchitectureRoute = ArchitectureRouteImport.update({
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof ActivityRoute
   '/apply': typeof ApplyRoute
   '/architecture': typeof ArchitectureRoute
+  '/ceremony': typeof CeremonyRoute
   '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
   '/payroll': typeof PayrollRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/apply': typeof ApplyRoute
   '/architecture': typeof ArchitectureRoute
+  '/ceremony': typeof CeremonyRoute
   '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
   '/payroll': typeof PayrollRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/activity': typeof ActivityRoute
   '/apply': typeof ApplyRoute
   '/architecture': typeof ArchitectureRoute
+  '/ceremony': typeof CeremonyRoute
   '/counterparties': typeof CounterpartiesRoute
   '/dashboard': typeof DashboardRoute
   '/payroll': typeof PayrollRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/apply'
     | '/architecture'
+    | '/ceremony'
     | '/counterparties'
     | '/dashboard'
     | '/payroll'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/apply'
     | '/architecture'
+    | '/ceremony'
     | '/counterparties'
     | '/dashboard'
     | '/payroll'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/apply'
     | '/architecture'
+    | '/ceremony'
     | '/counterparties'
     | '/dashboard'
     | '/payroll'
@@ -272,6 +284,7 @@ export interface RootRouteChildren {
   ActivityRoute: typeof ActivityRoute
   ApplyRoute: typeof ApplyRoute
   ArchitectureRoute: typeof ArchitectureRoute
+  CeremonyRoute: typeof CeremonyRoute
   CounterpartiesRoute: typeof CounterpartiesRoute
   DashboardRoute: typeof DashboardRoute
   PayrollRoute: typeof PayrollRoute
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/counterparties'
       fullPath: '/counterparties'
       preLoaderRoute: typeof CounterpartiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ceremony': {
+      id: '/ceremony'
+      path: '/ceremony'
+      fullPath: '/ceremony'
+      preLoaderRoute: typeof CeremonyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/architecture': {
@@ -440,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivityRoute: ActivityRoute,
   ApplyRoute: ApplyRoute,
   ArchitectureRoute: ArchitectureRoute,
+  CeremonyRoute: CeremonyRoute,
   CounterpartiesRoute: CounterpartiesRoute,
   DashboardRoute: DashboardRoute,
   PayrollRoute: PayrollRoute,

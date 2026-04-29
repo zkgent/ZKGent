@@ -11,7 +11,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "NODE_ENV=test ZKGENT_DATA_DIR=.local/test-data node --import tsx --test --test-concurrency=1 tests/**/*.test.ts",
+    "test": "NODE_ENV=test ZKGENT_DATA_DIR=.local/test-data node --import tsx --test --test-force-exit --test-concurrency=1 tests/**/*.test.ts",
     "ci": "npm run lint && npm run test && npm run build",
     "audit:prod": "npm audit --omit=dev",
     "format": "prettier --write .",
