@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/app/AppShell";
-import { useApplication } from "@/context/ApplicationContext";
+import { useApplication, type FormData as ApplicationFormData } from "@/context/ApplicationContext";
 import { useWallet } from "@/context/WalletContext";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +58,13 @@ const CONCERNS = [
 ];
 
 const STEPS = ["Identity", "Use Case", "Payment Profile", "Review"];
+
+type ApplyFormUpdate = (patch: Partial<ApplicationFormData>) => void;
+
+type StepProps = {
+  data: ApplicationFormData;
+  update: ApplyFormUpdate;
+};
 
 function StepIndicator({ current }: { current: number }) {
   return (
@@ -219,7 +226,7 @@ const variants = {
   exit: (dir: number) => ({ x: -dir * 40, opacity: 0 }),
 };
 
-function Step1({ data, update }: { data: any; update: any }) {
+function Step1({ data, update }: StepProps) {
   return (
     <div className="space-y-5">
       <div>
@@ -259,7 +266,7 @@ function Step1({ data, update }: { data: any; update: any }) {
   );
 }
 
-function Step2({ data, update }: { data: any; update: any }) {
+function Step2({ data, update }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -300,7 +307,7 @@ function Step2({ data, update }: { data: any; update: any }) {
   );
 }
 
-function Step3({ data, update }: { data: any; update: any }) {
+function Step3({ data, update }: StepProps) {
   return (
     <div className="space-y-5">
       <div>
@@ -355,7 +362,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Step4({ data }: { data: any }) {
+function Step4({ data }: { data: ApplicationFormData }) {
   const useCaseLabel = USE_CASES.find((u) => u.id === data.useCase)?.label || data.useCase;
   return (
     <div className="space-y-5">
@@ -432,7 +439,7 @@ function WalletNotice({
   );
 }
 
-function canAdvance(step: number, data: any): boolean {
+function canAdvance(step: number, data: ApplicationFormData): boolean {
   if (step === 0) return !!(data.fullName && data.workEmail && data.company && data.role);
   if (step === 1) return !!(data.useCase && data.teamSize && data.region);
   if (step === 2)

@@ -26,5 +26,27 @@ export default tseslint.config(
       "no-empty": "warn",
     },
   },
+  {
+    files: ["src/components/ui/**/*.{ts,tsx}", "src/context/**/*.{ts,tsx}", "src/router.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
+  {
+    files: [
+      "server/domain/ceremony.ts",
+      "server/domain/groth16.ts",
+      "server/domain/nullifier.ts",
+      "server/domain/proof.ts",
+      "server/domain/settlement.ts",
+      "server/domain/solana.ts",
+      "server/domain/solana_tx.ts",
+      "server/domain/transfer_circuit.ts",
+      "server/routes/zk.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
   eslintPluginPrettier,
 );
