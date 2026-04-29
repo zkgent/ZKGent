@@ -14,11 +14,7 @@ export function Hero() {
   const visualY = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   return (
-    <section
-      ref={ref}
-      id="top"
-      className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48"
-    >
+    <section ref={ref} id="top" className="relative overflow-hidden pt-32 pb-40 lg:pt-44 lg:pb-48">
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grid mask-radial-fade" />
       <div className="pointer-events-none absolute inset-0 -z-30 bg-grain opacity-[0.35]" />
 
@@ -197,8 +193,13 @@ function ContractAddressPill() {
       ta.value = CONTRACT_ADDRESS;
       document.body.appendChild(ta);
       ta.select();
-      try { document.execCommand("copy"); setCopied(true); setTimeout(() => setCopied(false), 1600); }
-      finally { document.body.removeChild(ta); }
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+      } finally {
+        document.body.removeChild(ta);
+      }
     }
   };
 
@@ -232,8 +233,14 @@ function ContractAddressPill() {
         {copied ? (
           <>
             <svg
-              width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="text-emerald"
             >
               <polyline points="20 6 9 17 4 12" />
@@ -243,8 +250,14 @@ function ContractAddressPill() {
         ) : (
           <>
             <svg
-              width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -262,8 +275,14 @@ function ContractAddressPill() {
       >
         <span className="hidden sm:inline">Solscan</span>
         <svg
-          width="11" height="11" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
           <path d="M7 17L17 7" />
           <path d="M7 7h10v10" />
@@ -282,8 +301,7 @@ function CredItem({
   label: string;
   value: string;
 }) {
-  const cls =
-    dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
+  const cls = dot === "emerald" ? "bg-emerald" : dot === "cyan" ? "bg-cyan" : "bg-violet";
   const glow =
     dot === "emerald"
       ? "shadow-[0_0_12px_var(--emerald-glow)]"

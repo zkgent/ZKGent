@@ -139,8 +139,6 @@ export function AccessGate({ children }: { children: ReactNode }) {
     return (
       <Wrapper title="Application under review">
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Thanks
-          {access.application?.fullName ? `, ${access.application.fullName.split(" ")[0]}` : ""}!
           Your application is in our review queue. We will unlock product access for this wallet as
           soon as you are approved (typically 5–7 business days).
         </p>

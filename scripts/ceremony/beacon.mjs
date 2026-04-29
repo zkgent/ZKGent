@@ -59,16 +59,13 @@ if (manifest.beacon) {
 
 const lastContribution = manifest.contributions[manifest.contributions.length - 1];
 const lastIndex = lastContribution.index;
-const prevZkey = path.join(
-  CEREMONY_DIR,
-  `contribution_${String(lastIndex).padStart(4, "0")}.zkey`
-);
+const prevZkey = path.join(CEREMONY_DIR, `contribution_${String(lastIndex).padStart(4, "0")}.zkey`);
 const beaconZkey = path.join(CEREMONY_DIR, "transfer_beacon.zkey");
 
 console.log("─".repeat(72));
 console.log("ZKGent Ceremony — Beacon (final)");
 console.log("─".repeat(72));
-console.log(`Previous     : contribution_${String(lastIndex).padStart(4,"0")}.zkey`);
+console.log(`Previous     : contribution_${String(lastIndex).padStart(4, "0")}.zkey`);
 console.log(`Output       : transfer_beacon.zkey`);
 console.log("");
 
@@ -76,7 +73,9 @@ console.log("Fetching Solana mainnet finalized beacon…");
 const beacon = await fetchSolanaBeacon();
 console.log(`  slot       : ${beacon.slot}`);
 console.log(`  blockhash  : ${beacon.blockhash}`);
-console.log(`  block_time : ${beacon.block_time ? new Date(beacon.block_time * 1000).toISOString() : "?"}`);
+console.log(
+  `  block_time : ${beacon.block_time ? new Date(beacon.block_time * 1000).toISOString() : "?"}`,
+);
 console.log(`  beacon hex : ${shortHash(beacon.beacon_hex)}`);
 console.log("");
 
@@ -96,7 +95,7 @@ const res = spawnSync(
     String(ITERATIONS),
     "--name=solana-mainnet-beacon",
   ],
-  { stdio: "inherit", cwd: process.cwd() }
+  { stdio: "inherit", cwd: process.cwd() },
 );
 if (res.status !== 0) {
   console.error("snarkjs zkey beacon failed");
@@ -107,19 +106,14 @@ const beaconMs = Date.now() - t0;
 console.log("\nVerifying beacon zkey against r1cs + ptau…");
 const verify = spawnSync(
   "node",
-  [
-    "node_modules/snarkjs/build/cli.cjs",
-    "zkey",
-    "verify",
-    CIRCUIT_R1CS,
-    CIRCUIT_PTAU,
-    beaconZkey,
-  ],
-  { stdio: "inherit", cwd: process.cwd() }
+  ["node_modules/snarkjs/build/cli.cjs", "zkey", "verify", CIRCUIT_R1CS, CIRCUIT_PTAU, beaconZkey],
+  { stdio: "inherit", cwd: process.cwd() },
 );
 if (verify.status !== 0) {
   console.error("zkey verify FAILED — refusing to publish beacon zkey.");
-  try { fs.unlinkSync(beaconZkey); } catch {}
+  try {
+    fs.unlinkSync(beaconZkey);
+  } catch {}
   process.exit(1);
 }
 
@@ -134,7 +128,7 @@ const exportRes = spawnSync(
     beaconZkey,
     CIRCUIT_VKEY,
   ],
-  { stdio: "inherit", cwd: process.cwd() }
+  { stdio: "inherit", cwd: process.cwd() },
 );
 if (exportRes.status !== 0) {
   console.error("verification key export failed");
@@ -144,10 +138,10 @@ if (exportRes.status !== 0) {
 // Promote beacon zkey to be the production transfer_final.zkey
 fs.copyFileSync(beaconZkey, CIRCUIT_FINAL_ZKEY);
 
-const prevHash    = await hashFile(prevZkey);
-const beaconHash  = await hashFile(beaconZkey);
-const finalHash   = await hashFile(CIRCUIT_FINAL_ZKEY);
-const vkeyHash    = await hashFile(CIRCUIT_VKEY);
+const prevHash = await hashFile(prevZkey);
+const beaconHash = await hashFile(beaconZkey);
+const finalHash = await hashFile(CIRCUIT_FINAL_ZKEY);
+const vkeyHash = await hashFile(CIRCUIT_VKEY);
 
 const beaconEntry = {
   ...beacon,

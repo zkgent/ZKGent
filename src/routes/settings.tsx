@@ -122,7 +122,8 @@ function SettingsPage() {
       setForm(s);
       setSaveMsg("Reset to defaults");
       setTimeout(() => setSaveMsg(null), 2500);
-    } catch {
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to reset");
     } finally {
       setSaving(false);
     }

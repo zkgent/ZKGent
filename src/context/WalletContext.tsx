@@ -358,15 +358,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "x-wallet-address": wallet.address,
             ...(sessionToken ? { "x-wallet-session": sessionToken } : {}),
           },
           body: JSON.stringify({
             request_id,
             tx_signature: txSignature,
-            wallet_address: wallet.address,
             network,
           }),
         });
+        if (!confirmRes.ok) {
+          const err = (await confirmRes.json()) as ApiErrorPayload;
+          throw new Error(err.error ?? "tx_confirm_failed");
+        }
         const confirmData = await confirmRes.json();
 
         setStatus("connected");

@@ -64,7 +64,12 @@ export interface CeremonyState {
   derived_final_zkey_hash: string | null;
   derived_vkey_hash: string | null;
   hashes_consistent: boolean;
-  trust_level: "none" | "single_party" | "single_party_plus_beacon" | "multi_party" | "multi_party_plus_beacon";
+  trust_level:
+    | "none"
+    | "single_party"
+    | "single_party_plus_beacon"
+    | "multi_party"
+    | "multi_party_plus_beacon";
   trust_summary: string;
   last_contribution_at: string | null;
   manifest_path_rel: string;
@@ -85,7 +90,7 @@ function sha256File(p: string): string | null {
 
 function classifyTrust(
   contribCount: number,
-  beaconApplied: boolean
+  beaconApplied: boolean,
 ): { trust_level: CeremonyState["trust_level"]; trust_summary: string } {
   if (contribCount === 0 && !beaconApplied) {
     return {
@@ -96,8 +101,7 @@ function classifyTrust(
   if (contribCount === 1 && !beaconApplied) {
     return {
       trust_level: "single_party",
-      trust_summary:
-        "1 contributor only, no public beacon — toxic waste held by single party.",
+      trust_summary: "1 contributor only, no public beacon — toxic waste held by single party.",
     };
   }
   if (contribCount === 1 && beaconApplied) {
@@ -194,9 +198,7 @@ export function getCeremonyState(): CeremonyState {
     derived_vkey_hash === manifest.verification_key_hash;
 
   const last_contribution_at =
-    contributions.length > 0
-      ? contributions[contributions.length - 1].contributed_at
-      : null;
+    contributions.length > 0 ? contributions[contributions.length - 1].contributed_at : null;
 
   const trust = classifyTrust(contributions.length, beacon_applied);
 

@@ -30,7 +30,6 @@ import {
   TransactionInstruction,
   sendAndConfirmTransaction,
   LAMPORTS_PER_SOL,
-  clusterApiUrl,
   Commitment,
 } from "@solana/web3.js";
 import crypto from "crypto";
@@ -129,29 +128,35 @@ export interface SettlementMemo {
   version: string;
 }
 
+export function createSettlementMemoText(memo: SettlementMemo): string {
+  return `zkgent:v1:${memo.settlement_id}:${memo.commitment_short}:${memo.nullifier_short}:${memo.proof_id}`;
+}
+
 /**
  * Build a real Solana Transaction with an SPL Memo instruction.
  * The memo anchors the settlement metadata on-chain.
  * IMPLEMENTED — real @solana/web3.js Transaction object.
  */
-export async function buildSettlementMemoTx(memo: SettlementMemo): Promise<Transaction> {
+export async function buildSettlementMemoTx(
+  memo: SettlementMemo,
+  feePayer: string | PublicKey,
+): Promise<Transaction> {
   const conn = getSolanaConnection();
-  const keypair = getOperatorKeypairCached();
-
-  const memoText = `zkgent:v1:${memo.settlement_id}:${memo.commitment_short}:${memo.nullifier_short}:${memo.proof_id}`;
+  const feePayerKey = typeof feePayer === "string" ? new PublicKey(feePayer) : feePayer;
+  const memoText = createSettlementMemoText(memo);
 
   const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
 
   const tx = new Transaction({
     recentBlockhash: blockhash,
     lastValidBlockHeight,
-    feePayer: keypair.publicKey,
+    feePayer: feePayerKey,
   });
 
   tx.add(
     new TransactionInstruction({
       programId: MEMO_PROGRAM_ID,
-      keys: [{ pubkey: keypair.publicKey, isSigner: true, isWritable: false }],
+      keys: [],
       data: Buffer.from(memoText, "utf8"),
     }),
   );
@@ -211,7 +216,7 @@ export async function submitSettlementOnChain(opts: {
       version: "v1",
     };
 
-    const tx = await buildSettlementMemoTx(memo);
+    const tx = await buildSettlementMemoTx(memo, keypair.publicKey);
 
     // Sign and send — sendAndConfirmTransaction handles confirmation polling
     const signature = await sendAndConfirmTransaction(conn, tx, [keypair], {

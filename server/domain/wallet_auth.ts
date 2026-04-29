@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { verify } from "@noble/ed25519";
-import bs58 from "@solana/web3.js";
+import bs58 from "bs58";
 import { db, generateId } from "../db.js";
 
 const CHALLENGE_TTL_MS = 5 * 60_000;

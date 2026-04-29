@@ -72,6 +72,14 @@ const CAT_COLORS: Record<string, string> = {
   system: "text-muted-foreground/60 bg-surface border-hairline",
 };
 
+interface ProductionSnarkCircuit {
+  id?: string;
+  constraints?: number;
+  proving_system?: string;
+  hash?: string;
+  curve?: string;
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function MetricCard({
@@ -361,30 +369,40 @@ function DashboardPage() {
                     </span>
                   )}
                 </div>
-                <p className="font-mono text-[12px] text-foreground">
-                  {zk.system.snark_ready
-                    ? typeof zk.system.snark_circuit === "object"
-                      ? (zk.system.snark_circuit as any).id
-                      : (zk.system.snark_circuit ?? "—")
-                    : "not built"}
-                </p>
-                {zk.system.snark_ready && typeof zk.system.snark_circuit === "object" ? (
-                  <>
-                    <p className="font-mono text-[10px] text-emerald/80">
-                      {(zk.system.snark_circuit as any).constraints?.toLocaleString()} R1CS ·{" "}
-                      {(zk.system.snark_circuit as any).proving_system} ·{" "}
-                      {(zk.system.snark_circuit as any).hash} /{" "}
-                      {(zk.system.snark_circuit as any).curve}
-                    </p>
-                    <p className="font-mono text-[9px] text-yellow-400/60">
-                      ptau: Hermez (multi-party) · phase-2: single-party (devnet)
-                    </p>
-                  </>
-                ) : (
-                  <p className="font-mono text-[10px] text-muted-foreground/60">
-                    needs membership + balance circuit + multi-party setup
-                  </p>
-                )}
+                {(() => {
+                  const productionCircuit =
+                    zk.system.snark_ready &&
+                    typeof zk.system.snark_circuit === "object" &&
+                    zk.system.snark_circuit !== null
+                      ? (zk.system.snark_circuit as ProductionSnarkCircuit)
+                      : null;
+
+                  return (
+                    <>
+                      <p className="font-mono text-[12px] text-foreground">
+                        {zk.system.snark_ready
+                          ? (productionCircuit?.id ?? zk.system.snark_circuit ?? "—")
+                          : "not built"}
+                      </p>
+                      {productionCircuit ? (
+                        <>
+                          <p className="font-mono text-[10px] text-emerald/80">
+                            {productionCircuit.constraints?.toLocaleString() ?? "—"} R1CS ·{" "}
+                            {productionCircuit.proving_system ?? "—"} ·{" "}
+                            {productionCircuit.hash ?? "—"} / {productionCircuit.curve ?? "—"}
+                          </p>
+                          <p className="font-mono text-[9px] text-yellow-400/60">
+                            ptau: Hermez (multi-party) · phase-2: single-party (devnet)
+                          </p>
+                        </>
+                      ) : (
+                        <p className="font-mono text-[10px] text-muted-foreground/60">
+                          needs membership + balance circuit + multi-party setup
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
             {/* Groth16 demo */}
